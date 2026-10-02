@@ -11,11 +11,14 @@ interface ProfileTabsProps {
   activeTab: ProfileTabId;
   onChangeTab: (tab: ProfileTabId) => void;
   ownMode: boolean;
+  readOnly?: boolean;
 }
 
 export const ProfileTabs: React.FC<ProfileTabsProps> = ({
   activeTab,
   onChangeTab,
+  ownMode,
+  readOnly = false,
 }) => {
   const tabs: TabItem[] = [
     { id: 'feed', label: 'Feed' },
@@ -36,9 +39,13 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
               role="tab"
               aria-selected={isActive}
               aria-controls={`panel-${tab.id}`}
+              aria-disabled={readOnly || undefined}
+              tabIndex={readOnly ? -1 : undefined}
               id={`tab-${tab.id}`}
-              onClick={() => onChangeTab(tab.id)}
-              className={`py-3 px-4 text-sm font-semibold transition-colors cursor-pointer border-b-2 -mb-px whitespace-nowrap ${
+              onClick={readOnly ? undefined : () => onChangeTab(tab.id)}
+              className={`py-3 px-4 text-sm font-semibold transition-colors ${
+                readOnly ? 'cursor-default' : 'cursor-pointer'
+              } border-b-2 -mb-px whitespace-nowrap ${
                 isActive
                   ? 'text-[var(--brand-primary)] border-[var(--brand-primary)]'
                   : 'text-[var(--text-secondary)] border-transparent hover:text-[var(--text-primary)]'
