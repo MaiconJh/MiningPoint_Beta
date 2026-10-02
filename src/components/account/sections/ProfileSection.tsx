@@ -91,7 +91,7 @@ export const ProfileSection: React.FC = () => {
   return (
     <div className="flex flex-col gap-6">
       {/* Sticky Top Bar (Phase 2) */}
-      <div className="sticky top-0 z-20 bg-[var(--bg-default)] py-3 px-1 border-b border-[var(--border-default)] flex items-center justify-between gap-4 -mt-2">
+      <div className="sticky top-[calc(var(--nav-offset)+var(--nav-h)+16px)] z-20 bg-[var(--bg-default)] py-3 px-1 border-b border-[var(--border-default)] flex items-center justify-between gap-4 -mt-2">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold text-[var(--text-primary)] m-0">
             Perfil
@@ -126,7 +126,7 @@ export const ProfileSection: React.FC = () => {
           onClick={() => setShowMobilePreview(!showMobilePreview)}
           className="w-full flex items-center justify-between text-xs font-semibold text-[var(--text-primary)] cursor-pointer"
         >
-          <span>Ver prévia ao vivo do perfil</span>
+          <span>Ver perfil como visitante</span>
           {showMobilePreview ? (
             <ChevronUpIcon className="w-4 h-4 text-[var(--text-secondary)]" />
           ) : (
@@ -139,6 +139,8 @@ export const ProfileSection: React.FC = () => {
               profile={profile}
               draft={draft}
               titlesMap={titlesMap}
+              availableBadges={availableBadges}
+              customIcons={customIcons}
             />
           </div>
         )}
@@ -158,9 +160,9 @@ export const ProfileSection: React.FC = () => {
 
           {/* Bio, Título Exibido e Visibilidade */}
           <div className="p-6 border-t border-[var(--border-subtle)] flex flex-col gap-2">
-            <h2 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider m-0 mb-1">
+            <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider m-0 mb-1">
               Informações do Perfil
-            </h2>
+            </h3>
 
             <div className="flex flex-col">
               {/* Bio */}
@@ -194,9 +196,9 @@ export const ProfileSection: React.FC = () => {
               className="p-6 border-t border-[var(--border-subtle)] flex flex-col"
               aria-hidden="true"
             >
-              <h2 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider m-0 mb-2">
+              <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider m-0 mb-2">
                 Insígnias destacadas
-              </h2>
+              </h3>
               <p className="text-xs text-[var(--text-secondary)] m-0 mb-4">
                 Escolha até 4 insígnias para aparecer no seu perfil.
               </p>
@@ -209,9 +211,9 @@ export const ProfileSection: React.FC = () => {
             </div>
           ) : availableBadges.length > 0 ? (
             <div className="p-6 border-t border-[var(--border-subtle)] flex flex-col">
-              <h2 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider m-0 mb-2">
+              <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider m-0 mb-2">
                 Insígnias destacadas
-              </h2>
+              </h3>
 
               <p className="text-xs text-[var(--text-secondary)] m-0 mb-4">
                 Escolha até 4 insígnias para aparecer no seu perfil.
@@ -266,11 +268,13 @@ export const ProfileSection: React.FC = () => {
         </div>
 
         {/* Right Column (Live Preview Desktop - 40% approx: 5 cols out of 12, sticky) */}
-        <div className="hidden lg:block lg:col-span-5 sticky top-20">
+        <div className="hidden lg:block lg:col-span-5 sticky top-[calc(var(--nav-offset)+var(--nav-h)+16px)]">
           <ProfileLivePreview
             profile={profile}
             draft={draft}
             titlesMap={titlesMap}
+            availableBadges={availableBadges}
+            customIcons={customIcons}
           />
         </div>
       </div>

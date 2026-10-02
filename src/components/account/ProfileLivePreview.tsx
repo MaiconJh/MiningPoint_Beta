@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { UserProfile } from '../../types/profile';
+import React, { useState, useEffect, useMemo } from 'react';
+import { UserProfile, Badge } from '../../types/profile';
+import { CustomIcon } from '../../types/icon';
 import { Title } from '../../types/title';
 import { getTitle } from '../../lib/titles';
 import { getAvatarColor, getInitials } from '../../lib/avatar';
+import { resolveIcon } from '../../data/icons/iconRegistry';
 import { Shield } from '../admin/Shield';
 import { Chip } from '../chip/Chip';
 import { ProfileDraftState } from '../../hooks/useProfileDraft';
@@ -11,17 +13,45 @@ interface ProfileLivePreviewProps {
   profile: UserProfile;
   draft: ProfileDraftState;
   titlesMap?: Map<string, Title>;
+  availableBadges?: Badge[];
+  customIcons?: Record<string, CustomIcon> | CustomIcon[] | Map<string, CustomIcon>;
 }
 
 export const ProfileLivePreview: React.FC<ProfileLivePreviewProps> = ({
   profile,
   draft,
   titlesMap,
+  availableBadges,
+  customIcons,
 }) => {
   const [imgError, setImgError] = useState(false);
   const [resolvedTitle, setResolvedTitle] = useState<Title | null>(null);
 
   const currentTitleId = draft.featuredTitleId;
+
+  const badgesMap = useMemo(() => {
+    const map = new Map<string, Badge>();
+    if (availableBadges) {
+      for (const b of availableBadges) {
+        map.set(b.id, b);
+      }
+    }
+    return map;
+  }, [availableBadges]);
+
+  const featuredBadgeList = useMemo(() => {
+    if (!draft.featuredBadges || draft.featuredBadges.length === 0 || !availableBadges) {
+      return [];
+    }
+    const resolved: Badge[] = [];
+    for (const id of draft.featuredBadges) {
+      const badge = badgesMap.get(id);
+      if (badge) {
+        resolved.push(badge);
+      }
+    }
+    return resolved;
+  }, [draft.featuredBadges, availableBadges, badgesMap]);
 
   useEffect(() => {
     if (!currentTitleId) {
@@ -66,7 +96,7 @@ export const ProfileLivePreview: React.FC<ProfileLivePreviewProps> = ({
     <div className="w-full flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider m-0">
-          Prévia do perfil
+          Aparência do perfil
         </h3>
         <span className="text-[11px] text-[var(--text-muted)]">
           {draft.visibility === 'private' ? 'Perfil privado' : 'Perfil público'}
@@ -108,7 +138,7 @@ export const ProfileLivePreview: React.FC<ProfileLivePreviewProps> = ({
         <div className="px-5 pb-5 relative">
           <div className="flex items-start gap-3">
             {/* Avatar overlapping banner */}
-            <div className="relative shrink-0 w-[54px] h-[54px] -mt-[27px] rounded-full overflow-hidden border-3 border-[var(--bg-surface)] shadow-xs bg-[var(--bg-surface-elevated)] flex items-center justify-center z-10">
+            <div className="relative shrink-0 w-[54px] h-[54px] -mt-[27px] rounded-full overflow-hidden border-2 border-[var(--bg-surface)] shadow-xs bg-[var(--bg-surface-elevated)] flex items-center justify-center z-10">
               {profile.photoURL && !imgError ? (
                 <img
                   src={profile.photoURL}
@@ -166,6 +196,25 @@ export const ProfileLivePreview: React.FC<ProfileLivePreviewProps> = ({
                 <p className="text-xs text-[var(--text-secondary)] mt-2 line-clamp-3 whitespace-pre-line m-0">
                   {draft.bio}
                 </p>
+              )}
+
+              {/* Featured Badges */}
+              {featuredBadgeList.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  {featuredBadgeList.map((badge) => {
+                    const IconComponent = resolveIcon(badge.icon, customIcons);
+                    return (
+                      <div
+                        key={badge.id}
+                        aria-label={badge.name}
+                        title={badge.name}
+                        className="w-8 h-8 rounded-full border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] flex items-center justify-center"
+                      >
+                        {IconComponent && <IconComponent className="w-4 h-4 shrink-0" />}
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </div>

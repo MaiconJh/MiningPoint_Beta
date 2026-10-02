@@ -84,11 +84,11 @@ export const HandleSettings: React.FC<HandleSettingsProps> = ({
   };
 
   return (
-    <section className="rounded-[12px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 flex flex-col gap-6">
+    <section className={className}>
       <div>
-        <h2 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider m-0 mb-1">
+        <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider m-0 mb-1">
           Identificação pública (@nick)
-        </h2>
+        </h3>
         <p className="text-xs text-[var(--text-secondary)] m-0">
           Gerencie o seu identificador único na plataforma e o link direto do seu perfil.
         </p>
@@ -137,7 +137,7 @@ export const HandleSettings: React.FC<HandleSettingsProps> = ({
         >
           {copied ? (
             <>
-              <CheckIcon className="w-3.5 h-3.5 text-emerald-500" />
+              <CheckIcon className="w-3.5 h-3.5 text-[var(--feedback-success)]" />
               <span>Copiado!</span>
             </>
           ) : (
@@ -151,18 +151,18 @@ export const HandleSettings: React.FC<HandleSettingsProps> = ({
 
       {/* Form / State logic */}
       {hasRedefined ? (
-        <div className="p-4 rounded-lg border border-amber-500/30 bg-amber-500/10 flex items-start gap-3">
-          <AlertTriangleIcon className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-          <p className="text-xs text-amber-200/90 leading-relaxed m-0">
+        <div className="p-4 rounded-lg border border-[color-mix(in_srgb,var(--feedback-warning)_30%,transparent)] bg-[color-mix(in_srgb,var(--feedback-warning)_10%,transparent)] flex items-start gap-3">
+          <AlertTriangleIcon className="w-5 h-5 text-[var(--feedback-warning)] shrink-0 mt-0.5" />
+          <p className="text-xs text-[var(--feedback-warning)] leading-relaxed m-0">
             Você já utilizou sua única redefinição de @nick. Para alterar novamente, solicite ajuda do suporte.
           </p>
         </div>
       ) : (
         <form onSubmit={handleApplyClick} className="flex flex-col gap-4">
           {currentHandle !== null && !hasRedefined && (
-            <div className="p-3.5 rounded-lg border border-amber-500/30 bg-amber-500/10 flex items-start gap-3">
-              <AlertTriangleIcon className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-200/90 leading-relaxed m-0">
+            <div className="p-3.5 rounded-lg border border-[color-mix(in_srgb,var(--feedback-warning)_30%,transparent)] bg-[color-mix(in_srgb,var(--feedback-warning)_10%,transparent)] flex items-start gap-3">
+              <AlertTriangleIcon className="w-4 h-4 text-[var(--feedback-warning)] shrink-0 mt-0.5" />
+              <p className="text-xs text-[var(--feedback-warning)] leading-relaxed m-0">
                 Esta é a sua <strong>ÚNICA</strong> redefinição de @nick. Escolha com atenção.
               </p>
             </div>
@@ -188,12 +188,12 @@ export const HandleSettings: React.FC<HandleSettingsProps> = ({
 
             {/* Live validation feedback */}
             {liveValidationReason && (
-              <span className="text-xs text-rose-400 mt-1">
+              <span className="text-xs text-[var(--feedback-error)] mt-1">
                 {liveValidationReason}
               </span>
             )}
             {!liveValidationReason && inputVal.trim().length >= 3 && (
-              <span className="text-xs text-emerald-400 mt-1">
+              <span className="text-xs text-[var(--feedback-success)] mt-1">
                 Formato de @nick válido!
               </span>
             )}
