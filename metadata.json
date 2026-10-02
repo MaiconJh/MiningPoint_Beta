@@ -1,0 +1,6 @@
+{
+  "name": "MiningPoint",
+  "description": "Comunidade de exploração subterrânea: materiais voláteis, expedições, eventos e uma economia própria em MP.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

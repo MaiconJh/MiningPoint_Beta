@@ -1,0 +1,151 @@
+@import "tailwindcss";
+
+:root {
+  /* Surfaces */
+  --bg-default: #272C35;
+  --bg-surface: #38404C;
+  --bg-surface-elevated: #545E6E;
+  --bg-overlay: rgba(26, 29, 35, 0.78);
+
+  /* Text */
+  --text-primary: #F7F7F8;
+  --text-secondary: #C2C6CC;
+  --text-muted: #768193;
+  --text-inverse: #1A1D23;
+  --text-on-primary: #1A1D23;
+
+  /* Borders */
+  --border-default: #545E6E;
+  --border-subtle: #38404C;
+  --border-strong: #9DA4AF;
+  --border-focus: #BDDCEB;
+
+  /* Brand */
+  --brand-primary: #8BD0EF;
+  --brand-primary-hover: #BDDCEB;
+  --brand-secondary: #B2E6E1;
+  --brand-community: #E8D3B0;
+
+  /* Feedback */
+  --feedback-success: #4ADE80;
+  --feedback-warning: #FBBF24;
+  --feedback-error: #F87171;
+  --feedback-info: #60A5FA;
+
+  /* Layout */
+  --nav-offset: 16px;
+  --nav-h: 56px;
+
+  /* Shadows */
+  --sombra-1: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="light"] {
+  /* Surfaces */
+  --bg-default: #F7F7F8;
+  --bg-surface: #EFF0F0;
+  --bg-surface-elevated: #FCFCFD;
+  --bg-overlay: rgba(84, 94, 110, 0.45);
+
+  /* Text */
+  --text-primary: #272C35;
+  --text-secondary: #545E6E;
+  --text-muted: #9DA4AF;
+  --text-inverse: #FCFCFD;
+  --text-on-primary: #FCFCFD;
+
+  /* Borders */
+  --border-default: #DEE0E2;
+  --border-subtle: #EFF0F0;
+  --border-strong: #C2C6CC;
+  --border-focus: #BED3E9;
+
+  /* Brand */
+  --brand-primary: #177CE8;
+  --brand-primary-hover: #0F80B3;
+  --brand-secondary: #108A80;
+  --brand-community: #A9762D;
+
+  /* Feedback */
+  --feedback-success: #16A34A;
+  --feedback-warning: #D97706;
+  --feedback-error: #DC2626;
+  --feedback-info: #2563EB;
+
+  /* Shadows */
+  --sombra-1: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--nav-offset) + var(--nav-h) + 16px);
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-default);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 250ms ease, color 250ms ease;
+}
+
+::selection {
+  background-color: var(--brand-primary);
+  color: var(--text-on-primary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand-primary);
+  outline-offset: 2px;
+}
+
+/* Fallback for browsers without backdrop-filter */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .nav-pill-fallback {
+    background-color: var(--bg-surface-elevated) !important;
+    border-color: var(--border-default) !important;
+  }
+}
+
+/* Chip Animations */
+@keyframes chip-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+@keyframes chip-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.chip-shimmer-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chip-shimmer-overlay {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,128 @@
+{
+  "entities": {
+    "Group": {
+      "title": "Group",
+      "description": "User authority and badge group",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "color": { "type": "string" },
+        "priority": { "type": "number" },
+        "isStaff": { "type": "boolean" },
+        "isDefault": { "type": "boolean" },
+        "permissions": {
+          "type": "object",
+          "properties": {
+            "admin": {
+              "type": "object",
+              "properties": {
+                "accessPanel": { "type": "boolean" },
+                "manageUsers": { "type": "boolean" },
+                "manageGroups": { "type": "boolean" },
+                "manageBadges": { "type": "boolean" },
+                "manageForum": { "type": "boolean" },
+                "manageContent": { "type": "boolean" }
+              }
+            },
+            "forum": {
+              "type": "object",
+              "properties": {
+                "categories": { "type": "object" }
+              }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["name", "color", "priority", "isStaff", "isDefault", "createdAt", "createdBy"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile in MiningPoint",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "photoURL": { "type": "string" },
+        "primaryGroupId": { "type": "string" },
+        "secondaryGroupIds": { "type": "array", "items": { "type": "string" } },
+        "isStaff": { "type": "boolean" },
+        "effectivePermissions": {
+          "type": "object",
+          "properties": {
+            "accessPanel": { "type": "boolean" },
+            "manageUsers": { "type": "boolean" },
+            "manageGroups": { "type": "boolean" },
+            "manageBadges": { "type": "boolean" },
+            "manageForum": { "type": "boolean" },
+            "manageContent": { "type": "boolean" }
+          }
+        },
+        "bio": { "type": "string" },
+        "title": { "type": "string" },
+        "visibility": { "type": "string", "enum": ["public", "private"] },
+        "featuredBadges": { "type": "array", "items": { "type": "string" } },
+        "attributes": {
+          "type": "object",
+          "properties": {
+            "exploration": { "type": "number" },
+            "gathering": { "type": "number" },
+            "knowledge": { "type": "number" },
+            "community": { "type": "number" },
+            "endurance": { "type": "number" },
+            "economy": { "type": "number" }
+          },
+          "required": ["exploration", "gathering", "knowledge", "community", "endurance", "economy"]
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "email", "primaryGroupId", "createdAt"]
+    },
+    "Badge": {
+      "title": "Badge",
+      "description": "Badge definition",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "icon": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["name", "description", "icon", "createdAt", "createdBy"]
+    },
+    "UserBadge": {
+      "title": "UserBadge",
+      "description": "User awarded badge link",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "badgeId": { "type": "string" },
+        "awardedAt": { "type": "string", "format": "date-time" },
+        "awardedBy": { "type": "string" }
+      },
+      "required": ["userId", "badgeId", "awardedAt", "awardedBy"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "UserProfile" },
+      "description": "Stores user profile data"
+    },
+    "/groups/{groupId}": {
+      "schema": { "$ref": "Group" },
+      "description": "User permission and identity groups"
+    },
+    "/badges/{badgeId}": {
+      "schema": { "$ref": "Badge" },
+      "description": "Badge definitions"
+    },
+    "/userBadges/{userId_badgeId}": {
+      "schema": { "$ref": "UserBadge" },
+      "description": "Badges awarded to users"
+    }
+  }
+}
