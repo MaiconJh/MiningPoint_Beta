@@ -56,30 +56,39 @@ export const SvgPreview: React.FC<SvgPreviewProps> = ({
         </div>
 
         {/* Light background preview */}
+        {/* Teste deliberado de renderização de ícone sobre fundo claro fixo */}
+        {/* eslint-disable-next-line design-tokens/no-raw-color-literals */}
         <div className="p-4 rounded-xl border border-[#DEE0E2] bg-[#F7F7F8] text-[#272C35] flex flex-col items-center justify-center gap-4">
+          {/* eslint-disable-next-line design-tokens/no-raw-color-literals */}
           <span className="text-xs text-[#768193] font-mono">Fundo claro</span>
           <div className="flex items-center gap-6 justify-center">
             {/* 24px */}
             <div className="flex flex-col items-center gap-1.5">
+              {/* eslint-disable-next-line design-tokens/no-raw-color-literals */}
               <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[rgba(23,124,232,0.12)] text-[#177CE8]">
                 <IconComp className="w-6 h-6" />
               </div>
+              {/* eslint-disable-next-line design-tokens/no-raw-color-literals */}
               <span className="text-[10px] text-[#768193] font-mono">24px</span>
             </div>
 
             {/* 48px */}
             <div className="flex flex-col items-center gap-1.5">
+              {/* eslint-disable-next-line design-tokens/no-raw-color-literals */}
               <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-[rgba(23,124,232,0.12)] text-[#177CE8]">
                 <IconComp className="w-12 h-12" />
               </div>
+              {/* eslint-disable-next-line design-tokens/no-raw-color-literals */}
               <span className="text-[10px] text-[#768193] font-mono">48px</span>
             </div>
 
             {/* 96px */}
             <div className="flex flex-col items-center gap-1.5">
+              {/* eslint-disable-next-line design-tokens/no-raw-color-literals */}
               <div className="w-28 h-28 rounded-2xl flex items-center justify-center bg-[rgba(23,124,232,0.12)] text-[#177CE8]">
                 <IconComp className="w-24 h-24" />
               </div>
+              {/* eslint-disable-next-line design-tokens/no-raw-color-literals */}
               <span className="text-[10px] text-[#768193] font-mono">96px</span>
             </div>
           </div>

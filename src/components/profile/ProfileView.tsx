@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useProfile } from '../../hooks/useProfile';
 import { useAuth } from '../../context/AuthContext';
 import { ProfileBanner } from './ProfileBanner';
@@ -19,6 +19,7 @@ interface ProfileViewProps {
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ userId, ownMode }) => {
+  const navigate = useNavigate();
   const {
     profile: fetchedProfile,
     userBadges,
@@ -57,7 +58,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ userId, ownMode }) => 
 
   return (
     <div className="w-full max-w-[1180px] mx-auto px-4 sm:px-6 py-8">
-      <div className="rounded-[12px] bg-[var(--bg-surface)] border border-[var(--border-default)] shadow-sm overflow-hidden">
+      <div className="rounded-[12px] bg-[var(--bg-surface)] border border-[var(--border-default)] shadow-sm overflow-clip">
         {/* 1. Banner */}
         <ProfileBanner featuredBadges={featuredBadges} />
 
@@ -81,7 +82,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ userId, ownMode }) => 
             {activeTab === 'feed' && (
               <FeedTab isBanned={profile.isBanned} ownMode={ownMode} />
             )}
-            {activeTab === 'sobre' && <AboutTab bio={profile.bio} />}
+            {activeTab === 'sobre' && (
+              <AboutTab
+                bio={profile.bio}
+                showEditButton={ownMode}
+                onEdit={() => navigate('/conta/perfil')}
+              />
+            )}
             {activeTab === 'qualidades' && (
               <AttributesTab attributes={profile.attributes} />
             )}

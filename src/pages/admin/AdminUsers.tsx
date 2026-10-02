@@ -394,7 +394,7 @@ export const AdminUsers: React.FC = () => {
                             />
                           ) : (
                             <div
-                              className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 text-white"
+                              className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 text-[var(--text-on-primary)]"
                               style={{ backgroundColor: avatarColor }}
                             >
                               {initials}

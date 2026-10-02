@@ -220,7 +220,7 @@ export const TitleForm: React.FC<TitleFormProps> = ({
                   type="button"
                   onClick={handleConfirmDelete}
                   disabled={deleting}
-                  className="px-3 py-1.5 rounded-md bg-[var(--feedback-error)] text-white text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
+                  className="px-3 py-1.5 rounded-md bg-[var(--feedback-error)] text-[var(--text-on-primary)] text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
                 >
                   {deleting ? 'Excluindo...' : 'Excluir'}
                 </button>

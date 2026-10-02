@@ -119,8 +119,8 @@ export const ProfileSection: React.FC = () => {
             Perfil
           </h2>
           {isDirty && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-[11px] font-semibold text-amber-400">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--feedback-warning)_10%,transparent)] border border-[color-mix(in_srgb,var(--feedback-warning)_30%,transparent)] text-[11px] font-semibold text-[var(--feedback-warning)]">
+              <span className="w-2 h-2 rounded-full bg-[var(--feedback-warning)] animate-pulse shrink-0" />
               <span>Alterações pendentes</span>
             </span>
           )}

@@ -75,6 +75,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile }) => {
           ) : (
             <div
               style={{ backgroundColor: getAvatarColor(displayName) }}
+              /* Texto fixo de alto contraste sobre o avatar colorido gerado dinamicamente */
+              /* eslint-disable-next-line design-tokens/no-raw-color-literals */
               className="w-full h-full flex items-center justify-center text-lg font-bold text-[#F7F7F8]"
             >
               {getInitials(displayName)}
@@ -128,7 +130,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile }) => {
             >
               {copiedLink ? (
                 <>
-                  <CheckIcon className="w-3 h-3 text-emerald-400" />
+                  <CheckIcon className="w-3 h-3 text-[var(--feedback-success)]" />
                   <span>Link copiado!</span>
                 </>
               ) : (

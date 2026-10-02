@@ -266,7 +266,7 @@ export const AdminUserDetail: React.FC = () => {
             />
           ) : (
             <div
-              className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl shrink-0 text-white"
+              className="w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl shrink-0 text-[var(--text-on-primary)]"
               style={{ backgroundColor: avatarColor }}
             >
               {initials}
@@ -371,10 +371,10 @@ export const AdminUserDetail: React.FC = () => {
           </div>
 
           {handleErrorMsg && (
-            <p className="text-xs text-rose-400 m-0">{handleErrorMsg}</p>
+            <p className="text-xs text-[var(--feedback-error)] m-0">{handleErrorMsg}</p>
           )}
           {handleSuccessMsg && (
-            <p className="text-xs text-emerald-400 m-0">{handleSuccessMsg}</p>
+            <p className="text-xs text-[var(--feedback-success)] m-0">{handleSuccessMsg}</p>
           )}
         </div>
       </section>

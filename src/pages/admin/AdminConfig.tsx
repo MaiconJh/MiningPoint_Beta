@@ -101,13 +101,13 @@ export const AdminConfig: React.FC = () => {
 
           {/* Resultado */}
           {result && (
-            <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3">
-              <CheckCircleIcon className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-              <div className="space-y-1 text-xs text-emerald-200">
-                <p className="font-semibold text-emerald-300 m-0">
+            <div className="p-4 rounded-lg bg-[color-mix(in_srgb,var(--feedback-success)_10%,transparent)] border border-[color-mix(in_srgb,var(--feedback-success)_30%,transparent)] flex items-start gap-3">
+              <CheckCircleIcon className="w-5 h-5 text-[var(--feedback-success)] shrink-0 mt-0.5" />
+              <div className="space-y-1 text-xs text-[var(--text-secondary)]">
+                <p className="font-semibold text-[var(--feedback-success)] m-0">
                   Processamento concluído com sucesso!
                 </p>
-                <ul className="list-disc list-inside space-y-0.5 text-emerald-300/90 font-mono">
+                <ul className="list-disc list-inside space-y-0.5 text-[var(--text-secondary)] font-mono">
                   <li>Novos shortIds gerados: <strong>{result.filledCount}</strong></li>
                   <li>Contas que já possuíam shortId: <strong>{result.alreadyHadCount}</strong></li>
                   <li>Total de contas verificadas: <strong>{result.totalCount}</strong></li>

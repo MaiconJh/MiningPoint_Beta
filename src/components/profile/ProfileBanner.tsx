@@ -12,6 +12,8 @@ export const ProfileBanner: React.FC<ProfileBannerProps> = ({ featuredBadges }) 
       {/* Texture & Gradients layer */}
       <div
         className="absolute inset-0 rounded-t-[11px] overflow-hidden pointer-events-none"
+        /* Textura gráfica deliberadamente escura em ambos os temas para contraste das insígnias */
+        /* eslint-disable-next-line design-tokens/no-raw-color-literals */
         style={{
           backgroundColor: '#333B46',
           backgroundImage: `
@@ -31,6 +33,8 @@ export const ProfileBanner: React.FC<ProfileBannerProps> = ({ featuredBadges }) 
         {/* Shading overlay for readability */}
         <div
           className="absolute inset-0"
+          /* Sombreado fixo independente de tema para legibilidade */
+          /* eslint-disable-next-line design-tokens/no-raw-color-literals */
           style={{
             backgroundImage:
               'linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, transparent 42%, rgba(0, 0, 0, 0.35) 100%)',

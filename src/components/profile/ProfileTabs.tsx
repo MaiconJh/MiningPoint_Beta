@@ -17,7 +17,6 @@ interface ProfileTabsProps {
 export const ProfileTabs: React.FC<ProfileTabsProps> = ({
   activeTab,
   onChangeTab,
-  ownMode,
   readOnly = false,
 }) => {
   const tabs: TabItem[] = [

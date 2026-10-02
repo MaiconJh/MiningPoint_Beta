@@ -189,7 +189,7 @@ export const AdminGroups: React.FC = () => {
                     >
                       <td className="py-3.5 px-4 text-center">
                         <span
-                          className="inline-block w-4 h-4 rounded-full border border-white/20 shadow-sm align-middle"
+                          className="inline-block w-4 h-4 rounded-full border border-[color-mix(in_srgb,var(--text-primary)_20%,transparent)] shadow-sm align-middle"
                           style={{ backgroundColor: group.color }}
                           title={group.color}
                         />

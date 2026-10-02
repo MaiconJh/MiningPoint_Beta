@@ -428,6 +428,8 @@ export const NavBar: React.FC = () => {
             ) : (
               <div
                 style={{ backgroundColor: getAvatarColor(user.displayName) }}
+                /* Texto fixo de alto contraste sobre o avatar colorido gerado dinamicamente */
+                /* eslint-disable-next-line design-tokens/no-raw-color-literals */
                 className="w-full h-full flex items-center justify-center text-xs font-bold text-[#F7F7F8]"
               >
                 {getInitials(user.displayName)}

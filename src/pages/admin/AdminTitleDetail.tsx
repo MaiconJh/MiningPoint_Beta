@@ -183,7 +183,7 @@ export const AdminTitleDetail: React.FC = () => {
                   <div className="flex items-center gap-3 min-w-0">
                     <div
                       style={{ backgroundColor: getAvatarColor(item.user.displayName) }}
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden"
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-[var(--text-on-primary)] shrink-0 overflow-hidden"
                     >
                       {item.user.photoURL ? (
                         <img

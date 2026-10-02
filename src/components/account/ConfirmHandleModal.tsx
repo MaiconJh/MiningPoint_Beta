@@ -29,11 +29,11 @@ export const ConfirmHandleModal: React.FC<ConfirmHandleModalProps> = ({
   return (
     <div
       onClick={handleBackdropClick}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--bg-overlay)] backdrop-blur-xs animate-in fade-in duration-200"
     >
       <div className="w-full max-w-md rounded-[12px] border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-6 shadow-xl flex flex-col gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-500">
+          <div className="w-10 h-10 rounded-full bg-[color-mix(in_srgb,var(--feedback-warning)_10%,transparent)] border border-[color-mix(in_srgb,var(--feedback-warning)_30%,transparent)] flex items-center justify-center shrink-0 text-[var(--feedback-warning)]">
             <AlertTriangleIcon className="w-5 h-5" />
           </div>
           <h3 className="text-lg font-bold text-[var(--text-primary)] m-0 leading-snug">

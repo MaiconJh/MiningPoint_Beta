@@ -52,6 +52,8 @@ export const BadgeCarousel: React.FC<BadgeCarouselProps> = ({ items }) => {
               onFocus={() => setActiveTooltipId(badge.id)}
               onBlur={() => setActiveTooltipId(null)}
               aria-label={badge.name}
+              /* Ícone com contraste deliberado sobre o banner escuro */
+              /* eslint-disable-next-line design-tokens/no-raw-color-literals */
               className="w-10 h-10 max-sm:w-9 max-sm:h-9 rounded-full flex items-center justify-center text-[#eaf4fa] transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
               style={{
                 backgroundColor: isHovered ? 'rgba(16, 19, 24, 0.75)' : 'rgba(16, 19, 24, 0.5)',
@@ -69,6 +71,8 @@ export const BadgeCarousel: React.FC<BadgeCarouselProps> = ({ items }) => {
               <div
                 role="tooltip"
                 className="absolute bottom-[calc(100%+8px)] right-0 w-max max-w-[220px] p-3 rounded-lg z-30 pointer-events-none"
+                /* Tooltip translúcido estilizado com fundo escuro fixo para contraste com o banner */
+                /* eslint-disable-next-line design-tokens/no-raw-color-literals */
                 style={{
                   backgroundColor: 'rgba(16, 19, 24, 0.85)',
                   backdropFilter: 'blur(11px)',
@@ -81,11 +85,15 @@ export const BadgeCarousel: React.FC<BadgeCarouselProps> = ({ items }) => {
                   {badge.name}
                 </p>
                 {badge.description && (
+                  /* Texto de alta legibilidade no tooltip escuro */
+                  /* eslint-disable-next-line design-tokens/no-raw-color-literals */
                   <p className="text-xs text-[#f4f7fa] m-0 mt-1 leading-snug">
                     {badge.description}
                   </p>
                 )}
                 {awardedDate && (
+                  /* Cores de apoio e separador com transparência fixa no tooltip escuro */
+                  /* eslint-disable-next-line design-tokens/no-raw-color-literals */
                   <p className="text-[11px] text-[rgba(244,247,250,0.82)] font-mono mt-1.5 m-0 border-t border-[rgba(255,255,255,0.15)] pt-1">
                     Concedida em {awardedDate}
                   </p>
