@@ -8,6 +8,12 @@ import {
   revokeTitle,
   UserWithTitleItem,
 } from '../../lib/titles';
+import {
+  listUserCollectibles,
+  revokeCollectible,
+} from '../../lib/collectibleLinks';
+import { listBadgesByIds } from '../../lib/profile';
+import { RevokeImpactModal } from '../../components/admin/RevokeImpactModal';
 import { SearchUserResult } from '../../lib/badges';
 import { UserSearch } from '../../components/admin/UserSearch';
 import { useAuth } from '../../context/AuthContext';
@@ -39,6 +45,13 @@ export const AdminTitleDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<{
+    userTitleId: string;
+    userId: string;
+    userName: string;
+    cascadingIds: string[];
+    cascadingNames: string[];
+  } | null>(null);
 
   const loadData = useCallback(async () => {
     if (!titleId) return;
@@ -77,11 +90,49 @@ export const AdminTitleDetail: React.FC = () => {
     }
   };
 
-  const handleRevoke = async (userTitleId: string) => {
+  const handleRevokeClick = async (item: UserWithTitleItem) => {
+    setError(null);
+    const linked = title?.linkedBadgeIds ?? [];
+    let cascadingIds: string[] = [];
+    let cascadingNames: string[] = [];
+
+    try {
+      if (linked.length > 0) {
+        const userBadges = await listUserCollectibles(item.user.uid, 'badge');
+        const linkedSet = new Set(linked);
+        const matched = userBadges.filter((ub) => linkedSet.has(ub.itemId));
+        cascadingIds = matched.map((ub) => ub.id);
+        if (cascadingIds.length > 0) {
+          const badgesData = await listBadgesByIds(matched.map((ub) => ub.itemId));
+          const nameMap = new Map(badgesData.map((b) => [b.id, b.name]));
+          cascadingNames = matched
+            .map((ub) => nameMap.get(ub.itemId))
+            .filter((n): n is string => Boolean(n));
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao buscar insígnias vinculadas:', err);
+    }
+
+    setRevokeTarget({
+      userTitleId: item.userTitle.id,
+      userId: item.user.uid,
+      userName: item.user.displayName,
+      cascadingIds,
+      cascadingNames,
+    });
+  };
+
+  const handleConfirmRevoke = async () => {
+    if (!revokeTarget) return;
     setActionLoading(true);
     setError(null);
     try {
-      await revokeTitle(userTitleId);
+      await revokeTitle(revokeTarget.userTitleId);
+      await Promise.all(
+        revokeTarget.cascadingIds.map((linkId) => revokeCollectible(linkId))
+      );
+      setRevokeTarget(null);
       await loadData();
     } catch (err) {
       console.error('Error revoking title:', err);
@@ -209,7 +260,7 @@ export const AdminTitleDetail: React.FC = () => {
                   <button
                     type="button"
                     disabled={actionLoading}
-                    onClick={() => handleRevoke(item.userTitle.id)}
+                    onClick={() => handleRevokeClick(item)}
                     className="px-2.5 py-1 text-xs font-semibold rounded border border-[var(--border-default)] text-[var(--feedback-error)] hover:border-[var(--feedback-error)] hover:bg-[color-mix(in_srgb,var(--feedback-error)_10%,transparent)] transition-colors cursor-pointer shrink-0 disabled:opacity-50"
                   >
                     Remover
@@ -235,6 +286,18 @@ export const AdminTitleDetail: React.FC = () => {
           />
         </section>
       </div>
+
+      <RevokeImpactModal
+        isOpen={revokeTarget !== null}
+        sourceKindLabel="o título"
+        sourceName={title.name}
+        userName={revokeTarget?.userName ?? ''}
+        cascadingKindLabel="insígnias"
+        cascadingNames={revokeTarget?.cascadingNames ?? []}
+        onConfirm={handleConfirmRevoke}
+        onCancel={() => !actionLoading && setRevokeTarget(null)}
+        saving={actionLoading}
+      />
     </div>
   );
 };

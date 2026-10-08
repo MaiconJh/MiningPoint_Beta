@@ -9,6 +9,12 @@ import {
   UserWithBadgeItem,
   SearchUserResult,
 } from '../../lib/badges';
+import {
+  listUserCollectibles,
+  revokeCollectible,
+} from '../../lib/collectibleLinks';
+import { listTitlesByIds } from '../../lib/titles';
+import { RevokeImpactModal } from '../../components/admin/RevokeImpactModal';
 import { resolveIcon } from '../../data/icons/iconRegistry';
 import { useCustomIcons } from '../../hooks/useCustomIcons';
 import { UserSearch } from '../../components/admin/UserSearch';
@@ -42,6 +48,13 @@ export const AdminBadgeDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<{
+    userBadgeId: string;
+    userId: string;
+    userName: string;
+    cascadingIds: string[];
+    cascadingNames: string[];
+  } | null>(null);
 
   const loadData = useCallback(async () => {
     if (!badgeId) return;
@@ -80,11 +93,49 @@ export const AdminBadgeDetail: React.FC = () => {
     }
   };
 
-  const handleRevoke = async (userBadgeId: string) => {
+  const handleRevokeClick = async (item: UserWithBadgeItem) => {
+    setError(null);
+    const linked = badge?.linkedTitleIds ?? [];
+    let cascadingIds: string[] = [];
+    let cascadingNames: string[] = [];
+
+    try {
+      if (linked.length > 0) {
+        const userTitles = await listUserCollectibles(item.user.uid, 'title');
+        const linkedSet = new Set(linked);
+        const matched = userTitles.filter((ut) => linkedSet.has(ut.itemId));
+        cascadingIds = matched.map((ut) => ut.id);
+        if (cascadingIds.length > 0) {
+          const titlesData = await listTitlesByIds(matched.map((ut) => ut.itemId));
+          const nameMap = new Map(titlesData.map((t) => [t.id, t.name]));
+          cascadingNames = matched
+            .map((ut) => nameMap.get(ut.itemId))
+            .filter((n): n is string => Boolean(n));
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao buscar títulos vinculados:', err);
+    }
+
+    setRevokeTarget({
+      userBadgeId: item.userBadge.id,
+      userId: item.user.uid,
+      userName: item.user.displayName,
+      cascadingIds,
+      cascadingNames,
+    });
+  };
+
+  const handleConfirmRevoke = async () => {
+    if (!revokeTarget) return;
     setActionLoading(true);
     setError(null);
     try {
-      await revokeBadge(userBadgeId);
+      await revokeBadge(revokeTarget.userBadgeId);
+      await Promise.all(
+        revokeTarget.cascadingIds.map((linkId) => revokeCollectible(linkId))
+      );
+      setRevokeTarget(null);
       await loadData();
     } catch (err) {
       console.error('Error revoking badge:', err);
@@ -204,7 +255,7 @@ export const AdminBadgeDetail: React.FC = () => {
                   <button
                     type="button"
                     disabled={actionLoading}
-                    onClick={() => handleRevoke(item.userBadge.id)}
+                    onClick={() => handleRevokeClick(item)}
                     className="px-2.5 py-1 text-xs font-semibold rounded border border-[var(--border-default)] text-[var(--feedback-error)] hover:border-[var(--feedback-error)] hover:bg-[color-mix(in_srgb,var(--feedback-error)_10%,transparent)] transition-colors cursor-pointer shrink-0 disabled:opacity-50"
                   >
                     Remover
@@ -230,6 +281,18 @@ export const AdminBadgeDetail: React.FC = () => {
           />
         </section>
       </div>
+
+      <RevokeImpactModal
+        isOpen={revokeTarget !== null}
+        sourceKindLabel="a insígnia"
+        sourceName={badge.name}
+        userName={revokeTarget?.userName ?? ''}
+        cascadingKindLabel="títulos"
+        cascadingNames={revokeTarget?.cascadingNames ?? []}
+        onConfirm={handleConfirmRevoke}
+        onCancel={() => !actionLoading && setRevokeTarget(null)}
+        saving={actionLoading}
+      />
     </div>
   );
 };
