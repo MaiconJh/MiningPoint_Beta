@@ -572,6 +572,14 @@ export const adminSetHandle = async (uid: string, rawHandle: string | null): Pro
   await updateDoc(userRef, { handle: h });
 };
 
+export const updateUserDocFields = async (
+  uid: string,
+  fields: Partial<Pick<UserProfile, 'displayName' | 'photoURL' | 'bio' | 'featuredTitleId' | 'featuredBadges'>>
+): Promise<void> => {
+  if (!db || !uid) return;
+  await updateDoc(doc(db, 'users', uid), fields);
+};
+
 export const backfillShortIds = async (
   onProgress?: (done: number, total: number) => void
 ): Promise<{ filledCount: number; alreadyHadCount: number; totalCount: number }> => {

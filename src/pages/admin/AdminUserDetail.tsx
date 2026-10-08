@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { UserProfile, UserAttributes } from '../../types/profile';
+import { UserProfile, UserAttributes, UserBadge } from '../../types/profile';
 import { Group } from '../../types/group';
 import { listGroups } from '../../lib/groups';
 import {
@@ -16,9 +16,16 @@ import {
   deleteUser,
   adminSetHandle,
 } from '../../lib/users';
+import { listUserBadges } from '../../lib/profile';
 import { getAvatarColor, getInitials } from '../../lib/avatar';
 import { UserAttributesEditor } from '../../components/admin/UserAttributesEditor';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+import { useTitles } from '../../hooks/useTitles';
+import { useBadges } from '../../hooks/useBadges';
+import { useAdminUserDraft } from '../../hooks/useAdminUserDraft';
+import { useCustomIcons } from '../../hooks/useCustomIcons';
+import { resolveIcon } from '../../data/icons/iconRegistry';
 import { Chip } from '../../components/chip/Chip';
 
 const formatDate = (dateVal?: unknown): string => {
@@ -41,16 +48,35 @@ const formatDate = (dateVal?: unknown): string => {
   });
 };
 
+const PERMISSION_LABELS: Record<string, string> = {
+  accessPanel: 'Acessar painel',
+  manageUsers: 'Gerenciar usuários',
+  manageGroups: 'Gerenciar grupos',
+  manageBadges: 'Gerenciar insígnias',
+  manageForum: 'Gerenciar fórum',
+  manageContent: 'Gerenciar conteúdo',
+};
+
 export const AdminUserDetail: React.FC = () => {
   const { uid } = useParams<{ uid: string }>();
   const navigate = useNavigate();
   const { user: currentAdmin } = useAuth();
+  const { showToast } = useToast();
+  const { titles } = useTitles();
+  const { badges } = useBadges();
+  const { customIcons } = useCustomIcons();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [bannerAdminName, setBannerAdminName] = useState<string | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { draft, setField, isDirty, isSaving, reset, save } = useAdminUserDraft(
+    uid || '',
+    profile
+  );
 
   // Deletion modal/inline confirm
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -62,6 +88,41 @@ export const AdminUserDetail: React.FC = () => {
   const [isUpdatingHandle, setIsUpdatingHandle] = useState(false);
   const [handleSuccessMsg, setHandleSuccessMsg] = useState<string | null>(null);
   const [handleErrorMsg, setHandleErrorMsg] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    if (!uid) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const [allGroups, userProfile, userBadgesList] = await Promise.all([
+        listGroups(),
+        getUser(uid),
+        listUserBadges(uid),
+      ]);
+      setGroups(allGroups);
+      setProfile(userProfile);
+      setUserBadges(userBadgesList);
+
+      if (userProfile?.bannedBy) {
+        getUser(userProfile.bannedBy)
+          .then((adminUser) => {
+            setBannerAdminName(adminUser?.displayName || userProfile.bannedBy || 'Admin');
+          })
+          .catch(() => {
+            setBannerAdminName(userProfile.bannedBy || 'Admin');
+          });
+      }
+    } catch (err) {
+      console.error('Failed to load user details:', err);
+      setError('Erro ao carregar detalhes do usuário.');
+    } finally {
+      setLoading(false);
+    }
+  }, [uid]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleAdminSaveHandle = async () => {
     if (!uid) return;
@@ -95,47 +156,34 @@ export const AdminUserDetail: React.FC = () => {
     }
   };
 
-  const loadData = useCallback(async () => {
-    if (!uid) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const [allGroups, userProfile] = await Promise.all([
-        listGroups(),
-        getUser(uid),
-      ]);
-      setGroups(allGroups);
-      setProfile(userProfile);
-
-      if (userProfile?.bannedBy) {
-        getUser(userProfile.bannedBy)
-          .then((adminUser) => {
-            setBannerAdminName(adminUser?.displayName || userProfile.bannedBy || 'Admin');
-          })
-          .catch(() => {
-            setBannerAdminName(userProfile.bannedBy || 'Admin');
-          });
-      }
-    } catch (err) {
-      console.error('Failed to load user details:', err);
-      setError('Erro ao carregar detalhes do usuário.');
-    } finally {
-      setLoading(false);
+  const handleSaveProfile = async () => {
+    const success = await save();
+    if (success) {
+      await loadData();
     }
-  }, [uid]);
+  };
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const handleToggleBadge = (badgeId: string) => {
+    const isSelected = draft.featuredBadges.includes(badgeId);
+    let updated: string[];
+    if (isSelected) {
+      updated = draft.featuredBadges.filter((id) => id !== badgeId);
+    } else {
+      if (draft.featuredBadges.length >= 4) return;
+      updated = [...draft.featuredBadges, badgeId];
+    }
+    setField('featuredBadges', updated);
+  };
 
   const handlePrimaryGroupChange = async (newGroupId: string) => {
     if (!uid || !profile) return;
     try {
       await setPrimaryGroup(uid, newGroupId);
+      showToast('Alterações salvas.', 'success');
       await loadData();
     } catch (err) {
       console.error('Failed to change primary group:', err);
-      setError('Erro ao alterar o grupo primário.');
+      showToast('Erro ao salvar.', 'error');
     }
   };
 
@@ -147,10 +195,11 @@ export const AdminUserDetail: React.FC = () => {
         ? current.filter((id) => id !== groupId)
         : [...current, groupId];
       await setSecondaryGroups(uid, updated);
+      showToast('Alterações salvas.', 'success');
       await loadData();
     } catch (err) {
       console.error('Failed to toggle secondary group:', err);
-      setError('Erro ao atualizar grupos secundários.');
+      showToast('Erro ao salvar.', 'error');
     }
   };
 
@@ -159,9 +208,10 @@ export const AdminUserDetail: React.FC = () => {
     try {
       await setAttributes(uid, newAttrs);
       setProfile((prev) => (prev ? { ...prev, attributes: newAttrs } : null));
+      showToast('Alterações salvas.', 'success');
     } catch (err) {
       console.error('Failed to save attributes:', err);
-      setError('Erro ao salvar as qualidades.');
+      showToast('Erro ao salvar.', 'error');
     }
   };
 
@@ -170,9 +220,10 @@ export const AdminUserDetail: React.FC = () => {
     try {
       await setVisibility(uid, visibility);
       setProfile((prev) => (prev ? { ...prev, visibility } : null));
+      showToast('Alterações salvas.', 'success');
     } catch (err) {
       console.error('Failed to change visibility:', err);
-      setError('Erro ao alterar visibilidade.');
+      showToast('Erro ao salvar.', 'error');
     }
   };
 
@@ -237,6 +288,9 @@ export const AdminUserDetail: React.FC = () => {
   const primaryName = profile.primaryGroup?.name || 'Visitante';
   const bannedDateFormatted = formatDate(profile.bannedAt);
 
+  const ownedBadgeIds = new Set(userBadges.map((ub) => ub.badgeId));
+  const ownedBadges = badges.filter((b) => ownedBadgeIds.has(b.id));
+
   return (
     <div className="space-y-8 max-w-4xl">
       {/* Back link */}
@@ -297,6 +351,225 @@ export const AdminUserDetail: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Section: Perfil (Editável via Draft) */}
+      <section className="p-6 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-[var(--text-primary)] m-0">Perfil</h2>
+            <p className="text-xs text-[var(--text-secondary)] m-0 mt-0.5">
+              Edite as informações públicas de exibição do usuário.
+            </p>
+          </div>
+          {isDirty && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--feedback-warning)_10%,transparent)] border border-[color-mix(in_srgb,var(--feedback-warning)_30%,transparent)] text-[11px] font-semibold text-[var(--feedback-warning)]">
+              <span className="w-2 h-2 rounded-full bg-[var(--feedback-warning)] animate-pulse shrink-0" />
+              <span>Alterações pendentes</span>
+            </span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* displayName */}
+          <div>
+            <label
+              htmlFor="admin-edit-displayname"
+              className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5"
+            >
+              Nome de exibição
+            </label>
+            <input
+              id="admin-edit-displayname"
+              type="text"
+              value={draft.displayName}
+              onChange={(e) => setField('displayName', e.target.value)}
+              placeholder="Nome do usuário"
+              className="w-full px-3.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)]"
+            />
+          </div>
+
+          {/* photoURL */}
+          <div>
+            <label
+              htmlFor="admin-edit-photourl"
+              className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5"
+            >
+              URL da foto de perfil
+            </label>
+            <input
+              id="admin-edit-photourl"
+              type="text"
+              value={draft.photoURL}
+              onChange={(e) => setField('photoURL', e.target.value)}
+              placeholder="https://exemplo.com/foto.jpg"
+              className="w-full px-3.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)]"
+            />
+          </div>
+        </div>
+
+        {/* bio */}
+        <div>
+          <label
+            htmlFor="admin-edit-bio"
+            className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5"
+          >
+            Bio
+          </label>
+          <textarea
+            id="admin-edit-bio"
+            rows={4}
+            maxLength={400}
+            value={draft.bio}
+            onChange={(e) => setField('bio', e.target.value)}
+            placeholder="Biografia do usuário..."
+            className="w-full px-3.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] text-sm text-[var(--text-primary)] focus:outline-none focus:border-[var(--brand-primary)] resize-y"
+          />
+          <div className="text-right text-[11px] text-[var(--text-muted)] mt-1">
+            {draft.bio.length}/400
+          </div>
+        </div>
+
+        {/* featuredTitleId */}
+        <div>
+          <label
+            htmlFor="admin-edit-title"
+            className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5"
+          >
+            Título exibido
+          </label>
+          <select
+            id="admin-edit-title"
+            value={draft.featuredTitleId || ''}
+            onChange={(e) => setField('featuredTitleId', e.target.value || null)}
+            className="w-full sm:w-80 px-3.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--brand-primary)]"
+          >
+            <option value="">Nenhum título</option>
+            {titles.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* featuredBadges */}
+        <div>
+          <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1">
+            Insígnias destacadas ({draft.featuredBadges.length}/4)
+          </label>
+          <p className="text-xs text-[var(--text-muted)] m-0 mb-3">
+            Escolha até 4 insígnias que o usuário possui para exibição no perfil público.
+          </p>
+
+          {ownedBadges.length === 0 ? (
+            <p className="text-xs text-[var(--text-muted)] italic m-0">
+              O usuário não possui insígnias concedidas.
+            </p>
+          ) : (
+            <div className="flex flex-wrap items-center gap-3">
+              {ownedBadges.map((badge) => {
+                const IconComponent = resolveIcon(badge.icon, customIcons);
+                const isSelected = draft.featuredBadges.includes(badge.id);
+                const isDisabled = !isSelected && draft.featuredBadges.length >= 4;
+
+                return (
+                  <button
+                    key={badge.id}
+                    type="button"
+                    onClick={() => handleToggleBadge(badge.id)}
+                    disabled={isDisabled}
+                    aria-label={badge.name}
+                    title={badge.name}
+                    className={`relative w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+                      isSelected
+                        ? 'border-2 border-[var(--brand-primary)] bg-[color-mix(in_srgb,var(--brand-primary)_12%,transparent)] text-[var(--brand-primary)] shadow-xs'
+                        : isDisabled
+                        ? 'border border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-muted)] opacity-50 cursor-not-allowed'
+                        : 'border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--text-secondary)] hover:border-[var(--brand-primary)] hover:text-[var(--text-primary)] cursor-pointer'
+                    }`}
+                  >
+                    {IconComponent && <IconComponent className="w-5 h-5 shrink-0" />}
+
+                    {isSelected && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[var(--brand-primary)] text-[var(--text-on-primary)] flex items-center justify-center shadow-xs">
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="10"
+                          height="10"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* visibility */}
+        <div>
+          <label className="block text-xs font-medium text-[var(--text-secondary)] mb-2">
+            Visibilidade do perfil
+          </label>
+          <div className="flex items-center gap-6">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="admin-user-visibility"
+                value="public"
+                checked={draft.visibility === 'public'}
+                onChange={() => setField('visibility', 'public')}
+                className="text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
+              />
+              <span className="text-sm text-[var(--text-primary)]">Público</span>
+            </label>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="admin-user-visibility"
+                value="private"
+                checked={draft.visibility === 'private'}
+                onChange={() => setField('visibility', 'private')}
+                className="text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
+              />
+              <span className="text-sm text-[var(--text-primary)]">Privado</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Action bar for Profile form */}
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-[var(--border-subtle)]">
+          <button
+            type="button"
+            onClick={reset}
+            disabled={!isDirty || isSaving}
+            className="px-4 py-2 rounded-lg text-xs font-semibold border border-[var(--border-default)] bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Descartar
+          </button>
+          <button
+            type="button"
+            onClick={handleSaveProfile}
+            disabled={!isDirty || isSaving}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+              isDirty && !isSaving
+                ? 'bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:opacity-90 shadow-xs cursor-pointer'
+                : 'border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--text-muted)] opacity-50 cursor-not-allowed'
+            }`}
+          >
+            {isSaving ? 'Salvando...' : 'Salvar alterações'}
+          </button>
+        </div>
+      </section>
 
       {/* Section: Identificação Pública (@nick) */}
       <section className="p-6 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] space-y-6">
@@ -460,39 +733,99 @@ export const AdminUserDetail: React.FC = () => {
         />
       </section>
 
-      {/* Section: Visibilidade */}
-      <section className="p-6 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] space-y-4">
+      {/* Section: Auditoria (Somente Leitura) */}
+      <section className="p-6 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] space-y-6">
         <div>
-          <h2 className="text-lg font-bold text-[var(--text-primary)] m-0">Visibilidade</h2>
+          <h2 className="text-lg font-bold text-[var(--text-primary)] m-0">Auditoria</h2>
           <p className="text-xs text-[var(--text-secondary)] m-0 mt-0.5">
-            Define se o perfil pode ser visto por visitantes não autenticados.
+            Dados de rastreamento, permissões vigentes e registros do sistema.
           </p>
         </div>
 
-        <div className="flex items-center gap-6">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="visibility"
-              value="public"
-              checked={profile.visibility === 'public'}
-              onChange={() => handleVisibilityChange('public')}
-              className="text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
-            />
-            <span className="text-sm text-[var(--text-primary)]">Público</span>
-          </label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="p-4 rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)]">
+            <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider block mb-1">
+              ShortId
+            </span>
+            <span className="font-mono text-sm font-semibold text-[var(--text-primary)] select-all">
+              {profile.shortId || '---'}
+            </span>
+          </div>
 
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="radio"
-              name="visibility"
-              value="private"
-              checked={profile.visibility === 'private'}
-              onChange={() => handleVisibilityChange('private')}
-              className="text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
-            />
-            <span className="text-sm text-[var(--text-primary)]">Privado</span>
-          </label>
+          <div className="p-4 rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)]">
+            <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider block mb-1">
+              Membro da Equipe
+            </span>
+            <span className="text-sm font-semibold text-[var(--text-primary)]">
+              {profile.isStaff ? 'Sim' : 'Não'}
+            </span>
+          </div>
+
+          <div className="p-4 rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)]">
+            <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider block mb-1">
+              Data de Cadastro
+            </span>
+            <span className="text-sm font-semibold text-[var(--text-primary)]">
+              {formatDate(profile.createdAt) || '---'}
+            </span>
+          </div>
+
+          <div className="p-4 rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)]">
+            <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider block mb-1">
+              Status da Conta
+            </span>
+            <span className="text-sm font-semibold text-[var(--text-primary)]">
+              {profile.isBanned ? 'Suspenso' : 'Ativo'}
+            </span>
+          </div>
+        </div>
+
+        {/* Banned details if applicable */}
+        {profile.isBanned && (
+          <div className="p-4 rounded-lg bg-[color-mix(in_srgb,var(--feedback-error)_8%,transparent)] border border-[var(--feedback-error)] space-y-1">
+            <p className="text-xs font-semibold text-[var(--feedback-error)] m-0">
+              Registro de Suspensão
+            </p>
+            <p className="text-xs text-[var(--text-secondary)] m-0">
+              Suspenso em: <strong className="text-[var(--text-primary)]">{bannedDateFormatted || 'Data desconhecida'}</strong> por{' '}
+              <strong className="text-[var(--text-primary)]">{bannerAdminName || profile.bannedBy || 'Administrador'}</strong>
+            </p>
+          </div>
+        )}
+
+        {/* Effective permissions */}
+        <div>
+          <span className="block text-xs font-medium text-[var(--text-secondary)] mb-2">
+            Permissões Efetivas
+          </span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+            {Object.entries(profile.effectivePermissions || {}).map(([key, active]) => {
+              const label = PERMISSION_LABELS[key] || key;
+              return (
+                <div
+                  key={key}
+                  className={`p-3 rounded-lg border flex items-center justify-between gap-2 ${
+                    active
+                      ? 'border-[var(--brand-primary)] bg-[color-mix(in_srgb,var(--brand-primary)_6%,transparent)]'
+                      : 'border-[var(--border-default)] bg-[var(--bg-default)] opacity-60'
+                  }`}
+                >
+                  <span className="text-xs font-medium text-[var(--text-primary)] truncate">
+                    {label}
+                  </span>
+                  <span
+                    className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                      active
+                        ? 'bg-[var(--brand-primary)] text-[var(--text-on-primary)]'
+                        : 'bg-[var(--bg-surface-elevated)] text-[var(--text-muted)]'
+                    }`}
+                  >
+                    {active ? 'Ativa' : 'Inativa'}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
@@ -593,3 +926,4 @@ export const AdminUserDetail: React.FC = () => {
     </div>
   );
 };
+
