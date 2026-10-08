@@ -100,4 +100,18 @@ describe('BadgeCarousel', () => {
     expect(badgeButtons[0]).toHaveAttribute('aria-label', 'Insígnia Beta');
     expect(badgeButtons[1]).toHaveAttribute('aria-label', 'Insígnia Alfa');
   });
+
+  it('permite ocultar o toggle com showModeToggle={false}', () => {
+    render(<BadgeCarousel items={mockItems} mode="manual" showModeToggle={false} />);
+    expect(screen.queryByRole('button', { name: 'Manual' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Auto' })).toBeNull();
+  });
+
+  it('renderiza rótulo acessível com instruções de arrasto quando onReorder for fornecido', () => {
+    const handleReorder = vi.fn();
+    render(<BadgeCarousel items={mockItems} mode="manual" onReorder={handleReorder} />);
+
+    const dragButton = screen.getByLabelText(/Insígnia Alfa\. Arraste para reordenar/);
+    expect(dragButton).toBeInTheDocument();
+  });
 });

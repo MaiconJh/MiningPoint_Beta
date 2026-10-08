@@ -11,6 +11,7 @@ import { AccountVisibilityRow } from '../AccountVisibilityRow';
 import { TitleSelector } from '../TitleSelector';
 import { HandleSettings } from '../HandleSettings';
 import { ProfilePreviewModal } from '../ProfilePreviewModal';
+import { SortableBadgeStrip } from '../../profile/SortableBadgeStrip';
 import { SkeletonCircle } from '../../skeleton/Skeleton';
 import { AccountSectionSkeleton } from '../../skeleton/AccountSectionSkeleton';
 import EyeIcon from 'lucide-react/dist/esm/icons/eye';
@@ -89,6 +90,13 @@ export const ProfileSection: React.FC = () => {
       updated = [...draft.featuredBadges, badgeId];
     }
     setField('featuredBadges', updated);
+  };
+
+  const handleReorderFeaturedBadges = (newOrderIds: string[]) => {
+    if (draft.featuredBadgesMode === 'auto') {
+      setField('featuredBadgesMode', 'manual');
+    }
+    setField('featuredBadges', newOrderIds);
   };
 
   const featuredBadgeItems: FeaturedBadgeItem[] = draft.featuredBadges
@@ -224,6 +232,24 @@ export const ProfileSection: React.FC = () => {
               Escolha até 4 insígnias para aparecer no seu perfil.
             </p>
 
+            {featuredBadgeItems.length > 0 && (
+              <div className="mb-5 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-[var(--text-secondary)]">
+                    Ordem de exibição ({featuredBadgeItems.length}/4)
+                  </span>
+                  <span className="text-[11px] text-[var(--text-muted)]">
+                    Arraste ou use os botões para reordenar
+                  </span>
+                </div>
+                <SortableBadgeStrip
+                  items={featuredBadgeItems}
+                  onReorder={handleReorderFeaturedBadges}
+                  onRemove={(badgeId) => handleToggleBadge(badgeId)}
+                />
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center gap-3">
               {availableBadges.map((badge) => {
                 const IconComponent = resolveIcon(badge.icon, customIcons);
@@ -279,6 +305,7 @@ export const ProfileSection: React.FC = () => {
         featuredBadges={featuredBadgeItems}
         visibility={draft.visibility}
         onModeChange={(newMode) => setField('featuredBadgesMode', newMode)}
+        onReorder={handleReorderFeaturedBadges}
       />
     </div>
   );

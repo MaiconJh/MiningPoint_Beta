@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { UserProfile, UserAttributes, UserBadge } from '../../types/profile';
+import { UserProfile, UserAttributes, UserBadge, FeaturedBadgeItem } from '../../types/profile';
+import { Timestamp } from 'firebase/firestore';
 import { Group } from '../../types/group';
 import { listGroups } from '../../lib/groups';
 import {
@@ -26,6 +27,7 @@ import { useAdminUserDraft } from '../../hooks/useAdminUserDraft';
 import { useCustomIcons } from '../../hooks/useCustomIcons';
 import { resolveIcon } from '../../data/icons/iconRegistry';
 import { Chip } from '../../components/chip/Chip';
+import { SortableBadgeStrip } from '../../components/profile/SortableBadgeStrip';
 import { Title } from '../../types/title';
 
 const formatDate = (dateVal?: unknown): string => {
@@ -318,6 +320,28 @@ export const AdminUserDetail: React.FC = () => {
   const ownedBadgeIds = new Set(userBadges.map((ub) => ub.badgeId));
   const ownedBadges = badges.filter((b) => ownedBadgeIds.has(b.id));
 
+  const featuredBadgeItems: FeaturedBadgeItem[] = draft.featuredBadges
+    .map((id) => {
+      const badge = badges.find((b) => b.id === id);
+      const userBadge = userBadges.find((ub) => ub.badgeId === id);
+      if (!badge) return null;
+      return {
+        badge,
+        userBadge: userBadge || {
+          id: `${uid}_${badge.id}`,
+          userId: uid || '',
+          badgeId: badge.id,
+          awardedAt: Timestamp.now(),
+          awardedBy: 'admin',
+        },
+      };
+    })
+    .filter((item): item is FeaturedBadgeItem => item !== null);
+
+  const handleReorderFeaturedBadges = (newOrderIds: string[]) => {
+    setField('featuredBadges', newOrderIds);
+  };
+
   return (
     <div className="space-y-8 max-w-4xl">
       {/* Back link */}
@@ -498,7 +522,26 @@ export const AdminUserDetail: React.FC = () => {
               O usuário não possui insígnias concedidas.
             </p>
           ) : (
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-col gap-4">
+              {featuredBadgeItems.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[var(--text-secondary)]">
+                      Ordem de exibição ({featuredBadgeItems.length}/4)
+                    </span>
+                    <span className="text-[11px] text-[var(--text-muted)]">
+                      Arraste ou use os botões para reordenar
+                    </span>
+                  </div>
+                  <SortableBadgeStrip
+                    items={featuredBadgeItems}
+                    onReorder={handleReorderFeaturedBadges}
+                    onRemove={(badgeId) => handleToggleBadge(badgeId)}
+                  />
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center gap-3">
               {ownedBadges.map((badge) => {
                 const IconComponent = resolveIcon(badge.icon, customIcons);
                 const isSelected = draft.featuredBadges.includes(badge.id);
@@ -542,6 +585,7 @@ export const AdminUserDetail: React.FC = () => {
                   </button>
                 );
               })}
+              </div>
             </div>
           )}
         </div>

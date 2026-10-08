@@ -10,6 +10,7 @@ interface ProfilePreviewModalProps {
   featuredBadges: FeaturedBadgeItem[];
   visibility: 'public' | 'private';
   onModeChange?: (nextMode: FeaturedBadgesMode) => void;
+  onReorder?: (newOrderIds: string[]) => void;
 }
 
 export const ProfilePreviewModal: React.FC<ProfilePreviewModalProps> = ({
@@ -19,6 +20,7 @@ export const ProfilePreviewModal: React.FC<ProfilePreviewModalProps> = ({
   featuredBadges,
   visibility,
   onModeChange,
+  onReorder,
 }) => {
   useEffect(() => {
     if (!isOpen) return;
@@ -87,6 +89,7 @@ export const ProfilePreviewModal: React.FC<ProfilePreviewModalProps> = ({
           profile={profile}
           featuredBadges={featuredBadges}
           onModeChange={onModeChange}
+          onReorder={onReorder}
         />
       </div>
     </div>

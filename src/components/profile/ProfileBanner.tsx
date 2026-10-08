@@ -7,12 +7,16 @@ export interface ProfileBannerProps {
   featuredBadges: FeaturedBadgeItem[];
   mode?: FeaturedBadgesMode;
   onModeChange?: (nextMode: FeaturedBadgesMode) => void;
+  onReorder?: (newOrderIds: string[]) => void;
+  showModeToggle?: boolean;
 }
 
 export const ProfileBanner: React.FC<ProfileBannerProps> = ({
   featuredBadges,
   mode,
   onModeChange,
+  onReorder,
+  showModeToggle,
 }) => {
   return (
     <div className="relative w-full h-[200px] rounded-t-[11px]">
@@ -55,6 +59,8 @@ export const ProfileBanner: React.FC<ProfileBannerProps> = ({
           items={featuredBadges}
           mode={mode}
           onModeChange={onModeChange}
+          onReorder={onReorder}
+          showModeToggle={showModeToggle}
         />
       </div>
 

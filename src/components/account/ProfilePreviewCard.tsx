@@ -9,12 +9,14 @@ interface ProfilePreviewCardProps {
   profile: UserProfile;
   featuredBadges: FeaturedBadgeItem[];
   onModeChange?: (nextMode: FeaturedBadgesMode) => void;
+  onReorder?: (newOrderIds: string[]) => void;
 }
 
 export const ProfilePreviewCard: React.FC<ProfilePreviewCardProps> = ({
   profile,
   featuredBadges,
   onModeChange,
+  onReorder,
 }) => {
   return (
     <div className="rounded-[12px] bg-[var(--bg-surface)] border border-[var(--border-default)] shadow-sm overflow-hidden">
@@ -22,6 +24,7 @@ export const ProfilePreviewCard: React.FC<ProfilePreviewCardProps> = ({
         featuredBadges={featuredBadges}
         mode={profile.featuredBadgesMode || 'manual'}
         onModeChange={onModeChange}
+        onReorder={onReorder}
       />
       <ProfileHeader profile={profile} />
       <ProfileTabs activeTab="sobre" onChangeTab={() => {}} ownMode={false} readOnly />
