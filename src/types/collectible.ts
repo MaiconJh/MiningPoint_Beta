@@ -10,10 +10,10 @@ export interface CollectibleBase {
   description: string;
   createdAt: Timestamp;
   createdBy: string;
-  // Campos opcionais adicionados para as fases seguintes. NÃO são gravados no Firestore nesta fase.
-  rarity?: Rarity;
-  categoryId?: string;
-  origin?: string;
-  collectionId?: string;
+  // Campos de referência ao catálogo e ordenação
+  rarityId?: string | null;
+  categoryId?: string | null;
+  originId?: string | null;
+  collectionId?: string | null;
   order?: number;
 }

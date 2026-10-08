@@ -124,6 +124,11 @@ badges/{badgeId}
   name: string
   description: string
   icon: string
+  rarityId: string | null         // ref para rarities/{rarityId}
+  categoryId: string | null       // ref para catalogCategories/{categoryId}
+  originId: string | null         // ref para origins/{originId}
+  collectionId: string | null     // ref para collections/{collectionId}
+  order: number                   // 0-999 ordem de exibição/hierarquia
   createdAt: timestamp
   createdBy: string
 
@@ -146,6 +151,12 @@ titles/{titleId}
   name: string                    // "Pioneiro", "Filho da Profundeza"
   description: string
   color: string                   // hex code for title rendering
+  chipStyle?: ChipStyle           // estilos customizados opcionais do chip
+  rarityId: string | null         // ref para rarities/{rarityId}
+  categoryId: string | null       // ref para catalogCategories/{categoryId}
+  originId: string | null         // ref para origins/{originId}
+  collectionId: string | null     // ref para collections/{collectionId}
+  order: number                   // 0-999 ordem de exibição/hierarquia
   createdAt: timestamp
   createdBy: string
 

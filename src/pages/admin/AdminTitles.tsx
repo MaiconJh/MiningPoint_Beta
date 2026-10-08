@@ -12,11 +12,17 @@ import {
 import { TitleForm } from '../../components/admin/TitleForm';
 import { useAuth } from '../../context/AuthContext';
 import { Chip } from '../../components/chip/Chip';
+import { useRarities } from '../../hooks/useRarities';
 
 type ViewMode = 'list' | 'create' | 'edit';
 
 export const AdminTitles: React.FC = () => {
   const { user, refreshProfile } = useAuth();
+  const { rarities } = useRarities();
+  const rarityMap = React.useMemo(
+    () => new Map(rarities.map((r) => [r.id, r])),
+    [rarities]
+  );
   const [titles, setTitles] = useState<Title[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -158,6 +164,7 @@ export const AdminTitles: React.FC = () => {
                 <tr className="border-b border-[var(--border-subtle)] text-xs font-mono uppercase tracking-[0.08em] text-[var(--text-muted)]">
                   <th className="py-3 px-4 sm:px-6">Cor</th>
                   <th className="py-3 px-4">Nome</th>
+                  <th className="py-3 px-4">Raridade</th>
                   <th className="py-3 px-4 hidden sm:table-cell">Descrição</th>
                   <th className="py-3 px-4 text-center">Usuários</th>
                   <th className="py-3 px-4 sm:px-6 text-right">Ações</th>
@@ -166,6 +173,7 @@ export const AdminTitles: React.FC = () => {
               <tbody className="divide-y divide-[var(--border-subtle)] text-sm">
                 {titles.map((title) => {
                   const userCount = counts[title.id] ?? 0;
+                  const rarity = title.rarityId ? rarityMap.get(title.rarityId) : null;
 
                   return (
                     <tr
@@ -193,6 +201,15 @@ export const AdminTitles: React.FC = () => {
                             style={title.chipStyle}
                           />
                         </Link>
+                      </td>
+
+                      {/* Rarity */}
+                      <td className="py-4 px-4">
+                        {rarity ? (
+                          <Chip label={rarity.label} color={rarity.color} />
+                        ) : (
+                          <span className="text-xs text-[var(--text-muted)]">—</span>
+                        )}
                       </td>
 
                       {/* Description */}

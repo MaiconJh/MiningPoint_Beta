@@ -13,12 +13,19 @@ import { resolveIcon } from '../../data/icons/iconRegistry';
 import { useCustomIcons } from '../../hooks/useCustomIcons';
 import { BadgeForm } from '../../components/admin/BadgeForm';
 import { useAuth } from '../../context/AuthContext';
+import { Chip } from '../../components/chip/Chip';
+import { useRarities } from '../../hooks/useRarities';
 
 type ViewMode = 'list' | 'create' | 'edit';
 
 export const AdminBadges: React.FC = () => {
   const { user } = useAuth();
   const { customIcons } = useCustomIcons();
+  const { rarities } = useRarities();
+  const rarityMap = React.useMemo(
+    () => new Map(rarities.map((r) => [r.id, r])),
+    [rarities]
+  );
   const [badges, setBadges] = useState<Badge[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -167,6 +174,7 @@ export const AdminBadges: React.FC = () => {
                 <tr className="border-b border-[var(--border-subtle)] text-xs font-mono uppercase tracking-[0.08em] text-[var(--text-muted)]">
                   <th className="py-3 px-4 sm:px-6">Ícone</th>
                   <th className="py-3 px-4">Nome</th>
+                  <th className="py-3 px-4">Raridade</th>
                   <th className="py-3 px-4 hidden sm:table-cell">Descrição</th>
                   <th className="py-3 px-4 text-center">Usuários</th>
                   <th className="py-3 px-4 sm:px-6 text-right">Ações</th>
@@ -176,6 +184,7 @@ export const AdminBadges: React.FC = () => {
                 {badges.map((badge) => {
                   const IconComponent = resolveIcon(badge.icon, customIcons);
                   const userCount = counts[badge.id] ?? 0;
+                  const rarity = badge.rarityId ? rarityMap.get(badge.rarityId) : null;
 
                   return (
                     <tr
@@ -197,6 +206,15 @@ export const AdminBadges: React.FC = () => {
                         >
                           {badge.name}
                         </Link>
+                      </td>
+
+                      {/* Rarity */}
+                      <td className="py-4 px-4">
+                        {rarity ? (
+                          <Chip label={rarity.label} color={rarity.color} />
+                        ) : (
+                          <span className="text-xs text-[var(--text-muted)]">—</span>
+                        )}
                       </td>
 
                       {/* Description */}

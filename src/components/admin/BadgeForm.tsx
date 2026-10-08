@@ -2,6 +2,10 @@ import React, { useState } from 'react';
 import { Badge } from '../../types/profile';
 import { BadgeFormData } from '../../lib/badges';
 import { BadgeIconPicker } from './BadgeIconPicker';
+import {
+  CollectibleCatalogFields,
+  CollectibleCatalogFieldsValue,
+} from './CollectibleCatalogFields';
 
 interface BadgeFormProps {
   initialBadge?: Badge | null;
@@ -23,6 +27,13 @@ export const BadgeForm: React.FC<BadgeFormProps> = ({
   const [name, setName] = useState(initialBadge?.name || '');
   const [description, setDescription] = useState(initialBadge?.description || '');
   const [icon, setIcon] = useState(initialBadge?.icon || 'award');
+  const [catalog, setCatalog] = useState<CollectibleCatalogFieldsValue>({
+    rarityId: initialBadge?.rarityId ?? null,
+    categoryId: initialBadge?.categoryId ?? null,
+    originId: initialBadge?.originId ?? null,
+    collectionId: initialBadge?.collectionId ?? null,
+    order: initialBadge?.order ?? 0,
+  });
 
   const [localError, setLocalError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -51,6 +62,11 @@ export const BadgeForm: React.FC<BadgeFormProps> = ({
       name: name.trim().slice(0, 40),
       description: description.trim().slice(0, 160),
       icon,
+      rarityId: catalog.rarityId || null,
+      categoryId: catalog.categoryId || null,
+      originId: catalog.originId || null,
+      collectionId: catalog.collectionId || null,
+      order: typeof catalog.order === 'number' ? catalog.order : 0,
     };
 
     try {
@@ -135,6 +151,11 @@ export const BadgeForm: React.FC<BadgeFormProps> = ({
             Ícone <span className="text-[var(--feedback-error)]">*</span>
           </label>
           <BadgeIconPicker value={icon} onChange={setIcon} />
+        </div>
+
+        {/* Catálogo */}
+        <div className="pt-2 border-t border-[var(--border-subtle)]">
+          <CollectibleCatalogFields value={catalog} onChange={setCatalog} />
         </div>
 
         {/* Action buttons */}

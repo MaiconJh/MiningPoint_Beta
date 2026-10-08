@@ -3,6 +3,10 @@ import { Title } from '../../types/title';
 import { TitleFormData } from '../../lib/titles';
 import { ChipStyle } from '../../types/chip';
 import { ChipStyleEditor } from './ChipStyleEditor';
+import {
+  CollectibleCatalogFields,
+  CollectibleCatalogFieldsValue,
+} from './CollectibleCatalogFields';
 
 interface TitleFormProps {
   initialTitle?: Title | null;
@@ -27,6 +31,13 @@ export const TitleForm: React.FC<TitleFormProps> = ({
   const [chipStyle, setChipStyle] = useState<ChipStyle | undefined>(
     initialTitle?.chipStyle
   );
+  const [catalog, setCatalog] = useState<CollectibleCatalogFieldsValue>({
+    rarityId: initialTitle?.rarityId ?? null,
+    categoryId: initialTitle?.categoryId ?? null,
+    originId: initialTitle?.originId ?? null,
+    collectionId: initialTitle?.collectionId ?? null,
+    order: initialTitle?.order ?? 0,
+  });
 
   const [localError, setLocalError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -56,6 +67,11 @@ export const TitleForm: React.FC<TitleFormProps> = ({
       description: description.trim().slice(0, 160),
       color: color.trim(),
       chipStyle: chipStyle ? chipStyle : undefined,
+      rarityId: catalog.rarityId || null,
+      categoryId: catalog.categoryId || null,
+      originId: catalog.originId || null,
+      collectionId: catalog.collectionId || null,
+      order: typeof catalog.order === 'number' ? catalog.order : 0,
     };
 
     try {
@@ -169,6 +185,11 @@ export const TitleForm: React.FC<TitleFormProps> = ({
             onChange={setChipStyle}
             labelName={name || 'Título'}
           />
+        </div>
+
+        {/* Catálogo */}
+        <div className="pt-2 border-t border-[var(--border-subtle)]">
+          <CollectibleCatalogFields value={catalog} onChange={setCatalog} />
         </div>
 
         {/* Action buttons */}

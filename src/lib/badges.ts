@@ -20,6 +20,11 @@ export interface BadgeFormData {
   name: string;
   description: string;
   icon: string;
+  rarityId?: string | null;
+  categoryId?: string | null;
+  originId?: string | null;
+  collectionId?: string | null;
+  order?: number;
 }
 
 export interface UserWithBadgeItem {
@@ -47,6 +52,11 @@ const parseBadgeDoc = (id: string, data: DocumentData): Badge => {
     icon: data.icon || 'award',
     createdAt: data.createdAt,
     createdBy: data.createdBy || '',
+    rarityId: data.rarityId || null,
+    categoryId: data.categoryId || null,
+    originId: data.originId || null,
+    collectionId: data.collectionId || null,
+    order: typeof data.order === 'number' ? Math.max(0, Math.min(999, data.order)) : 0,
   };
 };
 
@@ -73,7 +83,27 @@ const badgeRepository = createCollectibleRepository<Badge, BadgeFormData>({
     name: data.name.trim(),
     description: data.description.trim(),
     icon: data.icon,
+    rarityId: data.rarityId || null,
+    categoryId: data.categoryId || null,
+    originId: data.originId || null,
+    collectionId: data.collectionId || null,
+    order: typeof data.order === 'number' && !isNaN(data.order) ? Math.max(0, Math.min(999, data.order)) : 0,
   }),
+  formatUpdatePayload: (data) => {
+    const payload: Record<string, unknown> = {};
+    if (data.name !== undefined) payload.name = data.name.trim();
+    if (data.description !== undefined) payload.description = data.description.trim();
+    if (data.icon !== undefined) payload.icon = data.icon;
+    if (data.rarityId !== undefined) payload.rarityId = data.rarityId || null;
+    if (data.categoryId !== undefined) payload.categoryId = data.categoryId || null;
+    if (data.originId !== undefined) payload.originId = data.originId || null;
+    if (data.collectionId !== undefined) payload.collectionId = data.collectionId || null;
+    if (data.order !== undefined) {
+      payload.order = typeof data.order === 'number' && !isNaN(data.order) ? Math.max(0, Math.min(999, data.order)) : 0;
+    }
+    return payload;
+  },
+  clientSort: (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name),
   countUsersWith: countUsersWithBadgeInternal,
 });
 

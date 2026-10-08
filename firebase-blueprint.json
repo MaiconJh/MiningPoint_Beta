@@ -91,10 +91,45 @@
         "name": { "type": "string" },
         "description": { "type": "string" },
         "icon": { "type": "string" },
+        "rarityId": { "type": ["string", "null"] },
+        "categoryId": { "type": ["string", "null"] },
+        "originId": { "type": ["string", "null"] },
+        "collectionId": { "type": ["string", "null"] },
+        "order": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" },
         "createdBy": { "type": "string" }
       },
       "required": ["name", "description", "icon", "createdAt", "createdBy"]
+    },
+    "Title": {
+      "title": "Title",
+      "description": "Title definition",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "color": { "type": "string" },
+        "rarityId": { "type": ["string", "null"] },
+        "categoryId": { "type": ["string", "null"] },
+        "originId": { "type": ["string", "null"] },
+        "collectionId": { "type": ["string", "null"] },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["name", "description", "color", "createdAt", "createdBy"]
+    },
+    "UserTitle": {
+      "title": "UserTitle",
+      "description": "User awarded title link",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "titleId": { "type": "string" },
+        "awardedAt": { "type": "string", "format": "date-time" },
+        "awardedBy": { "type": "string" }
+      },
+      "required": ["userId", "titleId", "awardedAt", "awardedBy"]
     },
     "UserBadge": {
       "title": "UserBadge",
@@ -177,6 +212,14 @@
     "/userBadges/{userId_badgeId}": {
       "schema": { "$ref": "UserBadge" },
       "description": "Badges awarded to users"
+    },
+    "/titles/{titleId}": {
+      "schema": { "$ref": "Title" },
+      "description": "Title definitions"
+    },
+    "/userTitles/{userId_titleId}": {
+      "schema": { "$ref": "UserTitle" },
+      "description": "Titles awarded to users"
     },
     "/rarities/{rarityId}": {
       "schema": { "$ref": "Rarity" },

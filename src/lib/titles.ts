@@ -22,6 +22,11 @@ export interface TitleFormData {
   description: string;
   color: string;
   chipStyle?: ChipStyle;
+  rarityId?: string | null;
+  categoryId?: string | null;
+  originId?: string | null;
+  collectionId?: string | null;
+  order?: number;
 }
 
 export interface UserWithTitleItem {
@@ -43,6 +48,11 @@ const parseTitleDoc = (id: string, data: DocumentData): Title => {
     chipStyle: data.chipStyle,
     createdAt: data.createdAt,
     createdBy: data.createdBy || '',
+    rarityId: data.rarityId || null,
+    categoryId: data.categoryId || null,
+    originId: data.originId || null,
+    collectionId: data.collectionId || null,
+    order: typeof data.order === 'number' ? Math.max(0, Math.min(999, data.order)) : 0,
   };
 };
 
@@ -70,14 +80,32 @@ const titleRepository = createCollectibleRepository<Title, TitleFormData>({
     description: data.description.trim(),
     color: data.color.trim() || '#8BD0EF',
     chipStyle: data.chipStyle || null,
+    rarityId: data.rarityId || null,
+    categoryId: data.categoryId || null,
+    originId: data.originId || null,
+    collectionId: data.collectionId || null,
+    order: typeof data.order === 'number' && !isNaN(data.order) ? Math.max(0, Math.min(999, data.order)) : 0,
   }),
   formatUpdatePayload: (data) => {
-    const updateData: Record<string, unknown> = { ...data };
+    const updateData: Record<string, unknown> = {};
+    if (data.name !== undefined) updateData.name = data.name.trim();
+    if (data.description !== undefined) updateData.description = data.description.trim();
+    if (data.color !== undefined) updateData.color = data.color.trim();
     if (data.chipStyle === undefined) {
       updateData.chipStyle = deleteField();
+    } else {
+      updateData.chipStyle = data.chipStyle;
+    }
+    if (data.rarityId !== undefined) updateData.rarityId = data.rarityId || null;
+    if (data.categoryId !== undefined) updateData.categoryId = data.categoryId || null;
+    if (data.originId !== undefined) updateData.originId = data.originId || null;
+    if (data.collectionId !== undefined) updateData.collectionId = data.collectionId || null;
+    if (data.order !== undefined) {
+      updateData.order = typeof data.order === 'number' && !isNaN(data.order) ? Math.max(0, Math.min(999, data.order)) : 0;
     }
     return updateData;
   },
+  clientSort: (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name),
   countUsersWith: countUsersWithTitleInternal,
 });
 

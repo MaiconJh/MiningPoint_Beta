@@ -140,6 +140,9 @@ export const AdminUserDetail: React.FC = () => {
         if (titleIds.length > 0) {
           const loadedTitles = await listTitlesByIds(titleIds);
           if (isMounted) {
+            loadedTitles.sort(
+              (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name)
+            );
             setOwnedTitles(loadedTitles);
           }
         } else {
