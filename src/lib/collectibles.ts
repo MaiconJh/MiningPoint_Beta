@@ -10,12 +10,20 @@ import {
   orderBy,
   serverTimestamp,
   type DocumentData,
+  type Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { type CollectibleBase } from '../types/collectible';
+
+export interface NamedEntity {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: Timestamp;
+  createdBy: string;
+}
 
 export interface CollectibleRepositoryOptions<
-  T extends CollectibleBase,
+  T extends NamedEntity,
   TFormData extends { name: string }
 > {
   collectionName: string;
@@ -27,10 +35,11 @@ export interface CollectibleRepositoryOptions<
   userCountErrorMessage?: string;
   deleteErrorMessage?: string;
   logItemName?: string;
+  clientSort?: (a: T, b: T) => number;
 }
 
 export interface CollectibleRepository<
-  T extends CollectibleBase,
+  T extends NamedEntity,
   TFormData extends { name: string }
 > {
   list: () => Promise<T[]>;
@@ -45,7 +54,7 @@ export interface CollectibleRepository<
  * Fábrica genérica para gerenciamento de colecionáveis (insígnias e títulos).
  */
 export function createCollectibleRepository<
-  T extends CollectibleBase,
+  T extends NamedEntity,
   TFormData extends { name: string }
 >(
   options: CollectibleRepositoryOptions<T, TFormData>
@@ -70,6 +79,9 @@ export function createCollectibleRepository<
       snap.forEach((d) => {
         items.push(options.parse(d.id, d.data()));
       });
+      if (options.clientSort) {
+        items.sort(options.clientSort);
+      }
       return items;
     } catch (error) {
       console.error(`Error listing ${options.collectionName}:`, error);

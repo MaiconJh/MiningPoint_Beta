@@ -9,6 +9,7 @@ export const DEFAULT_EFFECTIVE_PERMISSIONS: EffectivePermissions = {
   manageBadges: false,
   manageForum: false,
   manageContent: false,
+  manageCatalogs: false,
 };
 
 export const unionUserPermissions = (groups: Group[]): EffectivePermissions => {
@@ -23,6 +24,7 @@ export const unionUserPermissions = (groups: Group[]): EffectivePermissions => {
     if (admin.manageBadges) result.manageBadges = true;
     if (admin.manageForum) result.manageForum = true;
     if (admin.manageContent) result.manageContent = true;
+    if (admin.manageCatalogs) result.manageCatalogs = true;
   }
 
   return result;

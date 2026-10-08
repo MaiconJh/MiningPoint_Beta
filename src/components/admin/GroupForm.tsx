@@ -48,6 +48,9 @@ export const GroupForm: React.FC<GroupFormProps> = ({
   const [manageContent, setManageContent] = useState(
     initialGroup?.permissions?.admin?.manageContent ?? false
   );
+  const [manageCatalogs, setManageCatalogs] = useState(
+    initialGroup?.permissions?.admin?.manageCatalogs ?? false
+  );
 
   const [localError, setLocalError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -82,6 +85,7 @@ export const GroupForm: React.FC<GroupFormProps> = ({
           manageBadges,
           manageForum,
           manageContent,
+          manageCatalogs,
         },
         forum: initialGroup?.permissions?.forum || {},
       },
@@ -302,6 +306,16 @@ export const GroupForm: React.FC<GroupFormProps> = ({
                 className="w-4 h-4 rounded border-[var(--border-default)] accent-[var(--brand-primary)] cursor-pointer"
               />
               <span className="text-sm text-[var(--text-secondary)]">Gerenciar conteúdo</span>
+            </label>
+
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={manageCatalogs}
+                onChange={(e) => setManageCatalogs(e.target.checked)}
+                className="w-4 h-4 rounded border-[var(--border-default)] accent-[var(--brand-primary)] cursor-pointer"
+              />
+              <span className="text-sm text-[var(--text-secondary)]">Gerenciar catálogos</span>
             </label>
           </div>
         </div>

@@ -32,6 +32,10 @@ import { AdminBadgeDetail } from './pages/admin/AdminBadgeDetail';
 import { AdminIcons } from './pages/admin/AdminIcons';
 import { AdminTitles } from './pages/admin/AdminTitles';
 import { AdminTitleDetail } from './pages/admin/AdminTitleDetail';
+import { AdminRarities } from './pages/admin/AdminRarities';
+import { AdminCatalogCategories } from './pages/admin/AdminCatalogCategories';
+import { AdminOrigins } from './pages/admin/AdminOrigins';
+import { AdminCollections } from './pages/admin/AdminCollections';
 import { AdminForum } from './pages/admin/AdminForum';
 import { AdminContent } from './pages/admin/AdminContent';
 import { AdminLogs } from './pages/admin/AdminLogs';
@@ -61,6 +65,10 @@ const AppRoutes: React.FC = () => {
             <Route path="/admin/icones" element={<AdminIcons />} />
             <Route path="/admin/titulos" element={<AdminTitles />} />
             <Route path="/admin/titulos/:titleId" element={<AdminTitleDetail />} />
+            <Route path="/admin/raridades" element={<AdminRarities />} />
+            <Route path="/admin/categorias" element={<AdminCatalogCategories />} />
+            <Route path="/admin/origens" element={<AdminOrigins />} />
+            <Route path="/admin/colecoes" element={<AdminCollections />} />
             <Route path="/admin/forum" element={<AdminForum />} />
             <Route path="/admin/conteudo" element={<AdminContent />} />
             <Route path="/admin/logs" element={<AdminLogs />} />

@@ -8,6 +8,7 @@ export interface GroupAdminPermissions {
   manageBadges: boolean;
   manageForum: boolean;
   manageContent: boolean;
+  manageCatalogs: boolean;
 }
 
 export interface GroupPermissions {

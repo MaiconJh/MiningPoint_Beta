@@ -77,6 +77,7 @@ users/{uid}
     manageBadges: boolean
     manageForum: boolean
     manageContent: boolean
+    manageCatalogs: boolean
   }
   bio: string
   featuredTitleId: string | null // null by default, chosen by user
@@ -110,6 +111,7 @@ groups/{groupId}
       manageBadges: boolean
       manageForum: boolean
       manageContent: boolean
+      manageCatalogs: boolean
     }
     forum: {
       categories: {}
@@ -152,6 +154,34 @@ userTitles/{userId_titleId}
   titleId: string
   awardedAt: timestamp
   awardedBy: string
+
+rarities/{rarityId}
+  label: string                   // "Comum", "Rara", "Lendária"
+  color: string                   // hex code para highlight da raridade
+  order: number                   // 0-999 ordem de exibição/hierarquia
+  createdAt: timestamp
+  createdBy: string
+
+catalogCategories/{categoryId}
+  name: string                    // "Expedição", "Combate", "Social"
+  description: string
+  order: number                   // 0-999
+  createdAt: timestamp
+  createdBy: string
+
+origins/{originId}
+  name: string                    // "Evento de Inauguração", "Loja"
+  description: string
+  order: number                   // 0-999
+  createdAt: timestamp
+  createdBy: string
+
+collections/{collectionId}
+  name: string                    // "Série Mineral", "Fundadores"
+  description: string
+  order: number                   // 0-999
+  createdAt: timestamp
+  createdBy: string
 
 Reads never throw. Missing fields fall back to defaults defined above.
 Migration:

@@ -87,6 +87,26 @@ service cloud.firestore {
       allow write: if has('manageBadges');
     }
 
+    match /rarities/{rarityId} {
+      allow read: if true;
+      allow write: if has('manageCatalogs');
+    }
+
+    match /catalogCategories/{categoryId} {
+      allow read: if true;
+      allow write: if has('manageCatalogs');
+    }
+
+    match /origins/{originId} {
+      allow read: if true;
+      allow write: if has('manageCatalogs');
+    }
+
+    match /collections/{collectionId} {
+      allow read: if true;
+      allow write: if has('manageCatalogs');
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

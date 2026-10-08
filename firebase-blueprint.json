@@ -22,7 +22,8 @@
                 "manageGroups": { "type": "boolean" },
                 "manageBadges": { "type": "boolean" },
                 "manageForum": { "type": "boolean" },
-                "manageContent": { "type": "boolean" }
+                "manageContent": { "type": "boolean" },
+                "manageCatalogs": { "type": "boolean" }
               }
             },
             "forum": {
@@ -58,7 +59,8 @@
             "manageGroups": { "type": "boolean" },
             "manageBadges": { "type": "boolean" },
             "manageForum": { "type": "boolean" },
-            "manageContent": { "type": "boolean" }
+            "manageContent": { "type": "boolean" },
+            "manageCatalogs": { "type": "boolean" }
           }
         },
         "bio": { "type": "string" },
@@ -105,6 +107,58 @@
         "awardedBy": { "type": "string" }
       },
       "required": ["userId", "badgeId", "awardedAt", "awardedBy"]
+    },
+    "Rarity": {
+      "title": "Rarity",
+      "description": "Rarity tier for collectibles",
+      "type": "object",
+      "properties": {
+        "label": { "type": "string" },
+        "color": { "type": "string" },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["label", "color", "order", "createdAt", "createdBy"]
+    },
+    "CatalogCategory": {
+      "title": "CatalogCategory",
+      "description": "Category for collectibles",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["name", "description", "order", "createdAt", "createdBy"]
+    },
+    "Origin": {
+      "title": "Origin",
+      "description": "Origin of collectibles",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["name", "description", "order", "createdAt", "createdBy"]
+    },
+    "Collection": {
+      "title": "Collection",
+      "description": "Named collection of collectibles",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "order": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["name", "description", "order", "createdAt", "createdBy"]
     }
   },
   "firestore": {
@@ -123,6 +177,22 @@
     "/userBadges/{userId_badgeId}": {
       "schema": { "$ref": "UserBadge" },
       "description": "Badges awarded to users"
+    },
+    "/rarities/{rarityId}": {
+      "schema": { "$ref": "Rarity" },
+      "description": "Rarity definitions"
+    },
+    "/catalogCategories/{categoryId}": {
+      "schema": { "$ref": "CatalogCategory" },
+      "description": "Catalog category definitions"
+    },
+    "/origins/{originId}": {
+      "schema": { "$ref": "Origin" },
+      "description": "Origin definitions"
+    },
+    "/collections/{collectionId}": {
+      "schema": { "$ref": "Collection" },
+      "description": "Named collection definitions"
     }
   }
 }
