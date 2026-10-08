@@ -121,30 +121,6 @@
       },
       "required": ["name", "description", "color", "createdAt", "createdBy"]
     },
-    "UserTitle": {
-      "title": "UserTitle",
-      "description": "User awarded title link",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "titleId": { "type": "string" },
-        "awardedAt": { "type": "string", "format": "date-time" },
-        "awardedBy": { "type": "string" }
-      },
-      "required": ["userId", "titleId", "awardedAt", "awardedBy"]
-    },
-    "UserBadge": {
-      "title": "UserBadge",
-      "description": "User awarded badge link",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string" },
-        "badgeId": { "type": "string" },
-        "awardedAt": { "type": "string", "format": "date-time" },
-        "awardedBy": { "type": "string" }
-      },
-      "required": ["userId", "badgeId", "awardedAt", "awardedBy"]
-    },
     "UserCollectible": {
       "title": "UserCollectible",
       "description": "User awarded collectible link (badge or title)",
@@ -224,17 +200,9 @@
       "schema": { "$ref": "Badge" },
       "description": "Badge definitions"
     },
-    "/userBadges/{userId_badgeId}": {
-      "schema": { "$ref": "UserBadge" },
-      "description": "Badges awarded to users"
-    },
     "/titles/{titleId}": {
       "schema": { "$ref": "Title" },
       "description": "Title definitions"
-    },
-    "/userTitles/{userId_titleId}": {
-      "schema": { "$ref": "UserTitle" },
-      "description": "Titles awarded to users"
     },
     "/userCollectibles/{userId_kind_itemId}": {
       "schema": { "$ref": "UserCollectible" },

@@ -129,12 +129,14 @@ badges/{badgeId}
   originId: string | null         // ref para origins/{originId}
   collectionId: string | null     // ref para collections/{collectionId}
   order: number                   // 0-999 ordem de exibição/hierarquia
+  linkedTitleIds: string[]        // [] por padrão, títulos concedidos junto
   createdAt: timestamp
   createdBy: string
 
-userBadges/{userId_badgeId}
+userCollectibles/{userId_kind_itemId}
   userId: string
-  badgeId: string
+  kind: 'badge' | 'title'
+  itemId: string
   awardedAt: timestamp
   awardedBy: string
 
@@ -157,14 +159,9 @@ titles/{titleId}
   originId: string | null         // ref para origins/{originId}
   collectionId: string | null     // ref para collections/{collectionId}
   order: number                   // 0-999 ordem de exibição/hierarquia
+  linkedBadgeIds: string[]        // [] por padrão, insígnias concedidas junto
   createdAt: timestamp
   createdBy: string
-
-userTitles/{userId_titleId}
-  userId: string
-  titleId: string
-  awardedAt: timestamp
-  awardedBy: string
 
 rarities/{rarityId}
   label: string                   // "Comum", "Rara", "Lendária"
@@ -212,7 +209,7 @@ Derivation rules:
 - A banned user cannot write anywhere in Firestore (enforced by `!isBannedUser(uid)` on all write rules).
 - A banned admin cannot access the `/admin` control panel.
 - On profile self-update, users can only modify profile fields (bio, title, visibility, featuredBadges); updating groups, permissions, staff flag, attributes or ban status requires `manageUsers`.
-- Deleting an account in the admin panel removes the user document from `users/{uid}` and all associated `userBadges` docs. (Firebase Auth account deletion requires Admin SDK/Cloud Functions, which is beyond client scope).
+- Deleting an account in the admin panel removes the user document from `users/{uid}` and all associated `userCollectibles` docs. (Firebase Auth account deletion requires Admin SDK/Cloud Functions, which is beyond client scope).
 
 ## Badges & Icons
 
@@ -236,15 +233,15 @@ Icon registry & custom icons:
 
 Badge grant/revoke flow:
   - Admin grants a badge to a user from `/admin/insignias/:badgeId`.
-  - Creates a doc in `userBadges/{userId_badgeId}` with `userId`, `badgeId`, `awardedAt: serverTimestamp()`, `awardedBy: adminUid`.
-  - Admin revoking a badge deletes the `userBadges/{userId_badgeId}` doc.
+  - Creates a doc in `userCollectibles/${userId}_badge_${badgeId}` with `userId`, `kind: 'badge'`, `itemId: badgeId`, `awardedAt: serverTimestamp()`, `awardedBy: adminUid`.
+  - Admin revoking a badge deletes the `userCollectibles/${userId}_badge_${badgeId}` doc.
   - Users with at least one badge choose up to 4 featured badges in `/conta/perfil` (Insígnias destacadas).
   - Selected badges are saved immediately to `users/{uid}.featuredBadges` and rendered in the profile header carousel.
 
 Title grant/revoke & display flow:
   - Admin manages titles from `/admin/titulos` and grants/revokes from `/admin/titulos/:titleId`.
-  - Creates a doc in `userTitles/{userId_titleId}` with `userId`, `titleId`, `awardedAt: serverTimestamp()`, `awardedBy: adminUid`.
-  - Admin revoking a title deletes the `userTitles/{userId_titleId}` doc.
+  - Creates a doc in `userCollectibles/${userId}_title_${titleId}` with `userId`, `kind: 'title'`, `itemId: titleId`, `awardedAt: serverTimestamp()`, `awardedBy: adminUid`.
+  - Admin revoking a title deletes the `userCollectibles/${userId}_title_${titleId}` doc.
   - Users with at least one title choose which title to display in `/conta/perfil` (Título exibido).
   - Selected title ID is saved to `users/{uid}.featuredTitleId` and rendered above the user's name in `ProfileHeader` using the title's custom colour.
 
