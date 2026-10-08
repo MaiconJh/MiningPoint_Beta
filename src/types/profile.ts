@@ -2,6 +2,7 @@ import { type Timestamp } from 'firebase/firestore';
 import { type Group } from './group';
 import { type EffectivePermissions } from '../lib/permissions';
 import { type Title, type UserTitle } from './title';
+import { type CollectibleBase } from './collectible';
 
 export type { Title, UserTitle };
 
@@ -45,13 +46,8 @@ export interface UserProfile {
   createdAt: Timestamp;
 }
 
-export interface Badge {
-  id: string;
-  name: string;
-  description: string;
+export interface Badge extends CollectibleBase {
   icon: string;
-  createdAt: Timestamp;
-  createdBy: string;
 }
 
 export interface UserBadge {

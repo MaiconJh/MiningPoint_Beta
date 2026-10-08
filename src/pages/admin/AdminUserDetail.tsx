@@ -10,23 +10,23 @@ import {
   setPrimaryGroup,
   setSecondaryGroups,
   setAttributes,
-  setVisibility,
   banUser,
   unbanUser,
   deleteUser,
   adminSetHandle,
 } from '../../lib/users';
 import { listUserBadges } from '../../lib/profile';
+import { listUserTitles, listTitlesByIds } from '../../lib/titles';
 import { getAvatarColor, getInitials } from '../../lib/avatar';
 import { UserAttributesEditor } from '../../components/admin/UserAttributesEditor';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
-import { useTitles } from '../../hooks/useTitles';
 import { useBadges } from '../../hooks/useBadges';
 import { useAdminUserDraft } from '../../hooks/useAdminUserDraft';
 import { useCustomIcons } from '../../hooks/useCustomIcons';
 import { resolveIcon } from '../../data/icons/iconRegistry';
 import { Chip } from '../../components/chip/Chip';
+import { Title } from '../../types/title';
 
 const formatDate = (dateVal?: unknown): string => {
   if (!dateVal) return '';
@@ -62,12 +62,12 @@ export const AdminUserDetail: React.FC = () => {
   const navigate = useNavigate();
   const { user: currentAdmin } = useAuth();
   const { showToast } = useToast();
-  const { titles } = useTitles();
   const { badges } = useBadges();
   const { customIcons } = useCustomIcons();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
+  const [ownedTitles, setOwnedTitles] = useState<Title[]>([]);
   const [bannerAdminName, setBannerAdminName] = useState<string | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,6 +123,41 @@ export const AdminUserDetail: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  useEffect(() => {
+    if (!uid) {
+      setOwnedTitles([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    listUserTitles(uid)
+      .then(async (userTitleDocs) => {
+        if (!isMounted) return;
+        const titleIds = userTitleDocs.map((ut) => ut.titleId);
+        if (titleIds.length > 0) {
+          const loadedTitles = await listTitlesByIds(titleIds);
+          if (isMounted) {
+            setOwnedTitles(loadedTitles);
+          }
+        } else {
+          if (isMounted) {
+            setOwnedTitles([]);
+          }
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching user titles in AdminUserDetail:', err);
+        if (isMounted) {
+          setOwnedTitles([]);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [uid]);
 
   const handleAdminSaveHandle = async () => {
     if (!uid) return;
@@ -211,18 +246,6 @@ export const AdminUserDetail: React.FC = () => {
       showToast('Alterações salvas.', 'success');
     } catch (err) {
       console.error('Failed to save attributes:', err);
-      showToast('Erro ao salvar.', 'error');
-    }
-  };
-
-  const handleVisibilityChange = async (visibility: 'public' | 'private') => {
-    if (!uid) return;
-    try {
-      await setVisibility(uid, visibility);
-      setProfile((prev) => (prev ? { ...prev, visibility } : null));
-      showToast('Alterações salvas.', 'success');
-    } catch (err) {
-      console.error('Failed to change visibility:', err);
       showToast('Erro ao salvar.', 'error');
     }
   };
@@ -444,7 +467,12 @@ export const AdminUserDetail: React.FC = () => {
             className="w-full sm:w-80 px-3.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-primary)] text-sm focus:outline-none focus:border-[var(--brand-primary)]"
           >
             <option value="">Nenhum título</option>
-            {titles.map((t) => (
+            {draft.featuredTitleId && !ownedTitles.some((t) => t.id === draft.featuredTitleId) && (
+              <option value={draft.featuredTitleId}>
+                {profile.featuredTitle?.name || 'Título atual'}
+              </option>
+            )}
+            {ownedTitles.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.name}
               </option>
@@ -580,22 +608,13 @@ export const AdminUserDetail: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="p-4 rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)]">
             <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider block mb-1">
               @nick atual
             </span>
             <span className="font-mono text-sm font-semibold text-[var(--text-primary)]">
               {profile.handle ? `@${profile.handle}` : 'Sem @nick'}
-            </span>
-          </div>
-
-          <div className="p-4 rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)]">
-            <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider block mb-1">
-              ShortId
-            </span>
-            <span className="font-mono text-sm font-semibold text-[var(--text-secondary)] select-all">
-              {profile.shortId || '---'}
             </span>
           </div>
 

@@ -1,14 +1,10 @@
 import { type Timestamp } from 'firebase/firestore';
 import { type ChipStyle } from './chip';
+import { type CollectibleBase } from './collectible';
 
-export interface Title {
-  id: string;
-  name: string;
-  description: string;
+export interface Title extends CollectibleBase {
   color: string;
   chipStyle?: ChipStyle;
-  createdAt: Timestamp;
-  createdBy: string;
 }
 
 export interface UserTitle {

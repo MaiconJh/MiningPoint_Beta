@@ -4,12 +4,10 @@ import {
   getDoc,
   getDocs,
   setDoc,
-  updateDoc,
   deleteDoc,
   deleteField,
   query,
   where,
-  orderBy,
   getCountFromServer,
   serverTimestamp,
   type DocumentData,
@@ -17,6 +15,7 @@ import {
 import { db } from './firebase';
 import { Title, UserTitle } from '../types/title';
 import { ChipStyle } from '../types/chip';
+import { createCollectibleRepository } from './collectibles';
 
 export interface TitleFormData {
   name: string;
@@ -47,79 +46,7 @@ const parseTitleDoc = (id: string, data: DocumentData): Title => {
   };
 };
 
-export const listTitles = async (): Promise<Title[]> => {
-  if (!db) return [];
-  try {
-    const q = query(collection(db, 'titles'), orderBy('name', 'asc'));
-    const snap = await getDocs(q);
-    const titles: Title[] = [];
-    snap.forEach((d) => {
-      titles.push(parseTitleDoc(d.id, d.data()));
-    });
-    return titles;
-  } catch (error) {
-    console.error('Error listing titles:', error);
-    return [];
-  }
-};
-
-export const getTitle = async (titleId: string): Promise<Title | null> => {
-  if (!db || !titleId) return null;
-  try {
-    const snap = await getDoc(doc(db, 'titles', titleId));
-    if (!snap.exists()) return null;
-    return parseTitleDoc(snap.id, snap.data());
-  } catch (error) {
-    console.error(`Error getting title ${titleId}:`, error);
-    return null;
-  }
-};
-
-export const createTitle = async (
-  data: TitleFormData,
-  createdBy: string
-): Promise<{ id: string }> => {
-  if (!db) throw new Error('Firebase DB indisponível');
-
-  const baseId =
-    data.name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '') || 'titulo';
-
-  const existing = await getDoc(doc(db, 'titles', baseId));
-  const docId = existing.exists() ? `${baseId}-${Date.now().toString(36)}` : baseId;
-
-  await setDoc(doc(db, 'titles', docId), {
-    name: data.name.trim(),
-    description: data.description.trim(),
-    color: data.color.trim() || '#8BD0EF',
-    chipStyle: data.chipStyle || null,
-    createdAt: serverTimestamp(),
-    createdBy,
-  });
-
-  return { id: docId };
-};
-
-export const updateTitle = async (
-  titleId: string,
-  data: Partial<TitleFormData>
-): Promise<void> => {
-  if (!db || !titleId) throw new Error('Parâmetros inválidos');
-
-  const updateData: Record<string, unknown> = { ...data };
-  if (data.chipStyle === undefined) {
-    updateData.chipStyle = deleteField();
-  }
-
-  await updateDoc(doc(db, 'titles', titleId), updateData);
-};
-
-export const countUsersWithTitle = async (titleId: string): Promise<number> => {
+const countUsersWithTitleInternal = async (titleId: string): Promise<number> => {
   if (!db || !titleId) return 0;
   try {
     const q = query(collection(db, 'userTitles'), where('titleId', '==', titleId));
@@ -131,29 +58,50 @@ export const countUsersWithTitle = async (titleId: string): Promise<number> => {
   }
 };
 
+const titleRepository = createCollectibleRepository<Title, TitleFormData>({
+  collectionName: 'titles',
+  fallbackSlug: 'titulo',
+  logItemName: 'title',
+  userCountErrorMessage: 'Não é possível excluir: há usuários com este título.',
+  deleteErrorMessage: 'Erro ao excluir o título.',
+  parse: parseTitleDoc,
+  formatCreatePayload: (data) => ({
+    name: data.name.trim(),
+    description: data.description.trim(),
+    color: data.color.trim() || '#8BD0EF',
+    chipStyle: data.chipStyle || null,
+  }),
+  formatUpdatePayload: (data) => {
+    const updateData: Record<string, unknown> = { ...data };
+    if (data.chipStyle === undefined) {
+      updateData.chipStyle = deleteField();
+    }
+    return updateData;
+  },
+  countUsersWith: countUsersWithTitleInternal,
+});
+
+export const listTitles = async (): Promise<Title[]> => titleRepository.list();
+
+export const getTitle = async (titleId: string): Promise<Title | null> =>
+  titleRepository.get(titleId);
+
+export const createTitle = async (
+  data: TitleFormData,
+  createdBy: string
+): Promise<{ id: string }> => titleRepository.create(data, createdBy);
+
+export const updateTitle = async (
+  titleId: string,
+  data: Partial<TitleFormData>
+): Promise<void> => titleRepository.update(titleId, data);
+
+export const countUsersWithTitle = async (titleId: string): Promise<number> =>
+  titleRepository.countUsersWith(titleId);
+
 export const deleteTitle = async (
   titleId: string
-): Promise<{ success: boolean; error?: string }> => {
-  if (!db || !titleId) {
-    return { success: false, error: 'Parâmetros inválidos.' };
-  }
-
-  const count = await countUsersWithTitle(titleId);
-  if (count > 0) {
-    return {
-      success: false,
-      error: 'Não é possível excluir: há usuários com este título.',
-    };
-  }
-
-  try {
-    await deleteDoc(doc(db, 'titles', titleId));
-    return { success: true };
-  } catch (error) {
-    console.error(`Error deleting title ${titleId}:`, error);
-    return { success: false, error: 'Erro ao excluir o título.' };
-  }
-};
+): Promise<{ success: boolean; error?: string }> => titleRepository.remove(titleId);
 
 export const listUsersWithTitle = async (titleId: string): Promise<UserWithTitleItem[]> => {
   if (!db || !titleId) return [];

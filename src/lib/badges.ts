@@ -4,11 +4,9 @@ import {
   getDoc,
   getDocs,
   setDoc,
-  updateDoc,
   deleteDoc,
   query,
   where,
-  orderBy,
   limit,
   getCountFromServer,
   serverTimestamp,
@@ -16,6 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Badge, UserBadge } from '../types/profile';
+import { createCollectibleRepository } from './collectibles';
 
 export interface BadgeFormData {
   name: string;
@@ -51,74 +50,7 @@ const parseBadgeDoc = (id: string, data: DocumentData): Badge => {
   };
 };
 
-export const listBadges = async (): Promise<Badge[]> => {
-  if (!db) return [];
-  try {
-    const q = query(collection(db, 'badges'), orderBy('name', 'asc'));
-    const snap = await getDocs(q);
-    const badges: Badge[] = [];
-    snap.forEach((d) => {
-      badges.push(parseBadgeDoc(d.id, d.data()));
-    });
-    return badges;
-  } catch (error) {
-    console.error('Error listing badges:', error);
-    return [];
-  }
-};
-
-export const getBadge = async (badgeId: string): Promise<Badge | null> => {
-  if (!db || !badgeId) return null;
-  try {
-    const snap = await getDoc(doc(db, 'badges', badgeId));
-    if (!snap.exists()) return null;
-    return parseBadgeDoc(snap.id, snap.data());
-  } catch (error) {
-    console.error(`Error getting badge ${badgeId}:`, error);
-    return null;
-  }
-};
-
-export const createBadge = async (
-  data: BadgeFormData,
-  createdBy: string
-): Promise<{ id: string }> => {
-  if (!db) throw new Error('Firebase DB indisponível');
-
-  const baseId =
-    data.name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '') || 'insignia';
-
-  const existing = await getDoc(doc(db, 'badges', baseId));
-  const docId = existing.exists() ? `${baseId}-${Date.now().toString(36)}` : baseId;
-
-  await setDoc(doc(db, 'badges', docId), {
-    name: data.name.trim(),
-    description: data.description.trim(),
-    icon: data.icon,
-    createdAt: serverTimestamp(),
-    createdBy,
-  });
-
-  return { id: docId };
-};
-
-export const updateBadge = async (
-  badgeId: string,
-  data: Partial<BadgeFormData>
-): Promise<void> => {
-  if (!db || !badgeId) throw new Error('Parâmetros inválidos');
-  await updateDoc(doc(db, 'badges', badgeId), {
-    ...data,
-  });
-};
-
-export const countUsersWithBadge = async (badgeId: string): Promise<number> => {
+const countUsersWithBadgeInternal = async (badgeId: string): Promise<number> => {
   if (!db || !badgeId) return 0;
   try {
     const q = query(collection(db, 'userBadges'), where('badgeId', '==', badgeId));
@@ -130,29 +62,42 @@ export const countUsersWithBadge = async (badgeId: string): Promise<number> => {
   }
 };
 
+const badgeRepository = createCollectibleRepository<Badge, BadgeFormData>({
+  collectionName: 'badges',
+  fallbackSlug: 'insignia',
+  logItemName: 'badge',
+  userCountErrorMessage: 'Não é possível excluir: há usuários com esta insígnia.',
+  deleteErrorMessage: 'Erro ao excluir a insígnia.',
+  parse: parseBadgeDoc,
+  formatCreatePayload: (data) => ({
+    name: data.name.trim(),
+    description: data.description.trim(),
+    icon: data.icon,
+  }),
+  countUsersWith: countUsersWithBadgeInternal,
+});
+
+export const listBadges = async (): Promise<Badge[]> => badgeRepository.list();
+
+export const getBadge = async (badgeId: string): Promise<Badge | null> =>
+  badgeRepository.get(badgeId);
+
+export const createBadge = async (
+  data: BadgeFormData,
+  createdBy: string
+): Promise<{ id: string }> => badgeRepository.create(data, createdBy);
+
+export const updateBadge = async (
+  badgeId: string,
+  data: Partial<BadgeFormData>
+): Promise<void> => badgeRepository.update(badgeId, data);
+
+export const countUsersWithBadge = async (badgeId: string): Promise<number> =>
+  badgeRepository.countUsersWith(badgeId);
+
 export const deleteBadge = async (
   badgeId: string
-): Promise<{ success: boolean; error?: string }> => {
-  if (!db || !badgeId) {
-    return { success: false, error: 'Parâmetros inválidos.' };
-  }
-
-  const count = await countUsersWithBadge(badgeId);
-  if (count > 0) {
-    return {
-      success: false,
-      error: 'Não é possível excluir: há usuários com esta insígnia.',
-    };
-  }
-
-  try {
-    await deleteDoc(doc(db, 'badges', badgeId));
-    return { success: true };
-  } catch (error) {
-    console.error(`Error deleting badge ${badgeId}:`, error);
-    return { success: false, error: 'Erro ao excluir a insígnia.' };
-  }
-};
+): Promise<{ success: boolean; error?: string }> => badgeRepository.remove(badgeId);
 
 export const listUsersWithBadge = async (badgeId: string): Promise<UserWithBadgeItem[]> => {
   if (!db || !badgeId) return [];
