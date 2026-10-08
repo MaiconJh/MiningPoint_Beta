@@ -2,8 +2,6 @@ import { type Timestamp } from 'firebase/firestore';
 
 export type CollectibleKind = 'badge' | 'title';
 
-export type Rarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
-
 export interface CollectibleBase {
   id: string;
   name: string;

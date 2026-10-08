@@ -57,10 +57,6 @@ const parseTitleDoc = (id: string, data: DocumentData): Title => {
   };
 };
 
-const countUsersWithTitleInternal = async (titleId: string): Promise<number> => {
-  return countUsersWithCollectible('title', titleId);
-};
-
 const titleRepository = createCollectibleRepository<Title, TitleFormData>({
   collectionName: 'titles',
   fallbackSlug: 'titulo',
@@ -103,7 +99,7 @@ const titleRepository = createCollectibleRepository<Title, TitleFormData>({
     return updateData;
   },
   clientSort: (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name),
-  countUsersWith: countUsersWithTitleInternal,
+  countUsersWith: (titleId) => countUsersWithCollectible('title', titleId),
 });
 
 export const listTitles = async (): Promise<Title[]> => titleRepository.list();

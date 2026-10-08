@@ -255,13 +255,13 @@ Banimento:
 - Um usuário banido **continua lendo** tudo o que lia antes.
 - Um usuário banido **não escreve em lugar nenhum**, e um admin banido perde o acesso ao painel.
 - Na edição do próprio perfil, o usuário só pode alterar bio, título exibido, visibilidade e insígnias destacadas; grupos, permissões, atributos e status de banimento exigem `manageUsers`.
-- Excluir uma conta pelo painel remove o documento do usuário e seus vínculos em `userBadges`. A remoção da conta no Firebase Auth exige Admin SDK ou Cloud Functions e está fora do escopo do cliente.
+- Excluir uma conta pelo painel remove o documento do usuário e seus vínculos em `userCollectibles`. A remoção da conta no Firebase Auth exige Admin SDK ou Cloud Functions e está fora do escopo do cliente.
 
 ## Insígnias, títulos e ícones
 
-**Insígnias** são definidas em `badges/{badgeId}` e concedidas por vínculos em `userBadges/{userId_badgeId}`. O membro escolhe até 4 insígnias destacadas em `/conta/perfil`, exibidas no carrossel do cabeçalho do perfil.
+**Insígnias** são definidas em `badges/{badgeId}` e concedidas por vínculos em `userCollectibles/{userId_badge_badgeId}`. O membro escolhe até 4 insígnias destacadas em `/conta/perfil`, exibidas no carrossel do cabeçalho do perfil.
 
-**Títulos** seguem o mesmo desenho, com `titles/{titleId}` e `userTitles/{userId_titleId}`. O título exibido é renderizado acima do nome no cabeçalho do perfil, com a cor definida no próprio título.
+**Títulos** seguem o mesmo desenho, com `titles/{titleId}` e vínculos em `userCollectibles/{userId_title_titleId}`. O título exibido é renderizado acima do nome no cabeçalho do perfil, com a cor definida no próprio título.
 
 **Ícones** vêm de duas origens: um registro curado de cerca de 300 ícones Lucide em 8 categorias (Geral, Comunidade, Exploração, Progresso, Itens, Conquistas, Tempo e Documentos) e ícones SVG customizados criados pela administração em `/admin/icones`. A referência aceita três formatos — `"shield"` (slug), `"lucide:shield"` (explícito) e `"custom:iconId"` (personalizado) — resolvidos centralizadamente, com fallback para o ícone `award`.
 
@@ -278,10 +278,13 @@ Firestore é o único banco (sem Realtime Database) e usa um banco nomeado, indi
 | `users/{uid}` | Perfil, grupos, permissões derivadas, atributos, visibilidade e banimento |
 | `groups/{groupId}` | Grupos de autoridade, cor, prioridade e permissões |
 | `badges/{badgeId}` | Definições de insígnias |
-| `userBadges/{userId_badgeId}` | Vínculos de insígnias concedidas a usuários |
-| `icons/{iconId}` | Ícones SVG customizados, já sanitizados |
 | `titles/{titleId}` | Definições de títulos |
-| `userTitles/{userId_titleId}` | Vínculos de títulos concedidos a usuários |
+| `icons/{iconId}` | Ícones SVG customizados, já sanitizados |
+| `userCollectibles/{userId_kind_itemId}` | Vínculos de insígnias e títulos concedidos a usuários |
+| `rarities/{rarityId}` | Níveis de raridade de colecionáveis (rótulo, cor, ordem) |
+| `catalogCategories/{categoryId}` | Categorias temáticas de colecionáveis |
+| `origins/{originId}` | Origens de obtenção (evento, conquista, lore, etc.) |
+| `collections/{collectionId}` | Conjuntos temáticos de colecionáveis |
 
 Coleções usam substantivos em inglês, minúsculos e no plural, e os campos são `camelCase` em inglês. O esquema completo de cada documento, incluindo os padrões de campos ausentes e as regras de migração, está em [PROJECT_STANDARDS.md](PROJECT_STANDARDS.md); o resumo de entidades está em [firebase-blueprint.json](firebase-blueprint.json).
 
@@ -289,7 +292,7 @@ Coleções usam substantivos em inglês, minúsculos e no plural, e os campos s�
 
 As regras de [firestore.rules](firestore.rules) partem de uma negação global (`allow read, write: if false`) e liberam apenas o necessário:
 
-- **Leitura** — catálogos (`groups`, `badges`, `userBadges`, `icons`, `titles`, `userTitles`) são públicos; `users` é legível pelo próprio dono, por quem tem `manageUsers` e para perfis com `visibility: 'public'`.
+- **Leitura** — catálogos (`groups`, `badges`, `titles`, `icons`, `userCollectibles`, `rarities`, `catalogCategories`, `origins`, `collections`) são públicos; `users` é legível pelo próprio dono, por quem tem `manageUsers` e para perfis com `visibility: 'public'`.
 - **Escrita** — sempre condicionada à permissão correspondente, e todo usuário banido é bloqueado por `!isBannedUser(uid)`.
 - **Autoedição** — o dono do perfil só altera campos de perfil, verificado por `onlyTouchesProfileFields()`.
 
