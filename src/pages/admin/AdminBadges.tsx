@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Badge } from '../../types/profile';
 import {
   listBadges,
@@ -15,17 +15,48 @@ import { BadgeForm } from '../../components/admin/BadgeForm';
 import { useAuth } from '../../context/AuthContext';
 import { Chip } from '../../components/chip/Chip';
 import { useRarities } from '../../hooks/useRarities';
+import { useCatalogCategories } from '../../hooks/useCatalogCategories';
+import { useOrigins } from '../../hooks/useOrigins';
+import { useCollections } from '../../hooks/useCollections';
+import { CollectibleFiltersBar } from '../../components/admin/CollectibleFiltersBar';
+import {
+  parseFiltersFromUrl,
+  filtersToSearchParams,
+  applyFilters,
+  groupCollectibles,
+  DEFAULT_FILTERS,
+  CollectibleListFilters,
+} from '../../lib/collectibleFilters';
 
 type ViewMode = 'list' | 'create' | 'edit';
 
 export const AdminBadges: React.FC = () => {
   const { user } = useAuth();
   const { customIcons } = useCustomIcons();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const { rarities } = useRarities();
-  const rarityMap = React.useMemo(
+  const { categories } = useCatalogCategories();
+  const { origins } = useOrigins();
+  const { collections } = useCollections();
+
+  const rarityMap = useMemo(
     () => new Map(rarities.map((r) => [r.id, r])),
     [rarities]
   );
+  const categoryMap = useMemo(
+    () => new Map(categories.map((c) => [c.id, c])),
+    [categories]
+  );
+  const originMap = useMemo(
+    () => new Map(origins.map((o) => [o.id, o])),
+    [origins]
+  );
+  const collectionMap = useMemo(
+    () => new Map(collections.map((col) => [col.id, col])),
+    [collections]
+  );
+
   const [badges, setBadges] = useState<Badge[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
@@ -33,6 +64,41 @@ export const AdminBadges: React.FC = () => {
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Filtros derivados da URL
+  const filters = useMemo(
+    () => parseFiltersFromUrl(searchParams),
+    [searchParams]
+  );
+
+  const handleFiltersChange = useCallback(
+    (next: CollectibleListFilters) => {
+      const nextParams = filtersToSearchParams(next);
+      setSearchParams(nextParams, { replace: true });
+    },
+    [setSearchParams]
+  );
+
+  const handleClearFilters = useCallback(() => {
+    setSearchParams(new URLSearchParams(), { replace: true });
+  }, [setSearchParams]);
+
+  // Itens filtrados e agrupados
+  const filteredBadges = useMemo(
+    () => applyFilters(badges, filters),
+    [badges, filters]
+  );
+
+  const groupedBadges = useMemo(
+    () =>
+      groupCollectibles(filteredBadges, filters.groupBy, {
+        rarities: rarityMap,
+        categories: categoryMap,
+        origins: originMap,
+        collections: collectionMap,
+      }),
+    [filteredBadges, filters.groupBy, rarityMap, categoryMap, originMap, collectionMap]
+  );
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -157,102 +223,137 @@ export const AdminBadges: React.FC = () => {
         </div>
       )}
 
-      {/* Catalog Table */}
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden shadow-sm">
-        {loading ? (
-          <div className="p-8 text-center text-sm text-[var(--text-muted)]">
-            Carregando...
-          </div>
-        ) : badges.length === 0 ? (
-          <div className="p-8 text-center text-sm text-[var(--text-secondary)]">
-            Nenhuma insígnia criada
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-[var(--border-subtle)] text-xs font-mono uppercase tracking-[0.08em] text-[var(--text-muted)]">
-                  <th className="py-3 px-4 sm:px-6">Ícone</th>
-                  <th className="py-3 px-4">Nome</th>
-                  <th className="py-3 px-4">Raridade</th>
-                  <th className="py-3 px-4 hidden sm:table-cell">Descrição</th>
-                  <th className="py-3 px-4 text-center">Usuários</th>
-                  <th className="py-3 px-4 sm:px-6 text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-subtle)] text-sm">
-                {badges.map((badge) => {
-                  const IconComponent = resolveIcon(badge.icon, customIcons);
-                  const userCount = counts[badge.id] ?? 0;
-                  const rarity = badge.rarityId ? rarityMap.get(badge.rarityId) : null;
+      {/* Barra de Filtros e Busca */}
+      <CollectibleFiltersBar
+        filters={filters}
+        onChange={handleFiltersChange}
+        onClear={handleClearFilters}
+        totalFiltered={filteredBadges.length}
+        totalItems={badges.length}
+      />
 
-                  return (
-                    <tr
-                      key={badge.id}
-                      className="hover:bg-[var(--bg-surface-elevated)] transition-colors"
-                    >
-                      {/* Icon */}
-                      <td className="py-4 px-4 sm:px-6 w-16">
-                        <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[color-mix(in_srgb,var(--brand-primary)_12%,transparent)] text-[var(--brand-primary)]">
-                          {IconComponent && <IconComponent className="w-6 h-6" />}
-                        </div>
-                      </td>
+      {/* Catalog Table(s) */}
+      {loading ? (
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden shadow-sm p-8 text-center text-sm text-[var(--text-muted)]">
+          Carregando...
+        </div>
+      ) : badges.length === 0 ? (
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden shadow-sm p-8 text-center text-sm text-[var(--text-secondary)]">
+          Nenhuma insígnia criada
+        </div>
+      ) : filteredBadges.length === 0 ? (
+        <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden shadow-sm p-8 text-center text-sm text-[var(--text-secondary)]">
+          Nenhuma insígnia corresponde aos filtros aplicados.
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {groupedBadges.map((group) => {
+            if (group.items.length === 0) return null;
 
-                      {/* Name with link to detail */}
-                      <td className="py-4 px-4 font-medium text-[var(--text-primary)]">
-                        <Link
-                          to={`/admin/insignias/${badge.id}`}
-                          className="hover:text-[var(--brand-primary)] transition-colors hover:underline"
-                        >
-                          {badge.name}
-                        </Link>
-                      </td>
+            return (
+              <div
+                key={group.key}
+                className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl overflow-hidden shadow-sm"
+              >
+                {filters.groupBy !== 'none' && (
+                  <div className="px-5 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-surface-elevated)] flex items-center justify-between">
+                    <h2 className="text-sm font-bold text-[var(--text-primary)] m-0">
+                      {group.label}
+                    </h2>
+                    <span className="text-xs font-mono text-[var(--text-muted)]">
+                      {group.items.length} {group.items.length === 1 ? 'item' : 'itens'}
+                    </span>
+                  </div>
+                )}
 
-                      {/* Rarity */}
-                      <td className="py-4 px-4">
-                        {rarity ? (
-                          <Chip label={rarity.label} color={rarity.color} />
-                        ) : (
-                          <span className="text-xs text-[var(--text-muted)]">—</span>
-                        )}
-                      </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-[var(--border-subtle)] text-xs font-mono uppercase tracking-[0.08em] text-[var(--text-muted)]">
+                        <th className="py-3 px-4 sm:px-6">Ícone</th>
+                        <th className="py-3 px-4">Nome</th>
+                        <th className="py-3 px-4">Raridade</th>
+                        <th className="py-3 px-4 hidden sm:table-cell">Descrição</th>
+                        <th className="py-3 px-4 text-center">Usuários</th>
+                        <th className="py-3 px-4 sm:px-6 text-right">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--border-subtle)] text-sm">
+                      {group.items.map((badge) => {
+                        const IconComponent = resolveIcon(badge.icon, customIcons);
+                        const userCount = counts[badge.id] ?? 0;
+                        const rarity = badge.rarityId ? rarityMap.get(badge.rarityId) : null;
 
-                      {/* Description */}
-                      <td className="py-4 px-4 text-[var(--text-secondary)] hidden sm:table-cell max-w-xs md:max-w-md truncate">
-                        {badge.description}
-                      </td>
-
-                      {/* Count of users */}
-                      <td className="py-4 px-4 text-center font-mono text-xs text-[var(--text-secondary)]">
-                        {userCount}
-                      </td>
-
-                      {/* Actions */}
-                      <td className="py-4 px-4 sm:px-6 text-right">
-                        <div className="inline-flex items-center gap-2 justify-end">
-                          <Link
-                            to={`/admin/insignias/${badge.id}`}
-                            className="px-2.5 py-1.5 rounded text-xs font-semibold border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] hover:border-[var(--brand-primary)] transition-colors cursor-pointer"
+                        return (
+                          <tr
+                            key={badge.id}
+                            className="hover:bg-[var(--bg-surface-elevated)] transition-colors"
                           >
-                            Atribuir
-                          </Link>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEdit(badge)}
-                            className="px-2.5 py-1.5 rounded text-xs font-semibold border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] hover:border-[var(--brand-primary)] transition-colors cursor-pointer"
-                          >
-                            Editar
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                            {/* Icon */}
+                            <td className="py-4 px-4 sm:px-6 w-16">
+                              <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-[color-mix(in_srgb,var(--brand-primary)_12%,transparent)] text-[var(--brand-primary)]">
+                                {IconComponent && <IconComponent className="w-6 h-6" />}
+                              </div>
+                            </td>
+
+                            {/* Name with link to detail */}
+                            <td className="py-4 px-4 font-medium text-[var(--text-primary)]">
+                              <Link
+                                to={`/admin/insignias/${badge.id}`}
+                                className="hover:text-[var(--brand-primary)] transition-colors hover:underline"
+                              >
+                                {badge.name}
+                              </Link>
+                            </td>
+
+                            {/* Rarity */}
+                            <td className="py-4 px-4">
+                              {rarity ? (
+                                <Chip label={rarity.label} color={rarity.color} />
+                              ) : (
+                                <span className="text-xs text-[var(--text-muted)]">—</span>
+                              )}
+                            </td>
+
+                            {/* Description */}
+                            <td className="py-4 px-4 text-[var(--text-secondary)] hidden sm:table-cell max-w-xs md:max-w-md truncate">
+                              {badge.description}
+                            </td>
+
+                            {/* Count of users */}
+                            <td className="py-4 px-4 text-center font-mono text-xs text-[var(--text-secondary)]">
+                              {userCount}
+                            </td>
+
+                            {/* Actions */}
+                            <td className="py-4 px-4 sm:px-6 text-right">
+                              <div className="inline-flex items-center gap-2 justify-end">
+                                <Link
+                                  to={`/admin/insignias/${badge.id}`}
+                                  className="px-2.5 py-1.5 rounded text-xs font-semibold border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] hover:border-[var(--brand-primary)] transition-colors cursor-pointer"
+                                >
+                                  Atribuir
+                                </Link>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEdit(badge)}
+                                  className="px-2.5 py-1.5 rounded text-xs font-semibold border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] hover:border-[var(--brand-primary)] transition-colors cursor-pointer"
+                                >
+                                  Editar
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
