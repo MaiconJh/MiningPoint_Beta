@@ -5,6 +5,8 @@ import {
   getDocs,
   setDoc,
   deleteDoc,
+  updateDoc,
+  arrayRemove,
   query,
   where,
   getCountFromServer,
@@ -56,11 +58,38 @@ export const grantCollectible = async (
 };
 
 /**
- * Revoga um vínculo de colecionável pelo ID do documento.
+ * Revoga um vínculo de colecionável pelo ID do documento e limpa referências em destaque.
  */
 export const revokeCollectible = async (userCollectibleId: string): Promise<void> => {
   if (!db || !userCollectibleId) throw new Error('Parâmetros inválidos');
-  await deleteDoc(doc(db, 'userCollectibles', userCollectibleId));
+  const linkRef = doc(db, 'userCollectibles', userCollectibleId);
+  const snap = await getDoc(linkRef);
+  await deleteDoc(linkRef);
+
+  if (snap.exists()) {
+    const data = snap.data();
+    const userId = data.userId;
+    const kind = data.kind;
+    const itemId = data.itemId;
+
+    if (userId && itemId) {
+      try {
+        const userRef = doc(db, 'users', userId);
+        if (kind === 'title') {
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists() && userSnap.data()?.featuredTitleId === itemId) {
+            await updateDoc(userRef, { featuredTitleId: null });
+          }
+        } else if (kind === 'badge') {
+          await updateDoc(userRef, {
+            featuredBadges: arrayRemove(itemId),
+          });
+        }
+      } catch (err) {
+        console.error(`Erro ao limpar destaque do usuário ${userId}:`, err);
+      }
+    }
+  }
 };
 
 /**

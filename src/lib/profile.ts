@@ -143,23 +143,31 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
     profile.primaryGroup = primaryGroup;
     profile.secondaryGroups = secondaryGroups;
 
-    // Resolve featured title if set
+    // Resolve featured title if set and link exists
     if (profile.featuredTitleId) {
       try {
-        const titleSnap = await getDoc(doc(db, 'titles', profile.featuredTitleId));
-        if (titleSnap.exists()) {
-          const tData = titleSnap.data();
-          profile.featuredTitle = {
-            id: titleSnap.id,
-            name: tData.name || '',
-            description: tData.description || '',
-            color: tData.color || '#8BD0EF',
-            chipStyle: tData.chipStyle,
-            createdAt: tData.createdAt,
-            createdBy: tData.createdBy || '',
-          } as Title;
+        const linkSnap = await getDoc(
+          doc(db, 'userCollectibles', `${uid}_title_${profile.featuredTitleId}`)
+        );
+        if (linkSnap.exists()) {
+          const titleSnap = await getDoc(doc(db, 'titles', profile.featuredTitleId));
+          if (titleSnap.exists()) {
+            const tData = titleSnap.data();
+            profile.featuredTitle = {
+              id: titleSnap.id,
+              name: tData.name || '',
+              description: tData.description || '',
+              color: tData.color || '#8BD0EF',
+              chipStyle: tData.chipStyle,
+              createdAt: tData.createdAt,
+              createdBy: tData.createdBy || '',
+            } as Title;
+          } else {
+            profile.featuredTitle = null;
+          }
         } else {
           profile.featuredTitle = null;
+          profile.featuredTitleId = null;
         }
       } catch (titleErr) {
         console.error(`Error resolving featured title ${profile.featuredTitleId}:`, titleErr);
