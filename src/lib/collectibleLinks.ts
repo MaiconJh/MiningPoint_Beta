@@ -8,6 +8,7 @@ import {
   query,
   where,
   getCountFromServer,
+  writeBatch,
   serverTimestamp,
   type Timestamp,
 } from 'firebase/firestore';
@@ -179,5 +180,30 @@ export const listUserCollectibles = async (
   } catch (error) {
     console.error(`Erro ao buscar colecionáveis do usuário ${uid}:`, error);
     return [];
+  }
+};
+
+/**
+ * Exclui todos os vínculos de colecionáveis de um usuário.
+ */
+export const deleteCollectiblesForUser = async (uid: string): Promise<void> => {
+  if (!db || !uid) return;
+  try {
+    const q = query(
+      collection(db, 'userCollectibles'),
+      where('userId', '==', uid)
+    );
+    const snap = await getDocs(q);
+    const BATCH_SIZE = 400;
+    const docs = snap.docs;
+
+    for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+      const chunk = docs.slice(i, i + BATCH_SIZE);
+      const batch = writeBatch(db);
+      chunk.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+  } catch (err) {
+    console.error(`Erro ao excluir colecionáveis do usuário ${uid}:`, err);
   }
 };

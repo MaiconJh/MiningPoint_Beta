@@ -23,6 +23,7 @@ import { normalizeUserProfile, getUserProfile } from './profile';
 import { deriveIsStaff, unionUserPermissions } from './permissions';
 import { validateHandle } from './handle';
 import { ensureUniqueShortId } from './shortId';
+import { deleteCollectiblesForUser } from './collectibleLinks';
 
 export interface ListUsersOptions {
   limitCount?: number;
@@ -294,21 +295,7 @@ export const deleteUser = async (uid: string): Promise<void> => {
   await deleteDoc(doc(db, 'users', uid));
 
   // 2. Delete all userCollectibles referencing uid
-  try {
-    const q = query(collection(db, 'userCollectibles'), where('userId', '==', uid));
-    const snap = await getDocs(q);
-    const BATCH_SIZE = 400;
-    const docs = snap.docs;
-
-    for (let i = 0; i < docs.length; i += BATCH_SIZE) {
-      const chunk = docs.slice(i, i + BATCH_SIZE);
-      const batch = writeBatch(db);
-      chunk.forEach((d) => batch.delete(d.ref));
-      await batch.commit();
-    }
-  } catch (err) {
-    console.error(`Error deleting userCollectibles for user ${uid}:`, err);
-  }
+  await deleteCollectiblesForUser(uid);
 };
 
 export const bulkAssignGroup = async (

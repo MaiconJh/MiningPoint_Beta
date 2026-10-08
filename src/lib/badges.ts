@@ -60,10 +60,6 @@ const parseBadgeDoc = (id: string, data: DocumentData): Badge => {
   };
 };
 
-const countUsersWithBadgeInternal = async (badgeId: string): Promise<number> => {
-  return countUsersWithCollectible('badge', badgeId);
-};
-
 const badgeRepository = createCollectibleRepository<Badge, BadgeFormData>({
   collectionName: 'badges',
   fallbackSlug: 'insignia',
@@ -96,7 +92,7 @@ const badgeRepository = createCollectibleRepository<Badge, BadgeFormData>({
     return payload;
   },
   clientSort: (a, b) => (a.order ?? 0) - (b.order ?? 0) || a.name.localeCompare(b.name),
-  countUsersWith: countUsersWithBadgeInternal,
+  countUsersWith: (badgeId) => countUsersWithCollectible('badge', badgeId),
 });
 
 export const listBadges = async (): Promise<Badge[]> => badgeRepository.list();

@@ -5,6 +5,7 @@ import {
   countUsersWithCollectible,
   listUsersWithCollectible,
   listUserCollectibles,
+  deleteCollectiblesForUser,
 } from './collectibleLinks';
 
 describe('collectibleLinks', () => {
@@ -35,6 +36,10 @@ describe('collectibleLinks', () => {
     it('retorna array vazio em listUserCollectibles quando uid for vazio', async () => {
       const items = await listUserCollectibles('');
       expect(items).toEqual([]);
+    });
+
+    it('não lança erro ao chamar deleteCollectiblesForUser com uid vazio', async () => {
+      await expect(deleteCollectiblesForUser('')).resolves.toBeUndefined();
     });
   });
 });
