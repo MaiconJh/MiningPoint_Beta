@@ -7,6 +7,7 @@ import {
   CollectibleCatalogFields,
   CollectibleCatalogFieldsValue,
 } from './CollectibleCatalogFields';
+import { LinkedCollectiblesPicker } from './LinkedCollectiblesPicker';
 
 interface TitleFormProps {
   initialTitle?: Title | null;
@@ -38,6 +39,9 @@ export const TitleForm: React.FC<TitleFormProps> = ({
     collectionId: initialTitle?.collectionId ?? null,
     order: initialTitle?.order ?? 0,
   });
+  const [linkedBadgeIds, setLinkedBadgeIds] = useState<string[]>(
+    initialTitle?.linkedBadgeIds || []
+  );
 
   const [localError, setLocalError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -72,6 +76,7 @@ export const TitleForm: React.FC<TitleFormProps> = ({
       originId: catalog.originId || null,
       collectionId: catalog.collectionId || null,
       order: typeof catalog.order === 'number' ? catalog.order : 0,
+      linkedBadgeIds,
     };
 
     try {
@@ -190,6 +195,16 @@ export const TitleForm: React.FC<TitleFormProps> = ({
         {/* Catálogo */}
         <div className="pt-2 border-t border-[var(--border-subtle)]">
           <CollectibleCatalogFields value={catalog} onChange={setCatalog} />
+        </div>
+
+        {/* Insígnias vinculadas */}
+        <div className="pt-2 border-t border-[var(--border-subtle)]">
+          <LinkedCollectiblesPicker
+            title="Insígnias vinculadas"
+            targetKind="badge"
+            selectedIds={linkedBadgeIds}
+            onChange={setLinkedBadgeIds}
+          />
         </div>
 
         {/* Action buttons */}

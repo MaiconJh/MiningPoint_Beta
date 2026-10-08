@@ -96,6 +96,7 @@
         "originId": { "type": ["string", "null"] },
         "collectionId": { "type": ["string", "null"] },
         "order": { "type": "number" },
+        "linkedTitleIds": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "string", "format": "date-time" },
         "createdBy": { "type": "string" }
       },
@@ -114,6 +115,7 @@
         "originId": { "type": ["string", "null"] },
         "collectionId": { "type": ["string", "null"] },
         "order": { "type": "number" },
+        "linkedBadgeIds": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "string", "format": "date-time" },
         "createdBy": { "type": "string" }
       },

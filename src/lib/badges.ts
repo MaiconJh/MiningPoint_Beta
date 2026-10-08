@@ -25,6 +25,7 @@ export interface BadgeFormData {
   originId?: string | null;
   collectionId?: string | null;
   order?: number;
+  linkedTitleIds?: string[];
 }
 
 export interface UserWithBadgeItem {
@@ -57,6 +58,7 @@ const parseBadgeDoc = (id: string, data: DocumentData): Badge => {
     originId: data.originId || null,
     collectionId: data.collectionId || null,
     order: typeof data.order === 'number' ? Math.max(0, Math.min(999, data.order)) : 0,
+    linkedTitleIds: Array.isArray(data.linkedTitleIds) ? data.linkedTitleIds : [],
   };
 };
 
@@ -76,6 +78,7 @@ const badgeRepository = createCollectibleRepository<Badge, BadgeFormData>({
     originId: data.originId || null,
     collectionId: data.collectionId || null,
     order: typeof data.order === 'number' && !isNaN(data.order) ? Math.max(0, Math.min(999, data.order)) : 0,
+    linkedTitleIds: data.linkedTitleIds ?? [],
   }),
   formatUpdatePayload: (data) => {
     const payload: Record<string, unknown> = {};
@@ -88,6 +91,9 @@ const badgeRepository = createCollectibleRepository<Badge, BadgeFormData>({
     if (data.collectionId !== undefined) payload.collectionId = data.collectionId || null;
     if (data.order !== undefined) {
       payload.order = typeof data.order === 'number' && !isNaN(data.order) ? Math.max(0, Math.min(999, data.order)) : 0;
+    }
+    if (data.linkedTitleIds !== undefined) {
+      payload.linkedTitleIds = data.linkedTitleIds;
     }
     return payload;
   },
@@ -136,7 +142,20 @@ export const grantBadge = async (
   badgeId: string,
   awardedBy: string
 ): Promise<string> => {
-  return grantCollectible(userId, 'badge', badgeId, awardedBy);
+  const result = await grantCollectible(userId, 'badge', badgeId, awardedBy);
+  try {
+    const badge = await getBadge(badgeId);
+    if (badge && Array.isArray(badge.linkedTitleIds) && badge.linkedTitleIds.length > 0) {
+      await Promise.all(
+        badge.linkedTitleIds.map((targetTitleId) =>
+          grantCollectible(userId, 'title', targetTitleId, awardedBy)
+        )
+      );
+    }
+  } catch (err) {
+    console.error('Erro ao propagar ganchos da insígnia:', err);
+  }
+  return result;
 };
 
 export const revokeBadge = async (userBadgeId: string): Promise<void> => {

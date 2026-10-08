@@ -5,6 +5,7 @@ import { type CollectibleBase } from './collectible';
 export interface Title extends CollectibleBase {
   color: string;
   chipStyle?: ChipStyle;
+  linkedBadgeIds?: string[];
 }
 
 export interface UserTitle {

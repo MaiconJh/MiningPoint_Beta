@@ -48,6 +48,7 @@ export interface UserProfile {
 
 export interface Badge extends CollectibleBase {
   icon: string;
+  linkedTitleIds?: string[];
 }
 
 export interface UserBadge {

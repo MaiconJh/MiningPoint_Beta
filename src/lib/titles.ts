@@ -26,6 +26,7 @@ export interface TitleFormData {
   originId?: string | null;
   collectionId?: string | null;
   order?: number;
+  linkedBadgeIds?: string[];
 }
 
 export interface UserWithTitleItem {
@@ -52,6 +53,7 @@ const parseTitleDoc = (id: string, data: DocumentData): Title => {
     originId: data.originId || null,
     collectionId: data.collectionId || null,
     order: typeof data.order === 'number' ? Math.max(0, Math.min(999, data.order)) : 0,
+    linkedBadgeIds: Array.isArray(data.linkedBadgeIds) ? data.linkedBadgeIds : [],
   };
 };
 
@@ -76,6 +78,7 @@ const titleRepository = createCollectibleRepository<Title, TitleFormData>({
     originId: data.originId || null,
     collectionId: data.collectionId || null,
     order: typeof data.order === 'number' && !isNaN(data.order) ? Math.max(0, Math.min(999, data.order)) : 0,
+    linkedBadgeIds: data.linkedBadgeIds ?? [],
   }),
   formatUpdatePayload: (data) => {
     const updateData: Record<string, unknown> = {};
@@ -93,6 +96,9 @@ const titleRepository = createCollectibleRepository<Title, TitleFormData>({
     if (data.collectionId !== undefined) updateData.collectionId = data.collectionId || null;
     if (data.order !== undefined) {
       updateData.order = typeof data.order === 'number' && !isNaN(data.order) ? Math.max(0, Math.min(999, data.order)) : 0;
+    }
+    if (data.linkedBadgeIds !== undefined) {
+      updateData.linkedBadgeIds = data.linkedBadgeIds;
     }
     return updateData;
   },
@@ -141,7 +147,20 @@ export const grantTitle = async (
   titleId: string,
   awardedBy: string
 ): Promise<string> => {
-  return grantCollectible(userId, 'title', titleId, awardedBy);
+  const result = await grantCollectible(userId, 'title', titleId, awardedBy);
+  try {
+    const title = await getTitle(titleId);
+    if (title && Array.isArray(title.linkedBadgeIds) && title.linkedBadgeIds.length > 0) {
+      await Promise.all(
+        title.linkedBadgeIds.map((targetBadgeId) =>
+          grantCollectible(userId, 'badge', targetBadgeId, awardedBy)
+        )
+      );
+    }
+  } catch (err) {
+    console.error('Erro ao propagar ganchos do título:', err);
+  }
+  return result;
 };
 
 export const revokeTitle = async (userTitleId: string): Promise<void> => {
