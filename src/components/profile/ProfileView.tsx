@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useProfile } from '../../hooks/useProfile';
 import { useAuth } from '../../context/AuthContext';
 import { FeaturedBadgesMode } from '../../lib/featuredBadges';
-import { updateUserDocFields } from '../../lib/users';
 import { ProfileBanner } from './ProfileBanner';
 import { ProfileHeader } from './ProfileHeader';
 import { ProfileTabs, ProfileTabId } from './ProfileTabs';
@@ -31,23 +30,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ userId, ownMode }) => 
   } = useProfile(userId);
   const { profile: authProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<ProfileTabId>('feed');
-  const [modeOverride, setModeOverride] = useState<FeaturedBadgesMode | null>(null);
 
   // Use live authProfile in ownMode to ensure immediate reactive UI updates
   const profile = ownMode && authProfile ? authProfile : fetchedProfile;
-  const currentMode: FeaturedBadgesMode =
-    modeOverride ?? profile?.featuredBadgesMode ?? 'manual';
-
-  const handleModeChange = async (nextMode: FeaturedBadgesMode) => {
-    setModeOverride(nextMode);
-    if (ownMode && profile?.uid) {
-      try {
-        await updateUserDocFields(profile.uid, { featuredBadgesMode: nextMode });
-      } catch (err) {
-        console.error('Erro ao persistir featuredBadgesMode:', err);
-      }
-    }
-  };
+  const displayMode: FeaturedBadgesMode = profile?.featuredBadgesMode ?? 'manual';
 
   if (loading && !profile) {
     return <ProfileSkeleton />;
@@ -78,8 +64,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ userId, ownMode }) => 
         {/* 1. Banner */}
         <ProfileBanner
           featuredBadges={featuredBadges}
-          mode={currentMode}
-          onModeChange={handleModeChange}
+          mode={displayMode}
+          showModeToggle={false}
         />
 
         {/* 2. Header row */}
