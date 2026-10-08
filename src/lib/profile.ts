@@ -89,6 +89,7 @@ export const normalizeUserProfile = (data: DocumentData, uid: string): UserProfi
     featuredTitle: null,
     visibility: data.visibility === 'private' ? 'private' : 'public',
     featuredBadges: Array.isArray(data.featuredBadges) ? data.featuredBadges : [],
+    featuredBadgesMode: data.featuredBadgesMode === 'auto' ? 'auto' : 'manual',
     attributes,
     isBanned: typeof data.isBanned === 'boolean' ? data.isBanned : false,
     bannedAt: data.bannedAt ?? null,

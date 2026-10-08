@@ -1,5 +1,6 @@
 import React from 'react';
 import { UserProfile, FeaturedBadgeItem } from '../../types/profile';
+import { FeaturedBadgesMode } from '../../lib/featuredBadges';
 import { ProfileBanner } from '../profile/ProfileBanner';
 import { ProfileHeader } from '../profile/ProfileHeader';
 import { ProfileTabs } from '../profile/ProfileTabs';
@@ -7,15 +8,21 @@ import { ProfileTabs } from '../profile/ProfileTabs';
 interface ProfilePreviewCardProps {
   profile: UserProfile;
   featuredBadges: FeaturedBadgeItem[];
+  onModeChange?: (nextMode: FeaturedBadgesMode) => void;
 }
 
 export const ProfilePreviewCard: React.FC<ProfilePreviewCardProps> = ({
   profile,
   featuredBadges,
+  onModeChange,
 }) => {
   return (
     <div className="rounded-[12px] bg-[var(--bg-surface)] border border-[var(--border-default)] shadow-sm overflow-hidden">
-      <ProfileBanner featuredBadges={featuredBadges} />
+      <ProfileBanner
+        featuredBadges={featuredBadges}
+        mode={profile.featuredBadgesMode || 'manual'}
+        onModeChange={onModeChange}
+      />
       <ProfileHeader profile={profile} />
       <ProfileTabs activeTab="sobre" onChangeTab={() => {}} ownMode={false} readOnly />
       <div className="p-6">

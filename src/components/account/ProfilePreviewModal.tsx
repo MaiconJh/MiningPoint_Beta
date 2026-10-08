@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { UserProfile, FeaturedBadgeItem } from '../../types/profile';
+import { FeaturedBadgesMode } from '../../lib/featuredBadges';
 import { ProfilePreviewCard } from './ProfilePreviewCard';
 
 interface ProfilePreviewModalProps {
@@ -8,6 +9,7 @@ interface ProfilePreviewModalProps {
   profile: UserProfile;
   featuredBadges: FeaturedBadgeItem[];
   visibility: 'public' | 'private';
+  onModeChange?: (nextMode: FeaturedBadgesMode) => void;
 }
 
 export const ProfilePreviewModal: React.FC<ProfilePreviewModalProps> = ({
@@ -16,6 +18,7 @@ export const ProfilePreviewModal: React.FC<ProfilePreviewModalProps> = ({
   profile,
   featuredBadges,
   visibility,
+  onModeChange,
 }) => {
   useEffect(() => {
     if (!isOpen) return;
@@ -80,7 +83,11 @@ export const ProfilePreviewModal: React.FC<ProfilePreviewModalProps> = ({
           </button>
         </div>
 
-        <ProfilePreviewCard profile={profile} featuredBadges={featuredBadges} />
+        <ProfilePreviewCard
+          profile={profile}
+          featuredBadges={featuredBadges}
+          onModeChange={onModeChange}
+        />
       </div>
     </div>
   );

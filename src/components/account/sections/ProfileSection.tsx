@@ -108,6 +108,7 @@ export const ProfileSection: React.FC = () => {
       ? titlesMap.get(draft.featuredTitleId) ?? null
       : null,
     visibility: draft.visibility,
+    featuredBadgesMode: draft.featuredBadgesMode,
   };
 
   return (
@@ -277,6 +278,7 @@ export const ProfileSection: React.FC = () => {
         profile={previewProfile}
         featuredBadges={featuredBadgeItems}
         visibility={draft.visibility}
+        onModeChange={(newMode) => setField('featuredBadgesMode', newMode)}
       />
     </div>
   );

@@ -1,12 +1,19 @@
 import React from 'react';
 import { FeaturedBadgeItem } from '../../types/profile';
+import { FeaturedBadgesMode } from '../../lib/featuredBadges';
 import { BadgeCarousel } from './BadgeCarousel';
 
-interface ProfileBannerProps {
+export interface ProfileBannerProps {
   featuredBadges: FeaturedBadgeItem[];
+  mode?: FeaturedBadgesMode;
+  onModeChange?: (nextMode: FeaturedBadgesMode) => void;
 }
 
-export const ProfileBanner: React.FC<ProfileBannerProps> = ({ featuredBadges }) => {
+export const ProfileBanner: React.FC<ProfileBannerProps> = ({
+  featuredBadges,
+  mode,
+  onModeChange,
+}) => {
   return (
     <div className="relative w-full h-[200px] rounded-t-[11px]">
       {/* Texture & Gradients layer */}
@@ -44,7 +51,11 @@ export const ProfileBanner: React.FC<ProfileBannerProps> = ({ featuredBadges }) 
 
       {/* Badge Carousel anchored to bottom-right (16px from right, 14px from bottom) */}
       <div className="absolute right-[16px] bottom-[14px] z-10">
-        <BadgeCarousel items={featuredBadges} />
+        <BadgeCarousel
+          items={featuredBadges}
+          mode={mode}
+          onModeChange={onModeChange}
+        />
       </div>
 
       {/* 3px accent strip at the bottom edge */}

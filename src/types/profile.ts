@@ -39,6 +39,7 @@ export interface UserProfile {
   featuredTitle?: Title | null;
   visibility: UserVisibility;
   featuredBadges: string[];
+  featuredBadgesMode?: 'manual' | 'auto';
   attributes: UserAttributes;
   isBanned?: boolean;
   bannedAt?: Timestamp | Date | string | null;

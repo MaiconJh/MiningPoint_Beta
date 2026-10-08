@@ -83,6 +83,7 @@ users/{uid}
   featuredTitleId: string | null // null by default, chosen by user
   visibility: 'public' | 'private'  // 'public' by default
   featuredBadges: string[]       // [] by default, max 8
+  featuredBadgesMode: 'manual' | 'auto' // 'manual' por padrão, ordenação no carrossel
   attributes: {
     exploration: number          // 0-100
     gathering: number

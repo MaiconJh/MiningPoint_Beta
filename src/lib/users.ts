@@ -561,7 +561,7 @@ export const adminSetHandle = async (uid: string, rawHandle: string | null): Pro
 
 export const updateUserDocFields = async (
   uid: string,
-  fields: Partial<Pick<UserProfile, 'displayName' | 'photoURL' | 'bio' | 'featuredTitleId' | 'featuredBadges'>>
+  fields: Partial<Pick<UserProfile, 'displayName' | 'photoURL' | 'bio' | 'featuredTitleId' | 'featuredBadges' | 'featuredBadgesMode'>>
 ): Promise<void> => {
   if (!db || !uid) return;
   await updateDoc(doc(db, 'users', uid), fields);

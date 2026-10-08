@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, UserVisibility } from '../types/profile';
+import { FeaturedBadgesMode } from '../lib/featuredBadges';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { setHandle, redefineHandle } from '../lib/users';
@@ -11,6 +12,7 @@ export interface ProfileDraftState {
   featuredTitleId: string | null;
   visibility: UserVisibility;
   featuredBadges: string[];
+  featuredBadgesMode: FeaturedBadgesMode;
   handle: string | null;
 }
 
@@ -33,6 +35,7 @@ export const useProfileDraft = (profile: UserProfile | null): UseProfileDraftRes
       featuredTitleId: profile?.featuredTitleId || null,
       visibility: profile?.visibility === 'private' ? 'private' : 'public',
       featuredBadges: profile?.featuredBadges || [],
+      featuredBadgesMode: profile?.featuredBadgesMode === 'auto' ? 'auto' : 'manual',
       handle: profile?.handle || null,
     };
   }, [
@@ -40,6 +43,7 @@ export const useProfileDraft = (profile: UserProfile | null): UseProfileDraftRes
     profile?.featuredTitleId,
     profile?.visibility,
     profile?.featuredBadges,
+    profile?.featuredBadgesMode,
     profile?.handle,
   ]);
 
@@ -71,7 +75,10 @@ export const useProfileDraft = (profile: UserProfile | null): UseProfileDraftRes
       draft.featuredBadges.length !== origBadges.length ||
       draft.featuredBadges.some((id, idx) => id !== origBadges[idx]);
 
-    return bioChanged || titleChanged || visChanged || handleChanged || badgesChanged;
+    const modeChanged =
+      draft.featuredBadgesMode !== (profile.featuredBadgesMode || 'manual');
+
+    return bioChanged || titleChanged || visChanged || handleChanged || badgesChanged || modeChanged;
   }, [draft, profile]);
 
   const reset = useCallback(() => {
@@ -118,6 +125,9 @@ export const useProfileDraft = (profile: UserProfile | null): UseProfileDraftRes
 
       if (badgesChanged) {
         updates.featuredBadges = draft.featuredBadges;
+      }
+      if (draft.featuredBadgesMode !== (profile.featuredBadgesMode || 'manual')) {
+        updates.featuredBadgesMode = draft.featuredBadgesMode;
       }
 
       if (Object.keys(updates).length > 0) {

@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { FeaturedBadgeItem } from '../../types/profile';
+import { Rarity } from '../../types/rarity';
+import { FeaturedBadgesMode, sortFeaturedBadges } from '../../lib/featuredBadges';
 import { resolveIcon } from '../../data/icons/iconRegistry';
 import { useCustomIcons } from '../../hooks/useCustomIcons';
+import { useRarities } from '../../hooks/useRarities';
 
-interface BadgeCarouselProps {
+export interface BadgeCarouselProps {
   items: FeaturedBadgeItem[];
+  mode?: FeaturedBadgesMode;
+  onModeChange?: (nextMode: FeaturedBadgesMode) => void;
 }
 
 const formatAwardedAt = (awardedAt?: unknown): string => {
@@ -25,9 +30,40 @@ const formatAwardedAt = (awardedAt?: unknown): string => {
   });
 };
 
-export const BadgeCarousel: React.FC<BadgeCarouselProps> = ({ items }) => {
+export const BadgeCarousel: React.FC<BadgeCarouselProps> = ({
+  items,
+  mode: modeProp,
+  onModeChange,
+}) => {
   const [activeTooltipId, setActiveTooltipId] = useState<string | null>(null);
+  const [internalMode, setInternalMode] = useState<FeaturedBadgesMode>(
+    modeProp ?? 'manual'
+  );
   const { customIcons } = useCustomIcons();
+  const { rarities } = useRarities();
+
+  useEffect(() => {
+    if (modeProp !== undefined) {
+      setInternalMode(modeProp);
+    }
+  }, [modeProp]);
+
+  const currentMode = modeProp !== undefined ? modeProp : internalMode;
+
+  const raritiesMap = useMemo(() => {
+    const map = new Map<string, Rarity>();
+    rarities.forEach((r) => map.set(r.id, r));
+    return map;
+  }, [rarities]);
+
+  const displayItems = useMemo(() => {
+    return sortFeaturedBadges(items, currentMode, raritiesMap);
+  }, [items, currentMode, raritiesMap]);
+
+  const handleSelectMode = (nextMode: FeaturedBadgesMode) => {
+    setInternalMode(nextMode);
+    onModeChange?.(nextMode);
+  };
 
   if (!items || items.length === 0) {
     return null;
@@ -35,7 +71,47 @@ export const BadgeCarousel: React.FC<BadgeCarouselProps> = ({ items }) => {
 
   return (
     <div className="flex items-center gap-2">
-      {items.map(({ badge, userBadge }) => {
+      {/* Toggle Manual / Auto */}
+      <div
+        role="group"
+        aria-label="Modo de exibição das insígnias"
+        className="flex items-center rounded-full p-0.5 border backdrop-blur-xs"
+        /* Contraste deliberado sobre o banner escuro */
+        /* eslint-disable-next-line design-tokens/no-raw-color-literals */
+        style={{
+          backgroundColor: 'rgba(16, 19, 24, 0.65)',
+          borderColor: 'rgba(255, 255, 255, 0.22)',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => handleSelectMode('manual')}
+          aria-pressed={currentMode === 'manual'}
+          title="Modo Manual: ordem de seleção"
+          className={`px-2 py-0.5 text-[10px] sm:text-[11px] font-medium rounded-full transition-all cursor-pointer ${
+            currentMode === 'manual'
+              ? 'bg-[var(--brand-primary)] text-[var(--text-on-primary)] font-semibold shadow-xs'
+              : 'text-[rgba(255,255,255,0.7)] hover:text-[rgba(255,255,255,0.95)]'
+          }`}
+        >
+          Manual
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSelectMode('auto')}
+          aria-pressed={currentMode === 'auto'}
+          title="Modo Automático: ordenado por raridade, ordem e nome"
+          className={`px-2 py-0.5 text-[10px] sm:text-[11px] font-medium rounded-full transition-all cursor-pointer ${
+            currentMode === 'auto'
+              ? 'bg-[var(--brand-primary)] text-[var(--text-on-primary)] font-semibold shadow-xs'
+              : 'text-[rgba(255,255,255,0.7)] hover:text-[rgba(255,255,255,0.95)]'
+          }`}
+        >
+          Auto
+        </button>
+      </div>
+
+      {displayItems.map(({ badge, userBadge }) => {
         const isHovered = activeTooltipId === badge.id;
         const awardedDate = formatAwardedAt(userBadge.awardedAt);
         const IconComponent = resolveIcon(badge.icon, customIcons);
