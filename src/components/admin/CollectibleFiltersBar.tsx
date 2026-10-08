@@ -7,6 +7,7 @@ import { useRarities } from '../../hooks/useRarities';
 import { useCatalogCategories } from '../../hooks/useCatalogCategories';
 import { useOrigins } from '../../hooks/useOrigins';
 import { useCollections } from '../../hooks/useCollections';
+import { Chip } from '../chip/Chip';
 
 interface CollectibleFiltersBarProps {
   filters: CollectibleListFilters;
@@ -15,6 +16,14 @@ interface CollectibleFiltersBarProps {
   totalFiltered: number;
   totalItems: number;
 }
+
+const ORDER_PRESETS = [
+  { label: 'Todos', min: null, max: null },
+  { label: '0 – 10', min: 0, max: 10 },
+  { label: '11 – 50', min: 11, max: 50 },
+  { label: '51 – 100', min: 51, max: 100 },
+  { label: '101+', min: 101, max: null },
+] as const;
 
 export const CollectibleFiltersBar: React.FC<CollectibleFiltersBarProps> = ({
   filters,
@@ -54,14 +63,45 @@ export const CollectibleFiltersBar: React.FC<CollectibleFiltersBarProps> = ({
   const { origins } = useOrigins();
   const { collections } = useCollections();
 
-  const handleMultiSelectChange = (
+  // Identificação do preset de ordem ativo
+  const matchingPresetIndex = ORDER_PRESETS.findIndex(
+    (p) => p.min === filters.orderMin && p.max === filters.orderMax
+  );
+
+  const [isCustomOrder, setIsCustomOrder] = useState<boolean>(() => {
+    return filters.orderMin !== null || filters.orderMax !== null
+      ? matchingPresetIndex === -1
+      : false;
+  });
+
+  useEffect(() => {
+    if (filters.orderMin === null && filters.orderMax === null) {
+      setIsCustomOrder(false);
+    } else if (matchingPresetIndex === -1) {
+      setIsCustomOrder(true);
+    }
+  }, [filters.orderMin, filters.orderMax, matchingPresetIndex]);
+
+  const toggleId = (
     field: 'rarityIds' | 'categoryIds' | 'originIds' | 'collectionIds',
-    e: React.ChangeEvent<HTMLSelectElement>
+    id: string
   ) => {
-    const selected = Array.from(e.target.selectedOptions).map((opt) => opt.value);
+    const current = filters[field];
+    const next = current.includes(id)
+      ? current.filter((x) => x !== id)
+      : [...current, id];
     onChange({
       ...filters,
-      [field]: selected,
+      [field]: next,
+    });
+  };
+
+  const handleOrderPresetSelect = (min: number | null, max: number | null) => {
+    setIsCustomOrder(false);
+    onChange({
+      ...filters,
+      orderMin: min,
+      orderMax: max,
     });
   };
 
@@ -185,145 +225,239 @@ export const CollectibleFiltersBar: React.FC<CollectibleFiltersBarProps> = ({
       </div>
 
       {/* Grid de Filtros de Catálogo: Raridade, Categoria, Origem, Coleção */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Raridade */}
-        <div className="space-y-1">
-          <label
-            htmlFor="filter-rarity"
-            className="block text-xs font-semibold uppercase tracking-[0.05em] text-[var(--text-secondary)]"
-          >
+        <div className="space-y-1.5">
+          <span className="block text-xs font-semibold uppercase tracking-[0.05em] text-[var(--text-secondary)]">
             Raridade {filters.rarityIds.length > 0 && `(${filters.rarityIds.length})`}
-          </label>
-          <select
-            id="filter-rarity"
-            multiple
-            size={3}
-            disabled={filters.unclassified}
-            value={filters.rarityIds}
-            onChange={(e) => handleMultiSelectChange('rarityIds', e)}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--brand-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {rarities.map((r) => (
-              <option key={r.id} value={r.id} className="py-0.5">
-                {r.label}
-              </option>
-            ))}
-          </select>
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {rarities.length === 0 ? (
+              <span className="text-xs text-[var(--text-muted)] italic">Nenhuma raridade</span>
+            ) : (
+              rarities.map((r) => {
+                const isSelected = filters.rarityIds.includes(r.id);
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    disabled={filters.unclassified}
+                    onClick={() => toggleId('rarityIds', r.id)}
+                    aria-pressed={isSelected}
+                    className={`p-0.5 rounded-full transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                      isSelected
+                        ? 'ring-2 ring-[var(--brand-primary)] ring-offset-1 ring-offset-[var(--bg-surface)]'
+                        : 'hover:opacity-80'
+                    }`}
+                  >
+                    <Chip label={r.label} color={r.color} />
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
 
         {/* Categoria */}
-        <div className="space-y-1">
-          <label
-            htmlFor="filter-category"
-            className="block text-xs font-semibold uppercase tracking-[0.05em] text-[var(--text-secondary)]"
-          >
+        <div className="space-y-1.5">
+          <span className="block text-xs font-semibold uppercase tracking-[0.05em] text-[var(--text-secondary)]">
             Categoria {filters.categoryIds.length > 0 && `(${filters.categoryIds.length})`}
-          </label>
-          <select
-            id="filter-category"
-            multiple
-            size={3}
-            disabled={filters.unclassified}
-            value={filters.categoryIds}
-            onChange={(e) => handleMultiSelectChange('categoryIds', e)}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--brand-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {categories.map((c) => (
-              <option key={c.id} value={c.id} className="py-0.5">
-                {c.name}
-              </option>
-            ))}
-          </select>
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {categories.length === 0 ? (
+              <span className="text-xs text-[var(--text-muted)] italic">Nenhuma categoria</span>
+            ) : (
+              categories.map((c) => {
+                const isSelected = filters.categoryIds.includes(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    disabled={filters.unclassified}
+                    onClick={() => toggleId('categoryIds', c.id)}
+                    aria-pressed={isSelected}
+                    title={c.name}
+                    className={`px-2.5 py-1 rounded-full border text-xs font-medium transition-colors cursor-pointer max-w-[180px] truncate disabled:opacity-40 disabled:cursor-not-allowed ${
+                      isSelected
+                        ? 'border-[var(--brand-primary)] bg-[color-mix(in_srgb,var(--brand-primary)_15%,transparent)] text-[var(--text-primary)] font-semibold'
+                        : 'border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]'
+                    }`}
+                  >
+                    {c.name}
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
 
         {/* Origem */}
-        <div className="space-y-1">
-          <label
-            htmlFor="filter-origin"
-            className="block text-xs font-semibold uppercase tracking-[0.05em] text-[var(--text-secondary)]"
-          >
+        <div className="space-y-1.5">
+          <span className="block text-xs font-semibold uppercase tracking-[0.05em] text-[var(--text-secondary)]">
             Origem {filters.originIds.length > 0 && `(${filters.originIds.length})`}
-          </label>
-          <select
-            id="filter-origin"
-            multiple
-            size={3}
-            disabled={filters.unclassified}
-            value={filters.originIds}
-            onChange={(e) => handleMultiSelectChange('originIds', e)}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--brand-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {origins.map((o) => (
-              <option key={o.id} value={o.id} className="py-0.5">
-                {o.name}
-              </option>
-            ))}
-          </select>
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {origins.length === 0 ? (
+              <span className="text-xs text-[var(--text-muted)] italic">Nenhuma origem</span>
+            ) : (
+              origins.map((o) => {
+                const isSelected = filters.originIds.includes(o.id);
+                return (
+                  <button
+                    key={o.id}
+                    type="button"
+                    disabled={filters.unclassified}
+                    onClick={() => toggleId('originIds', o.id)}
+                    aria-pressed={isSelected}
+                    title={o.name}
+                    className={`px-2.5 py-1 rounded-full border text-xs font-medium transition-colors cursor-pointer max-w-[180px] truncate disabled:opacity-40 disabled:cursor-not-allowed ${
+                      isSelected
+                        ? 'border-[var(--brand-primary)] bg-[color-mix(in_srgb,var(--brand-primary)_15%,transparent)] text-[var(--text-primary)] font-semibold'
+                        : 'border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]'
+                    }`}
+                  >
+                    {o.name}
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
 
         {/* Coleção */}
-        <div className="space-y-1">
-          <label
-            htmlFor="filter-collection"
-            className="block text-xs font-semibold uppercase tracking-[0.05em] text-[var(--text-secondary)]"
-          >
+        <div className="space-y-1.5">
+          <span className="block text-xs font-semibold uppercase tracking-[0.05em] text-[var(--text-secondary)]">
             Coleção {filters.collectionIds.length > 0 && `(${filters.collectionIds.length})`}
-          </label>
-          <select
-            id="filter-collection"
-            multiple
-            size={3}
-            disabled={filters.unclassified}
-            value={filters.collectionIds}
-            onChange={(e) => handleMultiSelectChange('collectionIds', e)}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--brand-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {collections.map((col) => (
-              <option key={col.id} value={col.id} className="py-0.5">
-                {col.name}
-              </option>
-            ))}
-          </select>
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {collections.length === 0 ? (
+              <span className="text-xs text-[var(--text-muted)] italic">Nenhuma coleção</span>
+            ) : (
+              collections.map((col) => {
+                const isSelected = filters.collectionIds.includes(col.id);
+                return (
+                  <button
+                    key={col.id}
+                    type="button"
+                    disabled={filters.unclassified}
+                    onClick={() => toggleId('collectionIds', col.id)}
+                    aria-pressed={isSelected}
+                    title={col.name}
+                    className={`px-2.5 py-1 rounded-full border text-xs font-medium transition-colors cursor-pointer max-w-[180px] truncate disabled:opacity-40 disabled:cursor-not-allowed ${
+                      isSelected
+                        ? 'border-[var(--brand-primary)] bg-[color-mix(in_srgb,var(--brand-primary)_15%,transparent)] text-[var(--text-primary)] font-semibold'
+                        : 'border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]'
+                    }`}
+                  >
+                    {col.name}
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Linha inferior: Faixa de Ordem + Checkbox Sem Classificação */}
+      {/* Linha inferior: Faixa de Ordem (Presets + Custom) + Toggle Sem Classificação */}
       <div className="flex flex-wrap items-center justify-between gap-4 pt-3 border-t border-[var(--border-subtle)] text-xs">
         {/* Faixa de ordem */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="font-semibold uppercase tracking-[0.05em] text-[var(--text-secondary)]">
             Ordem:
           </span>
-          <input
-            type="number"
-            min={0}
-            max={999}
-            placeholder="Mín"
-            value={filters.orderMin ?? ''}
-            onChange={(e) => handleOrderNumberChange('orderMin', e.target.value)}
-            className="w-20 font-mono px-2.5 py-1 rounded border border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--brand-primary)]"
-          />
-          <span className="text-[var(--text-muted)]">—</span>
-          <input
-            type="number"
-            min={0}
-            max={999}
-            placeholder="Máx"
-            value={filters.orderMax ?? ''}
-            onChange={(e) => handleOrderNumberChange('orderMax', e.target.value)}
-            className="w-20 font-mono px-2.5 py-1 rounded border border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--brand-primary)]"
-          />
+          <div className="flex flex-wrap items-center gap-1.5">
+            {ORDER_PRESETS.map((p, idx) => {
+              const isSelected = !isCustomOrder && matchingPresetIndex === idx;
+              return (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => handleOrderPresetSelect(p.min, p.max)}
+                  aria-pressed={isSelected}
+                  className={`px-2.5 py-1 rounded-full border text-xs font-medium transition-colors cursor-pointer ${
+                    isSelected
+                      ? 'border-[var(--brand-primary)] bg-[color-mix(in_srgb,var(--brand-primary)_15%,transparent)] text-[var(--text-primary)] font-semibold'
+                      : 'border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() => setIsCustomOrder(true)}
+              aria-pressed={isCustomOrder}
+              className={`px-2.5 py-1 rounded-full border text-xs font-medium transition-colors cursor-pointer ${
+                isCustomOrder
+                  ? 'border-[var(--brand-primary)] bg-[color-mix(in_srgb,var(--brand-primary)_15%,transparent)] text-[var(--text-primary)] font-semibold'
+                  : 'border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-strong)]'
+              }`}
+            >
+              Custom…
+            </button>
+          </div>
+
+          {/* Inputs Customizados revelados ao selecionar Custom */}
+          {isCustomOrder && (
+            <div className="flex items-center gap-1.5 font-mono ml-1">
+              <input
+                type="number"
+                min={0}
+                max={999}
+                placeholder="Mín"
+                value={filters.orderMin ?? ''}
+                onChange={(e) => handleOrderNumberChange('orderMin', e.target.value)}
+                className="w-16 font-mono px-2 py-1 rounded border border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--brand-primary)]"
+              />
+              <span className="text-[var(--text-muted)]">—</span>
+              <input
+                type="number"
+                min={0}
+                max={999}
+                placeholder="Máx"
+                value={filters.orderMax ?? ''}
+                onChange={(e) => handleOrderNumberChange('orderMax', e.target.value)}
+                className="w-16 font-mono px-2 py-1 rounded border border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-primary)] text-xs focus:outline-none focus:border-[var(--brand-primary)]"
+              />
+            </div>
+          )}
         </div>
 
-        {/* Toggle Sem Classificação */}
-        <label className="inline-flex items-center gap-2 cursor-pointer select-none text-[var(--text-primary)]">
-          <input
-            type="checkbox"
-            checked={filters.unclassified}
-            onChange={handleUnclassifiedChange}
-            className="rounded border-[var(--border-default)] text-[var(--brand-primary)] focus:ring-[var(--brand-primary)]"
-          />
-          <span className="font-medium">Apenas sem classificação</span>
+        {/* Toggle Switch Sem Classificação */}
+        <label className="inline-flex items-center gap-2.5 cursor-pointer select-none group">
+          <div className="relative">
+            <input
+              type="checkbox"
+              checked={filters.unclassified}
+              onChange={handleUnclassifiedChange}
+              className="sr-only peer"
+            />
+            <div
+              className={`w-9 h-5 rounded-full transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--brand-primary)] peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[var(--bg-surface)] ${
+                filters.unclassified
+                  ? 'bg-[var(--brand-primary)]'
+                  : 'bg-[var(--border-strong)] group-hover:bg-[var(--text-muted)]'
+              }`}
+            />
+            <div
+              className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full shadow-xs transition-transform ${
+                filters.unclassified
+                  ? 'translate-x-4 bg-[var(--text-on-primary)]'
+                  : 'translate-x-0 bg-[var(--text-primary)]'
+              }`}
+            />
+          </div>
+          <span
+            className={`text-xs transition-colors ${
+              filters.unclassified
+                ? 'text-[var(--text-primary)] font-semibold'
+                : 'text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] font-medium'
+            }`}
+          >
+            Apenas sem classificação
+          </span>
         </label>
       </div>
     </div>
