@@ -1,30 +1,70 @@
-import React, { useState } from 'react';
-import { NavLink, Link, Outlet } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, Link, Outlet, useLocation } from 'react-router-dom';
 
-interface AdminNavItem {
-  to: string;
-  label: string;
-}
+type AdminNavLink = { to: string; label: string };
+type AdminNavGroup = { id: string; label: string; items: AdminNavLink[] };
+type AdminNavEntry =
+  | ({ type: 'link' } & AdminNavLink)
+  | ({ type: 'group' } & AdminNavGroup);
 
-const NAV_ITEMS: AdminNavItem[] = [
-  { to: '/admin/visao-geral', label: 'Visão geral' },
-  { to: '/admin/usuarios', label: 'Usuários' },
-  { to: '/admin/grupos', label: 'Grupos' },
-  { to: '/admin/insignias', label: 'Insígnias' },
-  { to: '/admin/icones', label: 'Ícones custom' },
-  { to: '/admin/titulos', label: 'Títulos' },
-  { to: '/admin/raridades', label: 'Raridades' },
-  { to: '/admin/categorias', label: 'Categorias' },
-  { to: '/admin/origens', label: 'Origens' },
-  { to: '/admin/colecoes', label: 'Coleções' },
-  { to: '/admin/forum', label: 'Fórum' },
-  { to: '/admin/conteudo', label: 'Conteúdo' },
-  { to: '/admin/logs', label: 'Logs' },
-  { to: '/admin/configuracao', label: 'Configuração' },
+const NAV_ENTRIES: AdminNavEntry[] = [
+  { type: 'link', to: '/admin/visao-geral', label: 'Visão geral' },
+  { type: 'link', to: '/admin/usuarios', label: 'Usuários' },
+  { type: 'link', to: '/admin/grupos', label: 'Grupos' },
+  {
+    type: 'group',
+    id: 'collectibles',
+    label: 'Colecionáveis',
+    items: [
+      { to: '/admin/insignias', label: 'Insígnias' },
+      { to: '/admin/titulos', label: 'Títulos' },
+      { to: '/admin/icones', label: 'Ícones custom' },
+    ],
+  },
+  {
+    type: 'group',
+    id: 'catalogs',
+    label: 'Catálogo',
+    items: [
+      { to: '/admin/raridades', label: 'Raridades' },
+      { to: '/admin/categorias', label: 'Categorias' },
+      { to: '/admin/origens', label: 'Origens' },
+      { to: '/admin/colecoes', label: 'Coleções' },
+    ],
+  },
+  { type: 'link', to: '/admin/forum', label: 'Fórum' },
+  { type: 'link', to: '/admin/conteudo', label: 'Conteúdo' },
+  { type: 'link', to: '/admin/logs', label: 'Logs' },
+  { type: 'link', to: '/admin/configuracao', label: 'Configuração' },
 ];
 
 export const AdminLayout: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    collectibles: true,
+    catalogs: true,
+  });
+
+  useEffect(() => {
+    NAV_ENTRIES.forEach((entry) => {
+      if (entry.type === 'group') {
+        const hasActiveChild = entry.items.some(
+          (item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
+        );
+        if (hasActiveChild) {
+          setOpenGroups((prev) => (prev[entry.id] ? prev : { ...prev, [entry.id]: true }));
+        }
+      }
+    });
+  }, [location.pathname]);
+
+  const toggleGroup = (id: string) => {
+    setOpenGroups((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
 
   return (
     <div className="min-h-screen bg-[var(--bg-default)] text-[var(--text-primary)] flex flex-col lg:flex-row">
@@ -88,22 +128,79 @@ export const AdminLayout: React.FC = () => {
 
         {/* Navigation list */}
         <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto" aria-label="Navegação administrativa">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={() => setMobileOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  isActive
-                    ? 'bg-[color-mix(in_srgb,var(--brand-primary)_14%,transparent)] text-[var(--brand-primary)] font-semibold border-l-2 border-[var(--brand-primary)] pl-2.5'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)]'
-                }`
-              }
-            >
-              {item.label}
-            </NavLink>
-          ))}
+          {NAV_ENTRIES.map((entry) => {
+            if (entry.type === 'link') {
+              return (
+                <NavLink
+                  key={entry.to}
+                  to={entry.to}
+                  onClick={() => setMobileOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                      isActive
+                        ? 'bg-[color-mix(in_srgb,var(--brand-primary)_14%,transparent)] text-[var(--brand-primary)] font-semibold border-l-2 border-[var(--brand-primary)] pl-2.5'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)]'
+                    }`
+                  }
+                >
+                  {entry.label}
+                </NavLink>
+              );
+            }
+
+            const isOpen = openGroups[entry.id] ?? false;
+            const isChildActive = entry.items.some(
+              (item) => location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
+            );
+
+            return (
+              <div key={entry.id} className="pt-2 first:pt-0">
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(entry.id)}
+                  aria-expanded={isOpen}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] transition-colors cursor-pointer select-none"
+                >
+                  <span className={!isOpen && isChildActive ? 'text-[var(--brand-primary)] font-semibold' : ''}>
+                    {entry.label}
+                  </span>
+                  <svg
+                    className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                      isOpen ? 'rotate-180' : ''
+                    }`}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+
+                {isOpen && (
+                  <div className="mt-1 space-y-1 pl-2">
+                    {entry.items.map((subItem) => (
+                      <NavLink
+                        key={subItem.to}
+                        to={subItem.to}
+                        onClick={() => setMobileOpen(false)}
+                        className={({ isActive }) =>
+                          `flex items-center px-3 py-2 rounded-lg text-sm transition-colors ${
+                            isActive
+                              ? 'bg-[color-mix(in_srgb,var(--brand-primary)_14%,transparent)] text-[var(--brand-primary)] font-semibold border-l-2 border-[var(--brand-primary)] pl-2.5'
+                              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)]'
+                          }`
+                        }
+                      >
+                        {subItem.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         {/* Footer: Voltar ao site */}
