@@ -143,6 +143,19 @@
       },
       "required": ["userId", "badgeId", "awardedAt", "awardedBy"]
     },
+    "UserCollectible": {
+      "title": "UserCollectible",
+      "description": "User awarded collectible link (badge or title)",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "kind": { "type": "string", "enum": ["badge", "title"] },
+        "itemId": { "type": "string" },
+        "awardedAt": { "type": "string", "format": "date-time" },
+        "awardedBy": { "type": "string" }
+      },
+      "required": ["userId", "kind", "itemId", "awardedAt", "awardedBy"]
+    },
     "Rarity": {
       "title": "Rarity",
       "description": "Rarity tier for collectibles",
@@ -220,6 +233,10 @@
     "/userTitles/{userId_titleId}": {
       "schema": { "$ref": "UserTitle" },
       "description": "Titles awarded to users"
+    },
+    "/userCollectibles/{userId_kind_itemId}": {
+      "schema": { "$ref": "UserCollectible" },
+      "description": "Collectibles awarded to users"
     },
     "/rarities/{rarityId}": {
       "schema": { "$ref": "Rarity" },

@@ -293,9 +293,9 @@ export const deleteUser = async (uid: string): Promise<void> => {
   // 1. Delete user doc
   await deleteDoc(doc(db, 'users', uid));
 
-  // 2. Delete all userBadges referencing uid
+  // 2. Delete all userCollectibles referencing uid
   try {
-    const q = query(collection(db, 'userBadges'), where('userId', '==', uid));
+    const q = query(collection(db, 'userCollectibles'), where('userId', '==', uid));
     const snap = await getDocs(q);
     const BATCH_SIZE = 400;
     const docs = snap.docs;
@@ -307,7 +307,7 @@ export const deleteUser = async (uid: string): Promise<void> => {
       await batch.commit();
     }
   } catch (err) {
-    console.error(`Error deleting userBadges for user ${uid}:`, err);
+    console.error(`Error deleting userCollectibles for user ${uid}:`, err);
   }
 };
 

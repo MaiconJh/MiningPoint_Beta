@@ -1,21 +1,20 @@
 import {
-  collection,
   doc,
   getDoc,
-  getDocs,
-  setDoc,
-  deleteDoc,
   deleteField,
-  query,
-  where,
-  getCountFromServer,
-  serverTimestamp,
   type DocumentData,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Title, UserTitle } from '../types/title';
 import { ChipStyle } from '../types/chip';
 import { createCollectibleRepository } from './collectibles';
+import {
+  countUsersWithCollectible,
+  listUsersWithCollectible,
+  grantCollectible,
+  revokeCollectible,
+  listUserCollectibles,
+} from './collectibleLinks';
 
 export interface TitleFormData {
   name: string;
@@ -57,15 +56,7 @@ const parseTitleDoc = (id: string, data: DocumentData): Title => {
 };
 
 const countUsersWithTitleInternal = async (titleId: string): Promise<number> => {
-  if (!db || !titleId) return 0;
-  try {
-    const q = query(collection(db, 'userTitles'), where('titleId', '==', titleId));
-    const countSnap = await getCountFromServer(q);
-    return countSnap.data().count;
-  } catch (error) {
-    console.error(`Error counting users with title ${titleId}:`, error);
-    return 0;
-  }
+  return countUsersWithCollectible('title', titleId);
 };
 
 const titleRepository = createCollectibleRepository<Title, TitleFormData>({
@@ -132,56 +123,17 @@ export const deleteTitle = async (
 ): Promise<{ success: boolean; error?: string }> => titleRepository.remove(titleId);
 
 export const listUsersWithTitle = async (titleId: string): Promise<UserWithTitleItem[]> => {
-  if (!db || !titleId) return [];
-  try {
-    const q = query(collection(db, 'userTitles'), where('titleId', '==', titleId));
-    const snap = await getDocs(q);
-
-    const items: UserWithTitleItem[] = [];
-    for (const docSnap of snap.docs) {
-      const d = docSnap.data();
-      const userId = d.userId || '';
-      let userData = {
-        uid: userId,
-        displayName: 'Usuário',
-        email: '',
-        photoURL: null,
-      };
-
-      if (userId) {
-        try {
-          const userSnap = await getDoc(doc(db, 'users', userId));
-          if (userSnap.exists()) {
-            const u = userSnap.data();
-            userData = {
-              uid: userSnap.id,
-              displayName: u.displayName || 'Usuário',
-              email: u.email || '',
-              photoURL: u.photoURL || null,
-            };
-          }
-        } catch (err) {
-          console.error(`Error fetching user ${userId}:`, err);
-        }
-      }
-
-      items.push({
-        userTitle: {
-          id: docSnap.id,
-          userId,
-          titleId,
-          awardedAt: d.awardedAt,
-          awardedBy: d.awardedBy || '',
-        },
-        user: userData,
-      });
-    }
-
-    return items;
-  } catch (error) {
-    console.error(`Error listing users with title ${titleId}:`, error);
-    return [];
-  }
+  const items = await listUsersWithCollectible('title', titleId);
+  return items.map((item) => ({
+    userTitle: {
+      id: item.userCollectible.id,
+      userId: item.userCollectible.userId,
+      titleId: item.userCollectible.itemId,
+      awardedAt: item.userCollectible.awardedAt,
+      awardedBy: item.userCollectible.awardedBy,
+    },
+    user: item.user,
+  }));
 };
 
 export const grantTitle = async (
@@ -189,43 +141,22 @@ export const grantTitle = async (
   titleId: string,
   awardedBy: string
 ): Promise<string> => {
-  if (!db || !userId || !titleId) throw new Error('Parâmetros inválidos');
-  const docId = `${userId}_${titleId}`;
-  await setDoc(doc(db, 'userTitles', docId), {
-    userId,
-    titleId,
-    awardedAt: serverTimestamp(),
-    awardedBy,
-  });
-  return docId;
+  return grantCollectible(userId, 'title', titleId, awardedBy);
 };
 
 export const revokeTitle = async (userTitleId: string): Promise<void> => {
-  if (!db || !userTitleId) throw new Error('Parâmetros inválidos');
-  await deleteDoc(doc(db, 'userTitles', userTitleId));
+  return revokeCollectible(userTitleId);
 };
 
 export const listUserTitles = async (uid: string): Promise<UserTitle[]> => {
-  if (!db || !uid) return [];
-  try {
-    const q = query(collection(db, 'userTitles'), where('userId', '==', uid));
-    const snap = await getDocs(q);
-    const list: UserTitle[] = [];
-    snap.forEach((docSnap) => {
-      const d = docSnap.data();
-      list.push({
-        id: docSnap.id,
-        userId: d.userId || uid,
-        titleId: d.titleId || '',
-        awardedAt: d.awardedAt,
-        awardedBy: d.awardedBy || '',
-      });
-    });
-    return list;
-  } catch (error) {
-    console.error('Error fetching user titles:', error);
-    return [];
-  }
+  const items = await listUserCollectibles(uid, 'title');
+  return items.map((uc) => ({
+    id: uc.id,
+    userId: uc.userId,
+    titleId: uc.itemId,
+    awardedAt: uc.awardedAt,
+    awardedBy: uc.awardedBy,
+  }));
 };
 
 export const listTitlesByIds = async (ids: string[]): Promise<Title[]> => {

@@ -22,6 +22,7 @@ import {
   deriveIsStaff,
 } from './permissions';
 import { Group } from '../types/group';
+import { listUserCollectibles } from './collectibleLinks';
 
 export const DEFAULT_ATTRIBUTES: UserAttributes = {
   exploration: 0,
@@ -174,26 +175,14 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
 };
 
 export const listUserBadges = async (uid: string): Promise<UserBadge[]> => {
-  if (!db || !uid) return [];
-  try {
-    const q = query(collection(db, 'userBadges'), where('userId', '==', uid));
-    const querySnapshot = await getDocs(q);
-    const list: UserBadge[] = [];
-    querySnapshot.forEach((docSnap) => {
-      const d = docSnap.data();
-      list.push({
-        id: docSnap.id,
-        userId: d.userId || uid,
-        badgeId: d.badgeId || '',
-        awardedAt: d.awardedAt,
-        awardedBy: d.awardedBy || '',
-      });
-    });
-    return list;
-  } catch (error) {
-    console.error('Error fetching user badges:', error);
-    return [];
-  }
+  const items = await listUserCollectibles(uid, 'badge');
+  return items.map((uc) => ({
+    id: uc.id,
+    userId: uc.userId,
+    badgeId: uc.itemId,
+    awardedAt: uc.awardedAt,
+    awardedBy: uc.awardedBy,
+  }));
 };
 
 export const listBadgesByIds = async (ids: string[]): Promise<Badge[]> => {

@@ -87,6 +87,11 @@ service cloud.firestore {
       allow write: if has('manageBadges');
     }
 
+    match /userCollectibles/{docId} {
+      allow read: if true;
+      allow write: if has('manageBadges');
+    }
+
     match /rarities/{rarityId} {
       allow read: if true;
       allow write: if has('manageCatalogs');

@@ -1,20 +1,20 @@
 import {
   collection,
-  doc,
-  getDoc,
   getDocs,
-  setDoc,
-  deleteDoc,
   query,
   where,
   limit,
-  getCountFromServer,
-  serverTimestamp,
   type DocumentData,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Badge, UserBadge } from '../types/profile';
 import { createCollectibleRepository } from './collectibles';
+import {
+  countUsersWithCollectible,
+  listUsersWithCollectible,
+  grantCollectible,
+  revokeCollectible,
+} from './collectibleLinks';
 
 export interface BadgeFormData {
   name: string;
@@ -61,15 +61,7 @@ const parseBadgeDoc = (id: string, data: DocumentData): Badge => {
 };
 
 const countUsersWithBadgeInternal = async (badgeId: string): Promise<number> => {
-  if (!db || !badgeId) return 0;
-  try {
-    const q = query(collection(db, 'userBadges'), where('badgeId', '==', badgeId));
-    const countSnap = await getCountFromServer(q);
-    return countSnap.data().count;
-  } catch (error) {
-    console.error(`Error counting users with badge ${badgeId}:`, error);
-    return 0;
-  }
+  return countUsersWithCollectible('badge', badgeId);
 };
 
 const badgeRepository = createCollectibleRepository<Badge, BadgeFormData>({
@@ -130,56 +122,17 @@ export const deleteBadge = async (
 ): Promise<{ success: boolean; error?: string }> => badgeRepository.remove(badgeId);
 
 export const listUsersWithBadge = async (badgeId: string): Promise<UserWithBadgeItem[]> => {
-  if (!db || !badgeId) return [];
-  try {
-    const q = query(collection(db, 'userBadges'), where('badgeId', '==', badgeId));
-    const snap = await getDocs(q);
-
-    const items: UserWithBadgeItem[] = [];
-    for (const docSnap of snap.docs) {
-      const d = docSnap.data();
-      const userId = d.userId || '';
-      let userData = {
-        uid: userId,
-        displayName: 'Usuário',
-        email: '',
-        photoURL: null,
-      };
-
-      if (userId) {
-        try {
-          const userSnap = await getDoc(doc(db, 'users', userId));
-          if (userSnap.exists()) {
-            const u = userSnap.data();
-            userData = {
-              uid: userSnap.id,
-              displayName: u.displayName || 'Usuário',
-              email: u.email || '',
-              photoURL: u.photoURL || null,
-            };
-          }
-        } catch (err) {
-          console.error(`Error fetching user ${userId}:`, err);
-        }
-      }
-
-      items.push({
-        userBadge: {
-          id: docSnap.id,
-          userId,
-          badgeId,
-          awardedAt: d.awardedAt,
-          awardedBy: d.awardedBy || '',
-        },
-        user: userData,
-      });
-    }
-
-    return items;
-  } catch (error) {
-    console.error(`Error listing users with badge ${badgeId}:`, error);
-    return [];
-  }
+  const items = await listUsersWithCollectible('badge', badgeId);
+  return items.map((item) => ({
+    userBadge: {
+      id: item.userCollectible.id,
+      userId: item.userCollectible.userId,
+      badgeId: item.userCollectible.itemId,
+      awardedAt: item.userCollectible.awardedAt,
+      awardedBy: item.userCollectible.awardedBy,
+    },
+    user: item.user,
+  }));
 };
 
 export const grantBadge = async (
@@ -187,20 +140,11 @@ export const grantBadge = async (
   badgeId: string,
   awardedBy: string
 ): Promise<string> => {
-  if (!db || !userId || !badgeId) throw new Error('Parâmetros inválidos');
-  const docId = `${userId}_${badgeId}`;
-  await setDoc(doc(db, 'userBadges', docId), {
-    userId,
-    badgeId,
-    awardedAt: serverTimestamp(),
-    awardedBy,
-  });
-  return docId;
+  return grantCollectible(userId, 'badge', badgeId, awardedBy);
 };
 
 export const revokeBadge = async (userBadgeId: string): Promise<void> => {
-  if (!db || !userBadgeId) throw new Error('Parâmetros inválidos');
-  await deleteDoc(doc(db, 'userBadges', userBadgeId));
+  return revokeCollectible(userBadgeId);
 };
 
 export const searchUsers = async (searchQuery: string): Promise<SearchUserResult[]> => {
