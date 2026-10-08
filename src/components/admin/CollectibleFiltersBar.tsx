@@ -244,9 +244,9 @@ export const CollectibleFiltersBar: React.FC<CollectibleFiltersBarProps> = ({
                     disabled={filters.unclassified}
                     onClick={() => toggleId('rarityIds', r.id)}
                     aria-pressed={isSelected}
-                    className={`p-0.5 rounded-full transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                    className={`rounded-full transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                       isSelected
-                        ? 'ring-2 ring-[var(--brand-primary)] ring-offset-1 ring-offset-[var(--bg-surface)]'
+                        ? 'ring-2 ring-[var(--brand-primary)] ring-offset-2 ring-offset-[var(--bg-surface)]'
                         : 'hover:opacity-80'
                     }`}
                   >
