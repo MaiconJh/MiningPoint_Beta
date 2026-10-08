@@ -65,6 +65,7 @@ export const normalizeUserProfile = (data: DocumentData, uid: string): UserProfi
     manageBadges: !!rawPerms.manageBadges,
     manageForum: !!rawPerms.manageForum,
     manageContent: !!rawPerms.manageContent,
+    manageCatalogs: !!rawPerms.manageCatalogs,
   };
 
   return {

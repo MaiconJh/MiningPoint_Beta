@@ -55,6 +55,7 @@ const PERMISSION_LABELS: Record<string, string> = {
   manageBadges: 'Gerenciar insígnias',
   manageForum: 'Gerenciar fórum',
   manageContent: 'Gerenciar conteúdo',
+  manageCatalogs: 'Gerenciar catálogos',
 };
 
 export const AdminUserDetail: React.FC = () => {

@@ -21,6 +21,7 @@ describe('ProfileSidebar', () => {
         manageBadges: false,
         manageForum: false,
         manageContent: false,
+        manageCatalogs: false,
       },
       bio: 'Bio teste',
       featuredTitleId: null,
