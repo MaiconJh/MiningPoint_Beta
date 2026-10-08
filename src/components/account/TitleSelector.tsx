@@ -108,7 +108,7 @@ export const TitleSelector: React.FC<TitleSelectorProps> = ({
               key={t.id}
               type="button"
               onClick={() => onSelectTitle(t.id)}
-              className={`rounded-full transition-all cursor-pointer ${
+              className={`inline-flex items-center justify-center leading-none rounded-full transition-all cursor-pointer ${
                 isSelected
                   ? 'ring-2 ring-[var(--brand-primary)] ring-offset-2 ring-offset-[var(--bg-surface)]'
                   : 'hover:opacity-80'
