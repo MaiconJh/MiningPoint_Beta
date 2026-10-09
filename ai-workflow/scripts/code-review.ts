@@ -44,6 +44,15 @@ const diff = files
 .map((f) => '--- a/' + f.filename + '\n+++ b/' + f.filename + '\n' + f.patch)
 .join('\n\n');
 
+const MAX_DIFF_CHARS = 50000;
+if (diff.length > MAX_DIFF_CHARS) {
+  console.log(
+    'Diff muito grande (' + diff.length + ' caracteres). Pulando review automatico.'
+  );
+  console.log('Divida o PR em partes menores ou revise manualmente.');
+  return;
+}
+  
 if (!diff.trim()) {
 console.log('Nenhum diff textual para revisar.');
 return;
@@ -60,7 +69,7 @@ join(getRepoRoot(), '.github', 'ai-config', 'prompts', 'code-review.md'),
 
 const userPrompt = promptTemplate
 .replace('{{STANDARDS}}', standards.getCompactContext())
-.replace('{{DIFF}}', diff.slice(0, 30000))
+.replace('{{DIFF}}', diff.slice(0, 15000))
 .replace('{{PR_TITLE}}', pr.title)
 .replace('{{HEAD_REF}}', headRef)
 .replace('{{BASE_REF}}', baseRef)
