@@ -159,7 +159,7 @@ export const EffectStackEditor: React.FC<EffectStackEditorProps> = ({
           <EffectSurface
             stack={resolvedStack}
             surface="tooltip"
-            className="px-2.5 py-1 rounded text-xs font-mono font-bold"
+            className="relative px-2.5 py-1 rounded text-xs font-mono font-bold"
             /* eslint-disable-next-line design-tokens/no-raw-color-literals */
             style={{
               backgroundColor: 'rgba(16, 19, 24, 0.85)',
@@ -205,7 +205,7 @@ export const EffectStackEditor: React.FC<EffectStackEditorProps> = ({
               <EffectSurface
                 stack={resolvedStack}
                 surface="tooltip"
-                className="w-max max-w-[220px] p-3 rounded-lg z-30"
+                className="relative w-max max-w-[220px] p-3 rounded-lg z-30"
                 /* eslint-disable-next-line design-tokens/no-raw-color-literals */
                 style={{
                   backgroundColor: 'rgba(16, 19, 24, 0.85)',

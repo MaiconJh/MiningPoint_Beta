@@ -83,6 +83,8 @@ interface SortableCarouselItemProps {
   customIcons: Record<string, string>;
   rarityTheme?: EffectStack;
   effectStack?: EffectStack | ResolvedEffectStack;
+  isPinned: boolean;
+  onTogglePin: (badgeId: string) => void;
 }
 
 const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
@@ -93,9 +95,13 @@ const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
   customIcons,
   rarityTheme,
   effectStack,
+  isPinned,
+  onTogglePin,
 }) => {
   const { badge, userBadge } = item;
   const isHovered = activeTooltipId === badge.id;
+  const showTooltip = isHovered || isPinned;
+  const isActive = isHovered || isPinned;
   const awardedDate = formatAwardedAt(userBadge.awardedAt);
   const IconComponent = resolveIcon(badge.icon, customIcons);
 
@@ -144,6 +150,10 @@ const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
         type="button"
         {...(isDraggable ? attributes : {})}
         {...(isDraggable ? listeners : {})}
+        onClick={(e) => {
+          e.stopPropagation();
+          onTogglePin(badge.id);
+        }}
         onFocus={() => setActiveTooltipId(badge.id)}
         onBlur={() => setActiveTooltipId(null)}
         aria-label={
@@ -157,9 +167,9 @@ const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
           isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
         }`}
         style={{
-          backgroundColor: isHovered ? 'rgba(16, 19, 24, 0.75)' : 'rgba(16, 19, 24, 0.5)',
-          border: isHovered ? '1px solid var(--brand-primary)' : '1px solid rgba(255, 255, 255, 0.3)',
-          transform: isHovered && !isDragging ? 'translateY(-2px)' : 'none',
+          backgroundColor: isActive ? 'rgba(16, 19, 24, 0.75)' : 'rgba(16, 19, 24, 0.5)',
+          border: isActive ? '1px solid var(--brand-primary)' : '1px solid rgba(255, 255, 255, 0.3)',
+          transform: isActive && !isDragging ? 'translateY(-2px)' : 'none',
         }}
       >
         {IconComponent && (
@@ -168,7 +178,7 @@ const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
       </button>
 
       {/* Tooltip Card */}
-      {isHovered && !isDragging && (
+      {showTooltip && !isDragging && (
         <EffectSurface
           role="tooltip"
           surface="tooltip"
@@ -214,11 +224,30 @@ export const BadgeCarousel: React.FC<BadgeCarouselProps> = ({
   effectStack,
 }) => {
   const [activeTooltipId, setActiveTooltipId] = useState<string | null>(null);
+  const [pinnedBadgeId, setPinnedBadgeId] = useState<string | null>(null);
   const [internalMode, setInternalMode] = useState<FeaturedBadgesMode>(
     modeProp ?? 'manual'
   );
   const { customIcons } = useCustomIcons();
   const { rarities } = useRarities();
+
+  useEffect(() => {
+    if (!pinnedBadgeId) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setPinnedBadgeId(null);
+    };
+    const handleClickOutside = () => setPinnedBadgeId(null);
+    document.addEventListener('keydown', handleKeyDown);
+    // Usa captura e um tick para não fechar imediatamente com o clique que acabou de fixar
+    const timer = window.setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
+    }, 0);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('click', handleClickOutside);
+      window.clearTimeout(timer);
+    };
+  }, [pinnedBadgeId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -335,6 +364,10 @@ export const BadgeCarousel: React.FC<BadgeCarouselProps> = ({
             customIcons={customIcons}
             rarityTheme={rarity?.theme}
             effectStack={effectStack}
+            isPinned={pinnedBadgeId === item.badge.id}
+            onTogglePin={(id) =>
+              setPinnedBadgeId((prev) => (prev === id ? null : id))
+            }
           />
         );
       })}

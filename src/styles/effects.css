@@ -6,7 +6,6 @@
 
 /* Superfície base e camadas de efeito */
 .fx-surface {
-  position: relative;
   isolation: isolate;
 }
 
