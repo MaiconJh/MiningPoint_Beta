@@ -1,0 +1,50 @@
+name: Standards Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "src/**"
+      - "eslint-rules/**"
+      - "PROJECT_STANDARDS.md"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: standards-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  standards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run typecheck
+        run: npm run typecheck
+
+      - name: Run standards review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AI_BASE_BRANCH: "AI_ORCHESTRATOR"
+          AI_CONFIG_JSON: ${{ secrets.AI_CONFIG_JSON }}
+          AI_CONFIG_PATH: ${{ vars.AI_CONFIG_PATH }}
+          AI_PROVIDER_KEYS_JSON: ${{ secrets.AI_PROVIDER_KEYS_JSON }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: npx tsx scripts/standards-check.ts
