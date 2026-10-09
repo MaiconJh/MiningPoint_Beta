@@ -29,6 +29,8 @@ export interface EffectDescriptor {
   label: string;
   /** Nome da classe CSS correspondente em effects.css */
   cssClass: string;
+  /** Alvo de aplicação do efeito: 'container' no elemento raiz ou 'layer' na camada de fundo */
+  target: 'container' | 'layer';
   /** Superfícies suportadas */
   surfaces: EffectSurfaceType[];
   /** Indica se o efeito requer fundo escuro para contraste/blend adequado */

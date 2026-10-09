@@ -98,9 +98,17 @@ export const EffectSurface: React.FC<EffectSurfaceProps> = ({
     );
   }
 
+  const containerClassNames = stack.effects
+    .filter((e) => (e.target || 'layer') === 'container')
+    .map((e) => e.cssClass);
+
+  const layerEffects = stack.effects.filter(
+    (e) => (e.target || 'layer') === 'layer'
+  );
+
   const mergedClassName = [
     'fx-surface',
-    ...stack.classNames,
+    ...containerClassNames,
     className,
   ]
     .filter(Boolean)
@@ -122,7 +130,7 @@ export const EffectSurface: React.FC<EffectSurfaceProps> = ({
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
-        {stack.effects.map((effect) => (
+        {layerEffects.map((effect) => (
           <span
             key={effect.id}
             aria-hidden="true"

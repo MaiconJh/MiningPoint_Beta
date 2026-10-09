@@ -77,21 +77,21 @@
     ellipse at 50% 0%,
     color-mix(in srgb, var(--brand-secondary) 38%, transparent) 0%,
     color-mix(in srgb, var(--brand-primary) 22%, transparent) 50%,
-    transparent 80%
+    transparent 75%
   );
-  filter: blur(8px);
+  filter: blur(14px);
   opacity: 0.6;
   animation: fx-aurora-drift 8s ease-in-out infinite alternate;
-  will-change: transform, opacity;
+  will-change: transform, opacity, filter;
 }
 
 @keyframes fx-aurora-drift {
   0% {
-    transform: translateY(0%) scale(1);
+    transform: translateY(0%);
     opacity: 0.45;
   }
   100% {
-    transform: translateY(6%) scale(1.08);
+    transform: translateY(6%);
     opacity: 0.75;
   }
 }
@@ -120,7 +120,7 @@
   background: linear-gradient(
     90deg,
     transparent 0%,
-    color-mix(in srgb, var(--text-primary) 24%, transparent) 50%,
+    color-mix(in srgb, var(--text-primary) 20%, transparent) 50%,
     transparent 100%
   );
   animation: fx-shimmer-sweep 3.5s linear infinite;
@@ -147,27 +147,25 @@
 
 /* 8. Sparkle (pulso suave de centelhas) */
 .fx-sparkle {
+  opacity: 0.5;
   background-image:
     radial-gradient(circle 1.5px at 15% 25%, color-mix(in srgb, var(--text-primary) 95%, transparent) 100%, transparent),
     radial-gradient(circle 2px at 85% 20%, color-mix(in srgb, var(--fx-accent, var(--brand-primary)) 95%, transparent) 100%, transparent),
     radial-gradient(circle 1.5px at 65% 80%, color-mix(in srgb, var(--brand-secondary) 95%, transparent) 100%, transparent),
     radial-gradient(circle 1.2px at 30% 75%, color-mix(in srgb, var(--text-primary) 85%, transparent) 100%, transparent);
   animation: fx-sparkle-pulse 3s ease-in-out infinite alternate;
-  will-change: opacity, transform;
+  will-change: opacity;
 }
 
 @keyframes fx-sparkle-pulse {
   0% {
-    opacity: 0.35;
-    transform: scale(0.98);
+    opacity: 0.25;
   }
   50% {
-    opacity: 0.85;
-    transform: scale(1.02);
+    opacity: 0.75;
   }
   100% {
-    opacity: 0.35;
-    transform: scale(0.98);
+    opacity: 0.25;
   }
 }
 
