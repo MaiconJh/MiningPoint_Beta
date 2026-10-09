@@ -1,0 +1,29 @@
+{
+"name": "miningpoint-ai-workflow",
+"version": "1.0.0",
+"private": true,
+"type": "module",
+"description": "Orquestrador de PRs com IA para o MiningPoint — roda dentro do GitHub Actions",
+"scripts": {
+"build": "tsc",
+"typecheck": "tsc --noEmit",
+"providers": "tsx scripts/providers.ts",
+"feature:propose": "tsx scripts/feature-proposal.ts",
+"review:pr": "tsx scripts/code-review.ts",
+"standards:check": "tsx scripts/standards-check.ts"
+},
+"dependencies": {
+"@google/genai": "^2.0.0",
+"@octokit/rest": "^21.0.0",
+"openai": "^4.73.0",
+"zod": "^3.23.8"
+},
+"devDependencies": {
+"@types/node": "^22.10.0",
+"tsx": "^4.19.0",
+"typescript": "^5.7.0"
+},
+"engines": {
+"node": ">=20"
+}
+}
