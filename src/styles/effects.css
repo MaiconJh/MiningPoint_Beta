@@ -155,43 +155,43 @@
 
 .ember-particle {
   position: absolute;
-  bottom: -20px;
+  bottom: -16px;
   pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: block;
+  border-radius: 9999px;
   will-change: transform, opacity;
+  background: radial-gradient(
+    circle at 35% 35%,
+    var(--ember-secondary, var(--brand-secondary)) 0%,
+    var(--ember-primary, var(--brand-primary)) 75%
+  );
+  box-shadow:
+    0 0 calc(var(--ember-glow, 50) * 0.08px + 2px) color-mix(in srgb, var(--ember-primary, var(--brand-primary)) calc(var(--ember-glow, 50) * 1%), transparent),
+    0 0 calc(var(--ember-glow, 50) * 0.16px + 4px) color-mix(in srgb, var(--ember-secondary, var(--brand-secondary)) 35%, transparent);
   animation:
-    ember-rise var(--rise-dur, 6s) infinite linear,
-    ember-drift var(--sway-dur, 2.5s) infinite ease-in-out alternate;
+    ember-rise var(--rise-dur, 5s) infinite linear,
+    ember-drift var(--sway-dur, 2.2s) infinite ease-in-out alternate;
+}
+
+.ember-particle.is-spark {
+  background: radial-gradient(
+    circle,
+    white 0%,
+    var(--ember-secondary, var(--brand-secondary)) 40%,
+    var(--ember-primary, var(--brand-primary)) 100%
+  );
+  box-shadow:
+    0 0 4px white,
+    0 0 calc(var(--ember-glow, 50) * 0.12px + 3px) var(--ember-secondary, var(--brand-secondary));
+}
+
+.ember-particle.is-ash {
+  background: color-mix(in srgb, var(--ember-primary, var(--brand-primary)) 70%, black);
+  box-shadow: 0 0 2px color-mix(in srgb, var(--ember-primary, var(--brand-primary)) 30%, transparent);
 }
 
 .ember-particle.static {
   animation: none !important;
-}
-
-.ember-head {
-  display: block;
-  border-radius: 9999px;
-  background: radial-gradient(
-    circle,
-    var(--ember-secondary, var(--brand-secondary)) 0%,
-    var(--ember-primary, var(--brand-primary)) 70%
-  );
-  box-shadow: 0 0 6px color-mix(in srgb, var(--ember-primary, var(--brand-primary)) calc(var(--ember-glow, 50) * 1%), transparent);
-}
-
-.ember-wake {
-  display: block;
-  width: 100%;
-  border-radius: 9999px;
-  background: linear-gradient(
-    to top,
-    transparent 0%,
-    var(--ember-primary, var(--brand-primary)) 100%
-  );
-  filter: blur(1.5px);
-  opacity: 0.7;
 }
 
 @keyframes ember-rise {
@@ -199,24 +199,24 @@
     transform: translate3d(0, 0, 0) scale(1);
     opacity: 0;
   }
-  15% {
+  12% {
     opacity: var(--particle-opacity, 0.85);
   }
-  80% {
+  75% {
     opacity: var(--particle-opacity, 0.85);
   }
   100% {
-    transform: translate3d(0, -220px, 0) scale(0.3);
+    transform: translate3d(0, -230px, 0) scale(0.4);
     opacity: 0;
   }
 }
 
 @keyframes ember-drift {
   0% {
-    margin-left: calc(var(--amp, 10px) * -1);
+    margin-left: calc(var(--amp, 8px) * -1);
   }
   100% {
-    margin-left: var(--amp, 10px);
+    margin-left: var(--amp, 8px);
   }
 }
 
