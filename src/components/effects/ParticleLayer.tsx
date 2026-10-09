@@ -98,7 +98,7 @@ export const ParticleLayer: React.FC<ParticleLayerProps> = ({ config }) => {
           ['--sway-dur' as string]: `${p.swayDuration.toFixed(2)}s`,
           ['--particle-opacity' as string]: p.peakOpacity.toFixed(2),
           ['--amp' as string]: `${p.swayAmp.toFixed(1)}px`,
-          animationDelay: `${p.delay.toFixed(2)}s`,
+          animationDelay: `${p.delay.toFixed(2)}s, ${(p.delay * 0.7).toFixed(2)}s`,
           ...(reducedMotion ? { animation: 'none' as const, opacity: 0.4 } : {}),
         };
 

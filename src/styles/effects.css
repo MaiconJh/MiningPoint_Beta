@@ -159,7 +159,8 @@
   pointer-events: none;
   display: block;
   border-radius: 9999px;
-  will-change: transform, opacity;
+  translate: 0 0;
+  will-change: transform, opacity, translate;
   background: radial-gradient(
     circle at 35% 35%,
     var(--ember-secondary, var(--brand-secondary)) 0%,
@@ -186,7 +187,7 @@
 }
 
 .ember-particle.is-ash {
-  background: color-mix(in srgb, var(--ember-primary, var(--brand-primary)) 70%, black);
+  background: color-mix(in srgb, var(--ember-primary, var(--brand-primary)) 70%, var(--bg-default));
   box-shadow: 0 0 2px color-mix(in srgb, var(--ember-primary, var(--brand-primary)) 30%, transparent);
 }
 
@@ -212,12 +213,8 @@
 }
 
 @keyframes ember-drift {
-  0% {
-    margin-left: calc(var(--amp, 8px) * -1);
-  }
-  100% {
-    margin-left: var(--amp, 8px);
-  }
+  0%   { translate: calc(var(--amp, 8px) * -1) 0; }
+  100% { translate: var(--amp, 8px) 0; }
 }
 
 /* Desativação de animações para preferência de movimento reduzido */
