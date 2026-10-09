@@ -5,7 +5,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 concurrency:
@@ -36,7 +36,7 @@ jobs:
       - name: Run AI code review
         working-directory: ai-workflow
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.AI_ORCHESTRATOR_TOKEN }}
           REPO_ROOT: ${{ github.workspace }}
           AI_BASE_BRANCH: "AI_ORCHESTRATOR"
           AI_CONFIG_JSON: ${{ secrets.AI_CONFIG_JSON }}
