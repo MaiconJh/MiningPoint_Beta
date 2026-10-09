@@ -14,7 +14,9 @@ concurrency:
 
 jobs:
   review:
-    if: github.event.pull_request.draft == false
+    if: |
+      github.event.pull_request.draft == false &&
+      startsWith(github.event.pull_request.head.ref, 'ai/feat-')
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
