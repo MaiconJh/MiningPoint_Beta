@@ -152,4 +152,24 @@ describe('resolveEffectStack', () => {
       '--fx-accent': 'var(--brand-primary)',
     });
   });
+
+  it('resolve textColor para --fx-text mesmo sem efeitos ativos', () => {
+    const resolved = resolveEffectStack({ textColor: '#f59e0b' });
+
+    expect(resolved.hasEffects).toBe(false);
+    expect(resolved.effects).toEqual([]);
+    expect(resolved.classNames).toEqual([]);
+    expect((resolved.style as Record<string, string>)['--fx-text']).toBe('#f59e0b');
+  });
+
+  it('aplica cascata em textColor preservando ou sobrescrevendo', () => {
+    const base = { textColor: '#108a80', accentColor: '#177ce8' };
+    const override = { textColor: '#f59e0b' };
+
+    const resolved = resolveEffectStack(base, override);
+    expect(resolved.style).toEqual({
+      '--fx-accent': '#177ce8',
+      '--fx-text': '#f59e0b',
+    });
+  });
 });

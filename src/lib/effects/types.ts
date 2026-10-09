@@ -62,6 +62,8 @@ export interface EffectStack {
   effects?: EffectItem[];
   /** Cor de destaque (accent) opcional para efeitos como neon, aurora e spotlight */
   accentColor?: string;
+  /** Cor própria do texto da superfície (ex.: nome da raridade). Resolvida para --fx-text. Independente de accentColor. */
+  textColor?: string;
 }
 
 /**

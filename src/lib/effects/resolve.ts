@@ -90,24 +90,28 @@ export const resolveEffectStack = (
     activeEffects.push(descriptor);
   }
 
-  const hasEffects = activeEffects.length > 0;
-  if (!hasEffects) {
-    return {
-      effects: [],
-      classNames: [],
-      style: {},
-      hasEffects: false,
-    };
-  }
-
-  const classNames = activeEffects.map((effect) => effect.cssClass);
-
   const mergedAccentColor = override?.accentColor ?? base?.accentColor;
+  const mergedTextColor = override?.textColor ?? base?.textColor;
   const styleVariables: Record<string, string> = {};
 
   if (mergedAccentColor) {
     styleVariables['--fx-accent'] = mergedAccentColor;
   }
+  if (mergedTextColor) {
+    styleVariables['--fx-text'] = mergedTextColor;
+  }
+
+  const hasEffects = activeEffects.length > 0;
+  if (!hasEffects) {
+    return {
+      effects: [],
+      classNames: [],
+      style: styleVariables as React.CSSProperties,
+      hasEffects: false,
+    };
+  }
+
+  const classNames = activeEffects.map((effect) => effect.cssClass);
 
   return {
     effects: activeEffects,

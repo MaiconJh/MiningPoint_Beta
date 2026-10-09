@@ -91,7 +91,11 @@ export const EffectSurface: React.FC<EffectSurfaceProps> = ({
   if (!hasEffects || !stack) {
     return (
       <EffectSurfaceContext.Provider value={contextValue}>
-        <Component role={role} className={className} style={style}>
+        <Component
+          role={role}
+          className={className}
+          style={{ ...style, ...(stack?.style || {}) }}
+        >
           {children}
         </Component>
       </EffectSurfaceContext.Provider>

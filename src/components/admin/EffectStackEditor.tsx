@@ -39,6 +39,7 @@ export const EffectStackEditor: React.FC<EffectStackEditorProps> = ({
 
   const activeCount = activeEffectIds.size;
   const currentAccentColor = value?.accentColor || '';
+  const currentTextColor = value?.textColor || '';
 
   const handleToggleEffect = (targetId: EffectId) => {
     const nextSet = new Set(activeEffectIds);
@@ -52,12 +53,32 @@ export const EffectStackEditor: React.FC<EffectStackEditorProps> = ({
       .filter((desc) => nextSet.has(desc.id))
       .map((desc) => desc.id);
 
-    if (nextEffects.length === 0 && !value?.accentColor) {
+    if (nextEffects.length === 0 && !value?.accentColor && !value?.textColor) {
       onChange(undefined);
       return;
     }
 
     onChange({
+      ...(value?.textColor ? { textColor: value.textColor } : {}),
+      ...(value?.accentColor ? { accentColor: value.accentColor } : {}),
+      ...(nextEffects.length > 0 ? { effects: nextEffects } : {}),
+    });
+  };
+
+  const handleTextColorChange = (newColor: string) => {
+    const nextTextColor = newColor.trim() || undefined;
+
+    const nextEffects: EffectId[] = EFFECT_REGISTRY
+      .filter((desc) => activeEffectIds.has(desc.id))
+      .map((desc) => desc.id);
+
+    if (!nextTextColor && !value?.accentColor && nextEffects.length === 0) {
+      onChange(undefined);
+      return;
+    }
+
+    onChange({
+      ...(nextTextColor ? { textColor: nextTextColor } : {}),
       ...(value?.accentColor ? { accentColor: value.accentColor } : {}),
       ...(nextEffects.length > 0 ? { effects: nextEffects } : {}),
     });
@@ -70,12 +91,13 @@ export const EffectStackEditor: React.FC<EffectStackEditorProps> = ({
       .filter((desc) => activeEffectIds.has(desc.id))
       .map((desc) => desc.id);
 
-    if (!nextAccent && nextEffects.length === 0) {
+    if (!nextAccent && !value?.textColor && nextEffects.length === 0) {
       onChange(undefined);
       return;
     }
 
     onChange({
+      ...(value?.textColor ? { textColor: value.textColor } : {}),
       ...(nextAccent ? { accentColor: nextAccent } : {}),
       ...(nextEffects.length > 0 ? { effects: nextEffects } : {}),
     });
@@ -104,7 +126,7 @@ export const EffectStackEditor: React.FC<EffectStackEditorProps> = ({
               border: '1px solid rgba(255, 255, 255, 0.22)',
             }}
           >
-            <span className="text-[var(--brand-primary)] uppercase">
+            <span className="text-[var(--fx-text,var(--brand-primary))] uppercase">
               {labelName}
             </span>
           </EffectSurface>
@@ -143,7 +165,7 @@ export const EffectStackEditor: React.FC<EffectStackEditorProps> = ({
               <EffectSurface
                 stack={resolvedStack}
                 surface="tooltip"
-                className="w-max max-w-[240px] p-3 rounded-lg z-30"
+                className="w-max max-w-[220px] p-3 rounded-lg z-30"
                 /* eslint-disable-next-line design-tokens/no-raw-color-literals */
                 style={{
                   backgroundColor: 'rgba(16, 19, 24, 0.85)',
@@ -153,7 +175,7 @@ export const EffectStackEditor: React.FC<EffectStackEditorProps> = ({
                   boxShadow: '0 16px 38px rgba(0, 0, 0, 0.45)',
                 }}
               >
-                <p className="font-mono text-[11px] tracking-[0.1em] uppercase text-[var(--brand-primary)] font-bold m-0 truncate">
+                <p className="font-mono text-[11px] tracking-[0.1em] uppercase text-[var(--fx-text,var(--brand-primary))] font-bold m-0 truncate">
                   {labelName}
                 </p>
                 {/* eslint-disable-next-line design-tokens/no-raw-color-literals */}
@@ -214,7 +236,46 @@ export const EffectStackEditor: React.FC<EffectStackEditorProps> = ({
             </div>
           </div>
 
-          {/* 3. Cor de destaque (accentColor) */}
+          {/* 3. Cor do texto (textColor) */}
+          <div className="space-y-3 pt-4 border-t border-[var(--border-subtle)]">
+            <label
+              htmlFor="effect-text-color"
+              className="block text-xs font-mono uppercase tracking-[0.08em] text-[var(--text-muted)] font-bold"
+            >
+              Cor do texto (nome)
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={currentTextColor || '#8BD0EF'}
+                onChange={(e) => handleTextColorChange(e.target.value)}
+                className="w-10 h-10 p-0.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] cursor-pointer"
+              />
+              <input
+                id="effect-text-color"
+                type="text"
+                maxLength={7}
+                value={currentTextColor}
+                onChange={(e) => handleTextColorChange(e.target.value)}
+                placeholder="Padrão (--brand-primary)"
+                className="w-48 px-3.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-primary)] font-mono text-xs focus:outline-none focus:border-[var(--brand-primary)]"
+              />
+              {currentTextColor && (
+                <button
+                  type="button"
+                  onClick={() => handleTextColorChange('')}
+                  className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+                >
+                  Limpar cor
+                </button>
+              )}
+            </div>
+            <span className="text-xs text-[var(--text-muted)] block">
+              Tinge o nome da raridade no card. Vazio = usa a cor padrão do sistema.
+            </span>
+          </div>
+
+          {/* 4. Cor de destaque (accentColor) */}
           <div className="space-y-3 pt-4 border-t border-[var(--border-subtle)]">
             <label
               htmlFor="effect-accent-color"
@@ -253,7 +314,7 @@ export const EffectStackEditor: React.FC<EffectStackEditorProps> = ({
             </span>
           </div>
 
-          {/* 4. Rodapé / Restaurar padrão */}
+          {/* 5. Rodapé / Restaurar padrão */}
           <div className="pt-4 border-t border-[var(--border-subtle)] flex justify-end">
             <button
               type="button"
