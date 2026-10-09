@@ -211,6 +211,12 @@ export const listBadgesByIds = async (ids: string[]): Promise<Badge[]> => {
             icon: d.icon || 'award',
             createdAt: d.createdAt,
             createdBy: d.createdBy || '',
+            rarityId: d.rarityId || null,
+            categoryId: d.categoryId || null,
+            originId: d.originId || null,
+            collectionId: d.collectionId || null,
+            order: typeof d.order === 'number' ? Math.max(0, Math.min(999, d.order)) : 0,
+            linkedTitleIds: Array.isArray(d.linkedTitleIds) ? d.linkedTitleIds : [],
           } as Badge;
         }
       } catch (err) {
