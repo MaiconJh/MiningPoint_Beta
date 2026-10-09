@@ -56,7 +56,7 @@ export const ProfilePreviewModal: React.FC<ProfilePreviewModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-label={titleText}
-        className="w-full max-w-lg rounded-[12px] border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-6 shadow-xl flex flex-col gap-4 max-h-[calc(100vh-32px)] overflow-y-auto"
+        className="w-full max-w-3xl lg:max-w-4xl rounded-[16px] border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] p-4 sm:p-6 shadow-2xl flex flex-col gap-4 max-h-[calc(100vh-32px)] overflow-y-auto"
       >
         <div className="flex items-center justify-between gap-4">
           <h3 className="text-lg font-bold text-[var(--text-primary)] m-0 leading-snug">

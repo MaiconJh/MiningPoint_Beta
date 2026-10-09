@@ -8,8 +8,16 @@ import { Timestamp } from 'firebase/firestore';
 vi.mock('../../../hooks/useRarities', () => ({
   useRarities: () => ({
     rarities: [
-      { id: 'comum', label: 'Comum', order: 1 },
-      { id: 'raro', label: 'Raro', order: 3 },
+      { id: 'comum', label: 'Comum', color: '#94a3b8', order: 1 },
+      {
+        id: 'raro',
+        label: 'Raro',
+        color: '#f59e0b',
+        order: 3,
+        theme: {
+          effects: ['tilt', 'spotlight'],
+        },
+      },
     ],
     loading: false,
     reload: vi.fn(),
@@ -113,5 +121,23 @@ describe('BadgeCarousel', () => {
 
     const dragButton = screen.getByLabelText(/Insígnia Alfa\. Arraste para reordenar/);
     expect(dragButton).toBeInTheDocument();
+  });
+
+  it('aplica tema da raridade com pointer-events-auto e classes de efeito no tooltip', () => {
+    render(<BadgeCarousel items={mockItems} mode="manual" />);
+
+    // Clica no badge "Insígnia Beta" (raro) para fixar o tooltip
+    const betaBtn = screen.getByRole('button', { name: 'Insígnia Beta' });
+    fireEvent.click(betaBtn);
+
+    const tooltip = screen.getByRole('tooltip');
+    expect(tooltip).toBeInTheDocument();
+    // pointer-events-auto para permitir interação de ponteiro
+    expect(tooltip).toHaveClass('pointer-events-auto');
+    expect(tooltip).not.toHaveClass('pointer-events-none');
+    // Classe de efeito tilt aplicada no container
+    expect(tooltip).toHaveClass('fx-tilt');
+    // Herança de accentColor derivada da cor da raridade
+    expect(tooltip.style.getPropertyValue('--fx-accent')).toBe('#f59e0b');
   });
 });

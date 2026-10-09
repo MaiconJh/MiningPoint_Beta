@@ -19,14 +19,16 @@ export const ProfilePreviewCard: React.FC<ProfilePreviewCardProps> = ({
   onReorder,
 }) => {
   return (
-    <div className="rounded-[12px] bg-[var(--bg-surface)] border border-[var(--border-default)] shadow-sm overflow-hidden">
+    <div className="rounded-[16px] bg-[var(--bg-surface)] border border-[var(--border-default)] shadow-sm overflow-hidden">
       <ProfileBanner
         featuredBadges={featuredBadges}
         mode={profile.featuredBadgesMode || 'manual'}
         onModeChange={onModeChange}
         onReorder={onReorder}
       />
-      <ProfileHeader profile={profile} />
+      <div className="pb-4">
+        <ProfileHeader profile={profile} />
+      </div>
       <ProfileTabs activeTab="sobre" onChangeTab={() => {}} ownMode={false} readOnly />
       <div className="p-6">
         {profile.bio ? (

@@ -53,8 +53,8 @@ export const ProfileBanner: React.FC<ProfileBannerProps> = ({
         />
       </div>
 
-      {/* Badge Carousel anchored to bottom-right (16px from right, 14px from bottom) */}
-      <div className="absolute right-[16px] bottom-[14px] z-10">
+      {/* Badge Carousel ancorado no canto inferior direito do banner */}
+      <div className="absolute right-4 sm:right-6 bottom-[14px] z-10">
         <BadgeCarousel
           items={featuredBadges}
           mode={mode}

@@ -183,7 +183,7 @@ const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
           role="tooltip"
           surface="tooltip"
           stack={resolvedEffectStack}
-          className="absolute bottom-[calc(100%+8px)] right-0 w-max max-w-[220px] p-3 rounded-lg z-30 pointer-events-none"
+          className="absolute bottom-[calc(100%+8px)] right-0 w-max max-w-[220px] p-3 rounded-lg z-30 pointer-events-auto before:absolute before:inset-x-0 before:-bottom-2 before:h-2 before:content-['']"
           /* Tooltip translúcido estilizado com fundo escuro fixo para contraste com o banner */
           /* eslint-disable-next-line design-tokens/no-raw-color-literals */
           style={{
@@ -354,6 +354,12 @@ export const BadgeCarousel: React.FC<BadgeCarouselProps> = ({
         const rarity = item.badge.rarityId
           ? raritiesMap.get(item.badge.rarityId)
           : undefined;
+        const rarityTheme: EffectStack | undefined = rarity
+          ? {
+              ...(rarity.theme || { effects: [] }),
+              accentColor: rarity.theme?.accentColor || rarity.color,
+            }
+          : undefined;
         return (
           <SortableCarouselItem
             key={item.badge.id}
@@ -362,7 +368,7 @@ export const BadgeCarousel: React.FC<BadgeCarouselProps> = ({
             activeTooltipId={activeTooltipId}
             setActiveTooltipId={setActiveTooltipId}
             customIcons={customIcons}
-            rarityTheme={rarity?.theme}
+            rarityTheme={rarityTheme}
             effectStack={effectStack}
             isPinned={pinnedBadgeId === item.badge.id}
             onTogglePin={(id) =>

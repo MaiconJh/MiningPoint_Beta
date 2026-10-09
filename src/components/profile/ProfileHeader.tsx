@@ -61,9 +61,9 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile }) => {
 
   return (
     <div className="relative z-20 px-6 pt-0 pb-0">
-      <div className="flex items-start gap-4">
-        {/* Avatar: 60px diameter, -30px top margin overlapping banner */}
-        <div className="relative shrink-0 w-[60px] h-[60px] -mt-[30px] rounded-full overflow-hidden border-4 border-[var(--bg-default)] shadow-[0_0_0_1px_var(--border-default)] bg-[var(--bg-surface-elevated)] flex items-center justify-center z-30">
+      <div className="flex items-start gap-5">
+        {/* Avatar: 80px de diâmetro, -40px de margem superior sobrepondo o banner */}
+        <div className="relative shrink-0 w-[80px] h-[80px] -mt-[40px] rounded-full overflow-hidden border-4 border-[var(--bg-surface)] shadow-[0_0_0_1px_var(--border-default)] bg-[var(--bg-surface-elevated)] flex items-center justify-center z-30">
           {profile.photoURL && !imgError ? (
             <img
               src={profile.photoURL}
@@ -77,28 +77,17 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile }) => {
               style={{ backgroundColor: getAvatarColor(displayName) }}
               /* Texto fixo de alto contraste sobre o avatar colorido gerado dinamicamente */
               /* eslint-disable-next-line design-tokens/no-raw-color-literals */
-              className="w-full h-full flex items-center justify-center text-lg font-bold text-[#F7F7F8]"
+              className="w-full h-full flex items-center justify-center text-xl font-bold text-[#F7F7F8]"
             >
               {getInitials(displayName)}
             </div>
           )}
         </div>
 
-        {/* Identity: Featured Title above Name, Name, Group Badge + Shield */}
-        <div className="flex-1 min-w-0 pt-2">
-          {resolvedTitle && (
-            <div className="mb-1">
-              <Chip
-                label={resolvedTitle.name}
-                color={resolvedTitle.color}
-                style={resolvedTitle.chipStyle}
-                className="text-base"
-              />
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold text-[var(--text-primary)] m-0 leading-tight truncate">
+        {/* Identidade: Nome como âncora primária, Grupo e Título destacados em ordem coerente */}
+        <div className="flex-1 min-w-0 pt-1">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] m-0 leading-tight truncate">
               {displayName}
             </h1>
             {hasBadge && (
@@ -113,29 +102,37 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile }) => {
                 )}
               </div>
             )}
+            {resolvedTitle && (
+              <Chip
+                label={resolvedTitle.name}
+                color={resolvedTitle.color}
+                style={resolvedTitle.chipStyle}
+                className="text-sm"
+              />
+            )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 mt-1">
+          <div className="flex flex-wrap items-center gap-3 mt-1.5">
             {profile.handle && (
-              <div className="text-xs font-mono text-[var(--text-secondary)]">
+              <span className="text-xs font-mono text-[var(--text-secondary)]">
                 @{profile.handle}
-              </div>
+              </span>
             )}
 
             <button
               type="button"
               onClick={handleShareProfile}
               title="Copiar link do perfil"
-              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] hover:border-[var(--brand-primary)] text-[11px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] hover:border-[var(--brand-primary)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
             >
               {copiedLink ? (
                 <>
-                  <CheckIcon className="w-3 h-3 text-[var(--feedback-success)]" />
+                  <CheckIcon className="w-3.5 h-3.5 text-[var(--feedback-success)]" />
                   <span>Link copiado!</span>
                 </>
               ) : (
                 <>
-                  <Share2Icon className="w-3 h-3" />
+                  <Share2Icon className="w-3.5 h-3.5" />
                   <span>Compartilhar perfil</span>
                 </>
               )}

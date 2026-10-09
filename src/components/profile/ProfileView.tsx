@@ -59,47 +59,54 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ userId, ownMode }) => 
   }
 
   return (
-    <div className="w-full pb-8">
-      {/* 1. Banner em largura total */}
-      <ProfileBanner
-        featuredBadges={featuredBadges}
-        mode={displayMode}
-        showModeToggle={false}
-      />
-
-      {/* 2. Container centralizado de conteúdo */}
-      <div className="w-full max-w-[1180px] mx-auto px-4 sm:px-6">
-        {/* Header row */}
-        <ProfileHeader profile={profile} />
+    <div className="w-full pb-10 pt-6">
+      {/* Container centralizado de conteúdo */}
+      <div className="w-full max-w-[1180px] mx-auto px-4 sm:px-6 flex flex-col gap-6">
+        {/* Bloco superior com Banner e Cabeçalho contidos em harmonia com o preview */}
+        <div className="rounded-[16px] bg-[var(--bg-surface)] border border-[var(--border-default)] overflow-hidden shadow-sm">
+          <ProfileBanner
+            featuredBadges={featuredBadges}
+            mode={displayMode}
+            showModeToggle={false}
+          />
+          <div className="pb-5">
+            <ProfileHeader profile={profile} />
+          </div>
+        </div>
 
         {/* Onboarding HandleBanner */}
         {ownMode && profile && <HandleBanner profile={profile} />}
 
-        {/* Tabs row */}
-        <ProfileTabs
-          activeTab={activeTab}
-          onChangeTab={setActiveTab}
-          ownMode={ownMode}
-        />
-
         {/* Two-column body */}
-        <div className="p-6 flex flex-col lg:flex-row gap-6 items-start">
-          {/* Main tab content */}
-          <div className="flex-1 min-w-0" role="tabpanel" id={`panel-${activeTab}`}>
-            {activeTab === 'feed' && (
-              <FeedTab isBanned={profile.isBanned} ownMode={ownMode} />
-            )}
-            {activeTab === 'sobre' && (
-              <AboutTab
-                bio={profile.bio}
-                showEditButton={ownMode}
-                onEdit={() => navigate('/conta/perfil')}
-              />
-            )}
-            {activeTab === 'qualidades' && (
-              <AttributesTab attributes={profile.attributes} />
-            )}
-            {activeTab === 'historico' && <HistoryTab />}
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
+          {/* Main column with tabs and card surface */}
+          <div className="flex-1 min-w-0 w-full flex flex-col gap-4">
+            <ProfileTabs
+              activeTab={activeTab}
+              onChangeTab={setActiveTab}
+              ownMode={ownMode}
+            />
+
+            <div
+              className="rounded-[12px] border border-[var(--border-default)] bg-[var(--bg-surface)] p-6 min-h-[220px]"
+              role="tabpanel"
+              id={`panel-${activeTab}`}
+            >
+              {activeTab === 'feed' && (
+                <FeedTab isBanned={profile.isBanned} ownMode={ownMode} />
+              )}
+              {activeTab === 'sobre' && (
+                <AboutTab
+                  bio={profile.bio}
+                  showEditButton={ownMode}
+                  onEdit={() => navigate('/conta/perfil')}
+                />
+              )}
+              {activeTab === 'qualidades' && (
+                <AttributesTab attributes={profile.attributes} />
+              )}
+              {activeTab === 'historico' && <HistoryTab />}
+            </div>
           </div>
 
           {/* Sidebar */}

@@ -7,17 +7,19 @@ interface TabItem {
   label: string;
 }
 
-interface ProfileTabsProps {
+export interface ProfileTabsProps {
   activeTab: ProfileTabId;
   onChangeTab: (tab: ProfileTabId) => void;
   ownMode: boolean;
   readOnly?: boolean;
+  className?: string;
 }
 
 export const ProfileTabs: React.FC<ProfileTabsProps> = ({
   activeTab,
   onChangeTab,
   readOnly = false,
+  className = '',
 }) => {
   const tabs: TabItem[] = [
     { id: 'feed', label: 'Feed' },
@@ -27,7 +29,7 @@ export const ProfileTabs: React.FC<ProfileTabsProps> = ({
   ];
 
   return (
-    <div className="mt-6 px-6 border-b border-[var(--border-default)]">
+    <div className={`border-b border-[var(--border-default)] ${className}`}>
       <div className="flex flex-wrap items-center gap-1" role="tablist">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;

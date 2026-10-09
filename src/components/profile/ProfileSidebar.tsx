@@ -23,11 +23,11 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
 
   return (
     <aside
-      className="w-full lg:w-[258px] shrink-0 flex flex-col gap-6 lg:sticky lg:top-[calc(var(--nav-offset)+var(--nav-h)+16px)] lg:self-start"
+      className="w-full lg:w-[258px] shrink-0 flex flex-col lg:sticky lg:top-[calc(var(--nav-offset)+var(--nav-h)+16px)] lg:self-start"
       aria-label="Resumo do perfil"
     >
       {/* Block 1: Estatísticas */}
-      <section className="p-4 rounded-[12px] border border-[var(--border-default)] bg-[var(--bg-surface)] flex flex-col gap-3">
+      <section className="flex flex-col gap-3">
         <h2 className="font-mono text-[11px] tracking-[0.14em] uppercase text-[var(--brand-secondary)] font-bold m-0">
           Estatísticas
         </h2>
@@ -53,7 +53,7 @@ export const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
       </section>
 
       {/* Block 2: Reputação */}
-      <section className="p-4 rounded-[12px] border border-[var(--border-default)] bg-[var(--bg-surface)] flex flex-col gap-3">
+      <section className="pt-4 mt-4 border-t border-[var(--border-default)] flex flex-col gap-3">
         <h2 className="font-mono text-[11px] tracking-[0.14em] uppercase text-[var(--brand-secondary)] font-bold m-0">
           Reputação
         </h2>
