@@ -23,6 +23,9 @@ import { FeaturedBadgesMode, sortFeaturedBadges } from '../../lib/featuredBadges
 import { resolveIcon } from '../../data/icons/iconRegistry';
 import { useCustomIcons } from '../../hooks/useCustomIcons';
 import { useRarities } from '../../hooks/useRarities';
+import { EffectSurface } from '../effects/EffectSurface';
+import { resolveEffectStack } from '../../lib/effects/resolve';
+import { EffectStack, ResolvedEffectStack } from '../../lib/effects/types';
 
 export interface BadgeCarouselProps {
   items: FeaturedBadgeItem[];
@@ -30,6 +33,7 @@ export interface BadgeCarouselProps {
   onModeChange?: (nextMode: FeaturedBadgesMode) => void;
   onReorder?: (newOrderIds: string[]) => void;
   showModeToggle?: boolean;
+  effectStack?: EffectStack | ResolvedEffectStack;
 }
 
 const ptBrCarouselAnnouncements: Announcements = {
@@ -77,6 +81,7 @@ interface SortableCarouselItemProps {
   activeTooltipId: string | null;
   setActiveTooltipId: (id: string | null) => void;
   customIcons: Record<string, string>;
+  effectStack?: EffectStack | ResolvedEffectStack;
 }
 
 const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
@@ -85,11 +90,18 @@ const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
   activeTooltipId,
   setActiveTooltipId,
   customIcons,
+  effectStack,
 }) => {
   const { badge, userBadge } = item;
   const isHovered = activeTooltipId === badge.id;
   const awardedDate = formatAwardedAt(userBadge.awardedAt);
   const IconComponent = resolveIcon(badge.icon, customIcons);
+
+  const resolvedEffectStack = useMemo(() => {
+    if (!effectStack) return undefined;
+    if ('classNames' in effectStack) return effectStack as ResolvedEffectStack;
+    return resolveEffectStack(effectStack);
+  }, [effectStack]);
 
   const {
     attributes,
@@ -147,8 +159,10 @@ const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
 
       {/* Tooltip Card */}
       {isHovered && !isDragging && (
-        <div
+        <EffectSurface
           role="tooltip"
+          surface="tooltip"
+          stack={resolvedEffectStack}
           className="absolute bottom-[calc(100%+8px)] right-0 w-max max-w-[220px] p-3 rounded-lg z-30 pointer-events-none"
           /* Tooltip translúcido estilizado com fundo escuro fixo para contraste com o banner */
           /* eslint-disable-next-line design-tokens/no-raw-color-literals */
@@ -175,7 +189,7 @@ const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
               Concedida em {awardedDate}
             </p>
           )}
-        </div>
+        </EffectSurface>
       )}
     </div>
   );
@@ -187,6 +201,7 @@ export const BadgeCarousel: React.FC<BadgeCarouselProps> = ({
   onModeChange,
   onReorder,
   showModeToggle = true,
+  effectStack,
 }) => {
   const [activeTooltipId, setActiveTooltipId] = useState<string | null>(null);
   const [internalMode, setInternalMode] = useState<FeaturedBadgesMode>(
@@ -304,6 +319,7 @@ export const BadgeCarousel: React.FC<BadgeCarouselProps> = ({
           activeTooltipId={activeTooltipId}
           setActiveTooltipId={setActiveTooltipId}
           customIcons={customIcons}
+          effectStack={effectStack}
         />
       ))}
     </div>

@@ -1,0 +1,182 @@
+/* ==========================================================================
+   Effect Stack Foundation Styles
+   Animações restritas a transform e opacity para alta performance (sem layout thrashing).
+   Cores e estilos derivados exclusivamente de variáveis CSS do sistema.
+   ========================================================================== */
+
+/* Superfície base e camadas de efeito */
+.fx-surface {
+  position: relative;
+  isolation: isolate;
+}
+
+.fx-content {
+  position: relative;
+  z-index: 2;
+}
+
+.fx-layer {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* 1. Tilt 3D (reage à posição do cursor com rotação em perspectiva) */
+.fx-tilt {
+  transform: perspective(600px) rotateX(var(--fx-tilt-x, 0deg)) rotateY(var(--fx-tilt-y, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 120ms ease-out;
+  will-change: transform;
+}
+
+/* 2. Spotlight (holofote radial guiado pelo cursor) */
+.fx-spotlight {
+  background: radial-gradient(
+    circle 140px at var(--fx-mouse-x, 50%) var(--fx-mouse-y, 50%),
+    color-mix(in srgb, var(--fx-accent, var(--brand-primary)) 24%, transparent) 0%,
+    transparent 100%
+  );
+}
+
+/* 3. Holo (brilho espectral holográfico com mesclagem translúcida) */
+.fx-holo {
+  background: linear-gradient(
+    115deg,
+    transparent 15%,
+    color-mix(in srgb, var(--brand-primary) 32%, transparent) 35%,
+    color-mix(in srgb, var(--brand-secondary) 32%, transparent) 50%,
+    color-mix(in srgb, var(--brand-community) 32%, transparent) 65%,
+    transparent 85%
+  );
+  mix-blend-mode: color-dodge;
+  opacity: 0.5;
+  animation: fx-holo-shift 6s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+@keyframes fx-holo-shift {
+  0% {
+    transform: translate(-10%, -10%) rotate(0deg);
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.65;
+  }
+  100% {
+    transform: translate(10%, 10%) rotate(4deg);
+    opacity: 0.35;
+  }
+}
+
+/* 4. Aurora (ondulações orgânicas de gradiente difuso) */
+.fx-aurora {
+  background: radial-gradient(
+    ellipse at 50% 0%,
+    color-mix(in srgb, var(--brand-secondary) 38%, transparent) 0%,
+    color-mix(in srgb, var(--brand-primary) 22%, transparent) 50%,
+    transparent 80%
+  );
+  filter: blur(8px);
+  opacity: 0.6;
+  animation: fx-aurora-drift 8s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+@keyframes fx-aurora-drift {
+  0% {
+    transform: translateY(0%) scale(1);
+    opacity: 0.45;
+  }
+  100% {
+    transform: translateY(6%) scale(1.08);
+    opacity: 0.75;
+  }
+}
+
+/* 5. Prism (prisma estático com dispersão de luz em ângulo) */
+.fx-prism {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--brand-primary) 18%, transparent) 0%,
+    transparent 35%,
+    color-mix(in srgb, var(--brand-secondary) 18%, transparent) 55%,
+    transparent 75%,
+    color-mix(in srgb, var(--brand-community) 18%, transparent) 100%
+  );
+  opacity: 0.65;
+}
+
+/* 6. Shimmer (faixa luminosa que varre a superfície) */
+.fx-shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--text-primary) 24%, transparent) 50%,
+    transparent 100%
+  );
+  animation: fx-shimmer-sweep 3.5s linear infinite;
+  will-change: transform;
+}
+
+@keyframes fx-shimmer-sweep {
+  0% {
+    transform: translateX(-150%) skewX(-20deg);
+  }
+  100% {
+    transform: translateX(250%) skewX(-20deg);
+  }
+}
+
+/* 7. Neon (borda e resplendor estáticos de alto contraste) */
+.fx-neon {
+  border-color: color-mix(in srgb, var(--fx-accent, var(--brand-primary)) 75%, transparent) !important;
+  box-shadow:
+    0 0 10px color-mix(in srgb, var(--fx-accent, var(--brand-primary)) 45%, transparent),
+    0 0 20px color-mix(in srgb, var(--fx-accent, var(--brand-primary)) 20%, transparent),
+    0 16px 38px rgba(0, 0, 0, 0.45) !important;
+}
+
+/* 8. Sparkle (pulso suave de centelhas) */
+.fx-sparkle {
+  background-image:
+    radial-gradient(circle 1.5px at 15% 25%, color-mix(in srgb, var(--text-primary) 95%, transparent) 100%, transparent),
+    radial-gradient(circle 2px at 85% 20%, color-mix(in srgb, var(--fx-accent, var(--brand-primary)) 95%, transparent) 100%, transparent),
+    radial-gradient(circle 1.5px at 65% 80%, color-mix(in srgb, var(--brand-secondary) 95%, transparent) 100%, transparent),
+    radial-gradient(circle 1.2px at 30% 75%, color-mix(in srgb, var(--text-primary) 85%, transparent) 100%, transparent);
+  animation: fx-sparkle-pulse 3s ease-in-out infinite alternate;
+  will-change: opacity, transform;
+}
+
+@keyframes fx-sparkle-pulse {
+  0% {
+    opacity: 0.35;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
+  100% {
+    opacity: 0.35;
+    transform: scale(0.98);
+  }
+}
+
+/* Desativação de animações para preferência de movimento reduzido */
+@media (prefers-reduced-motion: reduce) {
+  .fx-holo,
+  .fx-aurora,
+  .fx-shimmer::after,
+  .fx-sparkle {
+    animation: none !important;
+  }
+}
