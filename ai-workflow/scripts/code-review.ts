@@ -104,32 +104,26 @@ console.log('\nConcluido em ' + (Date.now() - start) + 'ms');
 }
 
 function parseReview(raw: string): ReviewResult {
-  // 1. Remove fences de código em qualquer posição
+  // Remove fences
   let cleaned = raw.replace(/```(?:json|javascript)?\s*/gi, '').replace(/```/g, '').trim();
 
-  // 2. Extrai o primeiro bloco JSON válido procurando { ... }
-  const firstBrace = cleaned.indexOf('{');
-  const lastBrace = cleaned.lastIndexOf('}');
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    cleaned = cleaned.slice(firstBrace, lastBrace + 1);
-  }
+  // Extrai primeiro {...}
+  const first = cleaned.indexOf('{');
+  const last = cleaned.lastIndexOf('}');
+  if (first !== -1 && last > first) cleaned = cleaned.slice(first, last + 1);
 
   try {
     const parsed = JSON.parse(cleaned) as ReviewResult;
-    if (!parsed.summary || !parsed.verdict) {
-      throw new Error('Review incompleto: summary e verdict sao obrigatorios.');
-    }
+    if (!parsed.summary || !parsed.verdict) throw new Error('incomplete');
     parsed.comments = Array.isArray(parsed.comments) ? parsed.comments : [];
-    parsed.standards_violations = Array.isArray(parsed.standards_violations)
-      ? parsed.standards_violations
-      : [];
+    parsed.standards_violations = Array.isArray(parsed.standards_violations) ? parsed.standards_violations : [];
     return parsed;
   } catch (err) {
-    console.error('Falha ao parsear review. Resposta bruta (primeiros 800 chars):');
-    console.error(raw.slice(0, 800));
-    console.error('Erro:', err);
+    console.error('=== RESPOSTA BRUTA DO MODELO ===');
+    console.error(raw);
+    console.error('=== FIM ===');
     return {
-      summary: 'A IA nao conseguiu gerar um review estruturado.',
+      summary: raw.slice(0, 500) || 'Modelo nao retornou conteudo.',
       verdict: 'comment',
       comments: [],
       standards_violations: [],
