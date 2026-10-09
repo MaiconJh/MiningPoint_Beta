@@ -32,22 +32,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           ref: AI_ORCHESTRATOR
+          fetch-depth: 0
           token: ${{ secrets.AI_ORCHESTRATOR_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install AI workflow dependencies
+        working-directory: ai-workflow
+        run: npm install
 
       - name: Run feature proposal
+        working-directory: ai-workflow
         env:
           GITHUB_TOKEN: ${{ secrets.AI_ORCHESTRATOR_TOKEN }}
+          REPO_ROOT: ${{ github.workspace }}
           AI_BASE_BRANCH: "AI_ORCHESTRATOR"
           AI_CONFIG_JSON: ${{ secrets.AI_CONFIG_JSON }}
           AI_CONFIG_PATH: ${{ vars.AI_CONFIG_PATH }}
