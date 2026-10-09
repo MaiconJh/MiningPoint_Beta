@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Rarity, RarityFormData } from '../../types/rarity';
+import { EffectStack } from '../../lib/effects/types';
+import { EffectStackEditor } from './EffectStackEditor';
 
 interface RarityFormProps {
   initialRarity?: Rarity | null;
@@ -21,6 +23,7 @@ export const RarityForm: React.FC<RarityFormProps> = ({
   const [label, setLabel] = useState(initialRarity?.label || '');
   const [color, setColor] = useState(initialRarity?.color || '#8BD0EF');
   const [order, setOrder] = useState<number>(initialRarity?.order ?? 0);
+  const [theme, setTheme] = useState<EffectStack | undefined>(initialRarity?.theme);
 
   const [localError, setLocalError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -49,6 +52,7 @@ export const RarityForm: React.FC<RarityFormProps> = ({
       label: label.trim().slice(0, 40),
       color: color.trim(),
       order: Number(order) || 0,
+      theme: theme ?? undefined,
     };
 
     try {
@@ -134,6 +138,15 @@ export const RarityForm: React.FC<RarityFormProps> = ({
               className="w-36 px-3.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] text-[var(--text-primary)] font-mono text-sm focus:outline-none focus:border-[var(--brand-primary)]"
             />
           </div>
+        </div>
+
+        {/* Efeitos visuais */}
+        <div className="pt-2 border-t border-[var(--border-subtle)]">
+          <EffectStackEditor
+            value={theme}
+            onChange={setTheme}
+            labelName={label || 'Raridade'}
+          />
         </div>
 
         {/* Ordem */}

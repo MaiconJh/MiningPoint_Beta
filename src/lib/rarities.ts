@@ -7,6 +7,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   serverTimestamp,
   type DocumentData,
 } from 'firebase/firestore';
@@ -21,6 +22,7 @@ const parseRarityDoc = (id: string, data: DocumentData): Rarity => {
     label: data.label || '',
     color: data.color || '#8BD0EF',
     order: typeof data.order === 'number' ? data.order : 0,
+    theme: data.theme || undefined,
     createdAt: data.createdAt,
     createdBy: data.createdBy || '',
   };
@@ -70,6 +72,7 @@ export const createRarity = async (
     label: data.label.trim(),
     color: data.color.trim() || '#8BD0EF',
     order: typeof data.order === 'number' ? data.order : 0,
+    theme: data.theme || null,
     createdAt: serverTimestamp(),
     createdBy,
   });
@@ -87,6 +90,11 @@ export const updateRarity = async (
   if (data.label !== undefined) updatePayload.label = data.label.trim();
   if (data.color !== undefined) updatePayload.color = data.color.trim();
   if (data.order !== undefined) updatePayload.order = Number(data.order);
+  if (data.theme === undefined) {
+    updatePayload.theme = deleteField();
+  } else {
+    updatePayload.theme = data.theme || null;
+  }
 
   await updateDoc(doc(db, 'rarities', rarityId), updatePayload);
 };
