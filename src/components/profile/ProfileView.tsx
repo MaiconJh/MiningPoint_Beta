@@ -59,30 +59,29 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ userId, ownMode }) => 
   }
 
   return (
-    <div className="w-full pb-8">
-      {/* 1. Banner em largura total */}
-      <ProfileBanner
-        featuredBadges={featuredBadges}
-        mode={displayMode}
-        showModeToggle={false}
-      />
+    <div className="w-full max-w-[800px] mx-auto px-4 sm:px-6 py-8">
+      <div className="rounded-[12px] bg-[var(--bg-surface)] border border-[var(--border-default)] overflow-clip">
+        {/* 1. Banner */}
+        <ProfileBanner
+          featuredBadges={featuredBadges}
+          mode={displayMode}
+          showModeToggle={false}
+        />
 
-      {/* 2. Container centralizado de conteúdo */}
-      <div className="w-full max-w-[1180px] mx-auto px-4 sm:px-6">
-        {/* Header row */}
+        {/* 2. Header row */}
         <ProfileHeader profile={profile} />
 
         {/* Onboarding HandleBanner */}
         {ownMode && profile && <HandleBanner profile={profile} />}
 
-        {/* Tabs row */}
+        {/* 3. Tabs row */}
         <ProfileTabs
           activeTab={activeTab}
           onChangeTab={setActiveTab}
           ownMode={ownMode}
         />
 
-        {/* Two-column body */}
+        {/* 4. Two-column body */}
         <div className="p-6 flex flex-col lg:flex-row gap-6 items-start">
           {/* Main tab content */}
           <div className="flex-1 min-w-0" role="tabpanel" id={`panel-${activeTab}`}>

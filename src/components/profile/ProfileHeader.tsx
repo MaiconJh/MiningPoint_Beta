@@ -62,8 +62,8 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile }) => {
   return (
     <div className="relative z-20 px-6 pt-0 pb-0">
       <div className="flex items-start gap-4">
-        {/* Avatar: 60px diameter, -30px top margin overlapping banner */}
-        <div className="relative shrink-0 w-[60px] h-[60px] -mt-[30px] rounded-full overflow-hidden border-4 border-[var(--bg-default)] shadow-[0_0_0_1px_var(--border-default)] bg-[var(--bg-surface-elevated)] flex items-center justify-center z-30">
+        {/* Avatar: 76px diameter, -32px top margin overlapping banner */}
+        <div className="relative shrink-0 w-[76px] h-[76px] -mt-[32px] rounded-full overflow-hidden border-4 border-[var(--bg-surface)] shadow-[0_0_0_1px_var(--border-default)] bg-[var(--bg-surface-elevated)] flex items-center justify-center z-30">
           {profile.photoURL && !imgError ? (
             <img
               src={profile.photoURL}
