@@ -9,7 +9,7 @@ on:
       - "PROJECT_STANDARDS.md"
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 concurrency:
@@ -43,7 +43,7 @@ jobs:
       - name: Run standards review
         working-directory: ai-workflow
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.AI_ORCHESTRATOR_TOKEN }}
           REPO_ROOT: ${{ github.workspace }}
           AI_BASE_BRANCH: "AI_ORCHESTRATOR"
           AI_CONFIG_JSON: ${{ secrets.AI_CONFIG_JSON }}
