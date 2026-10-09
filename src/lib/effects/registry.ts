@@ -75,14 +75,14 @@ export const EFFECT_REGISTRY: readonly EffectDescriptor[] = [
     cost: 1,
   },
   {
-    id: 'sparkle',
-    label: 'Centelhas',
-    cssClass: 'fx-sparkle',
+    id: 'ember',
+    label: 'Brasas',
+    cssClass: 'fx-ember',
     target: 'layer',
     surfaces: ['tooltip'],
-    requiresDarkSurface: false,
+    requiresDarkSurface: true,
     animated: true,
-    cost: 2,
+    cost: 3,
   },
 ];
 

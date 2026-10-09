@@ -11,7 +11,50 @@ export type EffectId =
   | 'prism'
   | 'shimmer'
   | 'neon'
-  | 'sparkle';
+  | 'ember';
+
+/**
+ * Identificadores dos 6 presets oficiais de brasas.
+ */
+export type EmberPresetId =
+  | 'amber'
+  | 'crimson'
+  | 'blue'
+  | 'green'
+  | 'violet'
+  | 'dense';
+
+/**
+ * Configuração parametrizável de partículas de brasas.
+ */
+export interface EmberConfig {
+  /** Preset base selecionado */
+  preset?: EmberPresetId;
+  /** Cor primária da brasa e do rastro (herda accentColor se ausente) */
+  primaryColor?: string;
+  /** Cor secundária do núcleo da brasa */
+  secondaryColor?: string;
+  /** Quantidade de partículas ativas simultâneas (8-60) */
+  density?: number;
+  /** Multiplicador de velocidade de subida (0.5-2.0) */
+  riseSpeed?: number;
+  /** Multiplicador do comprimento do rastro luminoso (0.5-2.0) */
+  wakeLength?: number;
+  /** Intensidade do brilho difuso (0-100) */
+  glowIntensity?: number;
+}
+
+/**
+ * Configuração de brasas totalmente resolvida pronta para consumo visual.
+ */
+export interface ResolvedEmberConfig {
+  primary: string;
+  secondary: string;
+  density: number;
+  riseSpeed: number;
+  wakeLength: number;
+  glowIntensity: number;
+}
 
 /**
  * Superfícies visuais onde os efeitos podem ser aplicados.
@@ -64,6 +107,8 @@ export interface EffectStack {
   accentColor?: string;
   /** Cor própria do texto da superfície (ex.: nome da raridade). Resolvida para --fx-text. Independente de accentColor. */
   textColor?: string;
+  /** Configurações parametrizáveis do efeito de brasas */
+  particles?: EmberConfig;
 }
 
 /**
@@ -78,6 +123,8 @@ export interface ResolvedEffectStack {
   style: React.CSSProperties;
   /** Indica se há pelo menos um efeito ativo */
   hasEffects: boolean;
+  /** Configuração resolvida de brasas (presente apenas quando o efeito ember estiver ativo) */
+  ember?: ResolvedEmberConfig;
 }
 
 /**

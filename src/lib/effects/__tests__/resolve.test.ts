@@ -15,7 +15,7 @@ describe('Effect Registry', () => {
       'prism',
       'shimmer',
       'neon',
-      'sparkle',
+      'ember',
     ];
 
     expect(EFFECT_REGISTRY.map((e) => e.id)).toEqual(expectedIds);
@@ -113,8 +113,8 @@ describe('resolveEffectStack', () => {
   });
 
   it('filtra efeitos animados quando prefersReducedMotion estiver ativo', () => {
-    // Mistura de efeitos estáticos (tilt, prism, neon) e animados (holo, shimmer, sparkle)
-    const allEffects: EffectId[] = ['tilt', 'holo', 'prism', 'shimmer', 'neon', 'sparkle'];
+    // Mistura de efeitos estáticos (tilt, prism, neon) e animados (holo, shimmer, ember)
+    const allEffects: EffectId[] = ['tilt', 'holo', 'prism', 'shimmer', 'neon', 'ember'];
 
     const resolvedWithoutReducedMotion = resolveEffectStack(
       { effects: allEffects },
@@ -127,7 +127,7 @@ describe('resolveEffectStack', () => {
       'prism',
       'shimmer',
       'neon',
-      'sparkle',
+      'ember',
     ]);
 
     const resolvedWithReducedMotion = resolveEffectStack(
@@ -136,10 +136,63 @@ describe('resolveEffectStack', () => {
       { prefersReducedMotion: true }
     );
 
-    // Efeitos animados ('holo', 'shimmer', 'sparkle') são descartados;
+    // Efeitos animados ('holo', 'shimmer', 'ember') são descartados;
     // apenas estáticos ('tilt', 'prism', 'neon') permanecem.
     expect(resolvedWithReducedMotion.effects.map((e) => e.id)).toEqual(['tilt', 'prism', 'neon']);
     expect(resolvedWithReducedMotion.classNames).toEqual(['fx-tilt', 'fx-prism', 'fx-neon']);
+  });
+
+  it('resolve ember com preset amber quando nenhuma partícula for especificada', () => {
+    const resolved = resolveEffectStack({ effects: ['ember'] });
+    expect(resolved.ember).toBeDefined();
+    expect(resolved.ember?.density).toBe(22);
+    expect(resolved.ember?.riseSpeed).toBe(1.0);
+    expect(resolved.ember?.wakeLength).toBe(1.0);
+    expect(resolved.ember?.glowIntensity).toBe(55);
+    expect(resolved.ember?.primary).toBe('#ff8c2a');
+    expect(resolved.ember?.secondary).toBe('#ffd27a');
+  });
+
+  it('permite sobrescrever preset e densidade no ember', () => {
+    const resolved = resolveEffectStack({
+      effects: ['ember'],
+      particles: { preset: 'blue', density: 30 },
+    });
+    expect(resolved.ember?.density).toBe(30);
+    expect(resolved.ember?.primary).toBe('#4a90e2');
+  });
+
+  it('herda accentColor quando primaryColor não for especificada', () => {
+    const resolved = resolveEffectStack({
+      effects: ['ember'],
+      accentColor: '#00ff00',
+    });
+    expect(resolved.ember?.primary).toBe('#00ff00');
+  });
+
+  it('prioriza primaryColor explícita sobre accentColor e preset', () => {
+    const resolved = resolveEffectStack({
+      effects: ['ember'],
+      accentColor: '#00ff00',
+      particles: { primaryColor: '#ff0000' },
+    });
+    expect(resolved.ember?.primary).toBe('#ff0000');
+  });
+
+  it('clampa density para o limite máximo de 60', () => {
+    const resolved = resolveEffectStack({
+      effects: ['ember'],
+      particles: { density: 1000 },
+    });
+    expect(resolved.ember?.density).toBe(60);
+  });
+
+  it('não emite ember quando ember não estiver na lista de efeitos ativos', () => {
+    const resolved = resolveEffectStack({
+      particles: { preset: 'blue' },
+    });
+    expect(resolved.ember).toBeUndefined();
+    expect(resolved.hasEffects).toBe(false);
   });
 
   it('preserva accentColor base quando override não especificar nova cor', () => {

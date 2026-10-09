@@ -4,10 +4,13 @@ import {
   EffectId,
   EffectItem,
   EffectStack,
+  EmberPresetId,
   ResolvedEffectStack,
+  ResolvedEmberConfig,
   ResolveEffectStackOptions,
 } from './types';
 import { EFFECT_MAP, EFFECT_REGISTRY } from './registry';
+import { getEmberPreset } from './emberPresets';
 
 /**
  * Detecta se a preferência de movimento reduzido está ativa no ambiente do navegador.
@@ -111,6 +114,61 @@ export const resolveEffectStack = (
     };
   }
 
+  let resolvedEmber: ResolvedEmberConfig | undefined;
+  if (activeEffects.some((e) => e.id === 'ember')) {
+    const rawPresetId = (override?.particles?.preset ?? base?.particles?.preset ?? 'amber') as EmberPresetId;
+    const preset = getEmberPreset(rawPresetId);
+
+    const primaryRaw =
+      override?.particles?.primaryColor ??
+      base?.particles?.primaryColor ??
+      mergedAccentColor ??
+      preset.primary;
+
+    const secondaryRaw =
+      override?.particles?.secondaryColor ??
+      base?.particles?.secondaryColor ??
+      preset.secondary;
+
+    const densityRaw =
+      override?.particles?.density ??
+      base?.particles?.density ??
+      preset.density;
+
+    const riseSpeedRaw =
+      override?.particles?.riseSpeed ??
+      base?.particles?.riseSpeed ??
+      preset.riseSpeed;
+
+    const wakeLengthRaw =
+      override?.particles?.wakeLength ??
+      base?.particles?.wakeLength ??
+      preset.wakeLength;
+
+    const glowIntensityRaw =
+      override?.particles?.glowIntensity ??
+      base?.particles?.glowIntensity ??
+      preset.glowIntensity;
+
+    const density = Math.max(8, Math.min(60, Math.round(Number(densityRaw))));
+    const riseSpeed = Math.max(0.5, Math.min(2.0, Number(riseSpeedRaw)));
+    const wakeLength = Math.max(0.5, Math.min(2.0, Number(wakeLengthRaw)));
+    const glowIntensity = Math.max(0, Math.min(100, Math.round(Number(glowIntensityRaw))));
+
+    resolvedEmber = {
+      primary: primaryRaw,
+      secondary: secondaryRaw,
+      density,
+      riseSpeed,
+      wakeLength,
+      glowIntensity,
+    };
+
+    styleVariables['--fx-ember-primary'] = resolvedEmber.primary;
+    styleVariables['--fx-ember-secondary'] = resolvedEmber.secondary;
+    styleVariables['--fx-ember-glow'] = `${resolvedEmber.glowIntensity}`;
+  }
+
   const classNames = activeEffects.map((effect) => effect.cssClass);
 
   return {
@@ -118,5 +176,6 @@ export const resolveEffectStack = (
     classNames,
     style: styleVariables as React.CSSProperties,
     hasEffects: true,
+    ...(resolvedEmber ? { ember: resolvedEmber } : {}),
   };
 };

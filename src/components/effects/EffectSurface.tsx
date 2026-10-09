@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useRef, useState, useCallback } from 'react';
 import { EffectSurfaceType, ResolvedEffectStack } from '../../lib/effects/types';
+import { ParticleLayer } from './ParticleLayer';
 
 export interface EffectSurfaceContextValue {
   stack?: ResolvedEffectStack;
@@ -134,13 +135,26 @@ export const EffectSurface: React.FC<EffectSurfaceProps> = ({
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
-        {layerEffects.map((effect) => (
-          <span
-            key={effect.id}
-            aria-hidden="true"
-            className={`fx-layer ${effect.cssClass}`}
-          />
-        ))}
+        {layerEffects.map((effect) => {
+          if (effect.id === 'ember' && stack.ember) {
+            return (
+              <span
+                key={effect.id}
+                aria-hidden="true"
+                className={`fx-layer ${effect.cssClass}`}
+              >
+                <ParticleLayer config={stack.ember} />
+              </span>
+            );
+          }
+          return (
+            <span
+              key={effect.id}
+              aria-hidden="true"
+              className={`fx-layer ${effect.cssClass}`}
+            />
+          );
+        })}
         <div className="fx-content">{children}</div>
       </Component>
     </EffectSurfaceContext.Provider>
