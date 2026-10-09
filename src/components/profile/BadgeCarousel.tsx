@@ -81,6 +81,7 @@ interface SortableCarouselItemProps {
   activeTooltipId: string | null;
   setActiveTooltipId: (id: string | null) => void;
   customIcons: Record<string, string>;
+  rarityTheme?: EffectStack;
   effectStack?: EffectStack | ResolvedEffectStack;
 }
 
@@ -90,6 +91,7 @@ const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
   activeTooltipId,
   setActiveTooltipId,
   customIcons,
+  rarityTheme,
   effectStack,
 }) => {
   const { badge, userBadge } = item;
@@ -98,10 +100,18 @@ const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
   const IconComponent = resolveIcon(badge.icon, customIcons);
 
   const resolvedEffectStack = useMemo(() => {
-    if (!effectStack) return undefined;
-    if ('classNames' in effectStack) return effectStack as ResolvedEffectStack;
-    return resolveEffectStack(effectStack);
-  }, [effectStack]);
+    // Sem tema de raridade: usa apenas o prop (se houver).
+    if (!rarityTheme) {
+      if (!effectStack) return undefined;
+      if ('classNames' in effectStack) return effectStack as ResolvedEffectStack;
+      return resolveEffectStack(effectStack);
+    }
+    // Com tema de raridade: ele é a base. O prop, se for EffectStack puro (sem classNames), vira override.
+    if (effectStack && !('classNames' in effectStack)) {
+      return resolveEffectStack(rarityTheme, effectStack);
+    }
+    return resolveEffectStack(rarityTheme);
+  }, [rarityTheme, effectStack]);
 
   const {
     attributes,
@@ -174,7 +184,7 @@ const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
             boxShadow: '0 16px 38px rgba(0, 0, 0, 0.45)',
           }}
         >
-          <p className="font-mono text-[11px] tracking-[0.1em] uppercase text-[var(--brand-primary)] font-bold m-0 truncate">
+          <p className="font-mono text-[11px] tracking-[0.1em] uppercase text-[var(--fx-text,var(--brand-primary))] font-bold m-0 truncate">
             {badge.name}
           </p>
           {badge.description && (
@@ -311,17 +321,23 @@ export const BadgeCarousel: React.FC<BadgeCarouselProps> = ({
         </div>
       )}
 
-      {displayItems.map((item) => (
-        <SortableCarouselItem
-          key={item.badge.id}
-          item={item}
-          isDraggable={isReorderActive}
-          activeTooltipId={activeTooltipId}
-          setActiveTooltipId={setActiveTooltipId}
-          customIcons={customIcons}
-          effectStack={effectStack}
-        />
-      ))}
+      {displayItems.map((item) => {
+        const rarity = item.badge.rarityId
+          ? raritiesMap.get(item.badge.rarityId)
+          : undefined;
+        return (
+          <SortableCarouselItem
+            key={item.badge.id}
+            item={item}
+            isDraggable={isReorderActive}
+            activeTooltipId={activeTooltipId}
+            setActiveTooltipId={setActiveTooltipId}
+            customIcons={customIcons}
+            rarityTheme={rarity?.theme}
+            effectStack={effectStack}
+          />
+        );
+      })}
     </div>
   );
 
