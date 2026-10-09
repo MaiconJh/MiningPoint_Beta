@@ -29,17 +29,22 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install project dependencies
+        run: npm install
 
-      - name: Run typecheck
+      - name: Typecheck project
         run: npm run typecheck
 
+      - name: Install AI workflow dependencies
+        working-directory: ai-workflow
+        run: npm install
+
       - name: Run standards review
+        working-directory: ai-workflow
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_ROOT: ${{ github.workspace }}
           AI_BASE_BRANCH: "AI_ORCHESTRATOR"
           AI_CONFIG_JSON: ${{ secrets.AI_CONFIG_JSON }}
           AI_CONFIG_PATH: ${{ vars.AI_CONFIG_PATH }}
