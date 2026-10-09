@@ -19,10 +19,10 @@ export const ProfileBanner: React.FC<ProfileBannerProps> = ({
   showModeToggle,
 }) => {
   return (
-    <div className="relative w-full h-[132px] rounded-t-[11px] overflow-hidden">
+    <div className="relative w-full h-[200px] overflow-hidden">
       {/* Texture & Gradients layer */}
       <div
-        className="absolute inset-0 rounded-t-[11px] overflow-hidden pointer-events-none"
+        className="absolute inset-0 overflow-hidden pointer-events-none"
         /* Textura gráfica deliberadamente escura em ambos os temas para contraste das insígnias */
         /* eslint-disable-next-line design-tokens/no-raw-color-literals */
         style={{
