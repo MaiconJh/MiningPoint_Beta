@@ -18,12 +18,16 @@ export interface ProfileEditPanelProps {
   isOpen: boolean;
   onClose: () => void;
   availableBadges?: Badge[];
+  focusTarget?: 'banner' | 'avatar' | null;
+  focusNonce?: number;
 }
 
 export const ProfileEditPanel: React.FC<ProfileEditPanelProps> = ({
   isOpen,
   onClose,
   availableBadges = [],
+  focusTarget = null,
+  focusNonce = 0,
 }) => {
   const { profile } = useAuth();
   const { customIcons } = useCustomIcons();
@@ -35,6 +39,9 @@ export const ProfileEditPanel: React.FC<ProfileEditPanelProps> = ({
   const panelRef = useRef<HTMLDivElement>(null);
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const bannerRowRef = useRef<HTMLDivElement>(null);
+  const avatarRowRef = useRef<HTMLDivElement>(null);
+  const [highlightedRow, setHighlightedRow] = useState<'banner' | 'avatar' | null>(null);
 
   // Foco inicial ao abrir o painel
   useEffect(() => {
@@ -42,6 +49,28 @@ export const ProfileEditPanel: React.FC<ProfileEditPanelProps> = ({
       panelRef.current?.focus();
     }
   }, [isOpen]);
+
+  // Foco direcionado e destaque visual na linha solicitada
+  useEffect(() => {
+    if (!focusTarget || !focusNonce || focusNonce <= 0) return;
+
+    const targetRef = focusTarget === 'banner' ? bannerRowRef : avatarRowRef;
+    if (targetRef.current) {
+      const prefersReducedMotion =
+        typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      targetRef.current.scrollIntoView({
+        behavior: prefersReducedMotion ? 'auto' : 'smooth',
+        block: 'center',
+      });
+      setHighlightedRow(focusTarget);
+      const timer = setTimeout(() => {
+        setHighlightedRow(null);
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [focusTarget, focusNonce]);
 
   const handleRequestClose = useCallback(() => {
     if (isDirty) {
@@ -205,7 +234,12 @@ export const ProfileEditPanel: React.FC<ProfileEditPanelProps> = ({
             />
 
             {/* Linha Banner */}
-            <div className="p-3.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-default)] flex items-center justify-between gap-4">
+            <div
+              ref={bannerRowRef}
+              className={`p-3.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-default)] flex items-center justify-between gap-4 transition-all duration-300 ${
+                highlightedRow === 'banner' ? 'ring-2 ring-[var(--brand-primary)]' : ''
+              }`}
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <div
                   className="w-16 h-10 rounded-md overflow-hidden shrink-0 border border-[var(--border-default)] flex items-center justify-center"
@@ -258,7 +292,12 @@ export const ProfileEditPanel: React.FC<ProfileEditPanelProps> = ({
             </div>
 
             {/* Linha Avatar */}
-            <div className="p-3.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-default)] flex items-center justify-between gap-4">
+            <div
+              ref={avatarRowRef}
+              className={`p-3.5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-default)] flex items-center justify-between gap-4 transition-all duration-300 ${
+                highlightedRow === 'avatar' ? 'ring-2 ring-[var(--brand-primary)]' : ''
+              }`}
+            >
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-[var(--border-default)] flex items-center justify-center bg-[var(--bg-surface-elevated)]">
                   {draft.photoURL ? (

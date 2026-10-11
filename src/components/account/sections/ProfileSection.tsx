@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { UserProfile, Badge, UserBadge, FeaturedBadgeItem } from '../../../types/profile';
 import { useAuth } from '../../../context/AuthContext';
 import { useProfileDraftContext } from '../../../context/ProfileDraftContext';
@@ -10,15 +10,34 @@ import { AccountSectionSkeleton } from '../../skeleton/AccountSectionSkeleton';
 import EyeIcon from 'lucide-react/dist/esm/icons/eye';
 import PencilIcon from 'lucide-react/dist/esm/icons/pencil';
 
-export const ProfileSection: React.FC = () => {
+interface ProfileSectionProps {
+  isEditPanelOpen: boolean;
+  onEditPanelOpenChange: (open: boolean) => void;
+}
+
+export const ProfileSection: React.FC<ProfileSectionProps> = ({
+  isEditPanelOpen,
+  onEditPanelOpenChange,
+}) => {
   const { profile, user, loading } = useAuth();
   const { draft, setField, isDirty } = useProfileDraftContext();
 
-  const [isEditPanelOpen, setIsEditPanelOpen] = useState(false);
+  const [editFocusTarget, setEditFocusTarget] = useState<'banner' | 'avatar' | null>(null);
+  const [focusNonce, setFocusNonce] = useState(0);
+
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [availableBadges, setAvailableBadges] = useState<Badge[]>([]);
   const [, setBadgesLoading] = useState(true);
+
+  const openEditPanel = useCallback(
+    (target: 'banner' | 'avatar' | null = null) => {
+      setEditFocusTarget(target);
+      setFocusNonce((n) => n + 1);
+      onEditPanelOpenChange(true);
+    },
+    [onEditPanelOpenChange]
+  );
 
   useEffect(() => {
     if (!user?.uid) {
@@ -103,11 +122,7 @@ export const ProfileSection: React.FC = () => {
 
   return (
     <>
-      <div
-        className={`w-full mx-auto flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6 transition-[max-width] duration-[250ms] ease-out ${
-          isEditPanelOpen ? 'max-w-[1400px]' : 'max-w-[860px]'
-        }`}
-      >
+      <div className="w-full flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6">
         {/* Coluna da vitrine + barra de ações */}
         <div className="flex-1 min-w-0 flex flex-col gap-6">
           {/* Barra superior de ações */}
@@ -136,7 +151,7 @@ export const ProfileSection: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setIsEditPanelOpen((v) => !v)}
+                onClick={() => openEditPanel(null)}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:opacity-90 transition-opacity cursor-pointer shadow-xs ${
                   isEditPanelOpen ? 'lg:hidden' : ''
                 }`}
@@ -154,8 +169,8 @@ export const ProfileSection: React.FC = () => {
               featuredBadges={featuredBadgeItems}
               onModeChange={(nextMode) => setField('featuredBadgesMode', nextMode)}
               onReorder={handleReorderFeaturedBadges}
-              onEditBanner={() => setIsEditPanelOpen(true)}
-              onEditAvatar={() => setIsEditPanelOpen(true)}
+              onEditBanner={isEditPanelOpen ? undefined : () => openEditPanel('banner')}
+              onEditAvatar={isEditPanelOpen ? undefined : () => openEditPanel('avatar')}
             />
           </div>
         </div>
@@ -163,8 +178,10 @@ export const ProfileSection: React.FC = () => {
         {/* Painel lateral de edição */}
         <ProfileEditPanel
           isOpen={isEditPanelOpen}
-          onClose={() => setIsEditPanelOpen(false)}
+          onClose={() => onEditPanelOpenChange(false)}
           availableBadges={availableBadges}
+          focusTarget={editFocusTarget}
+          focusNonce={focusNonce}
         />
       </div>
 

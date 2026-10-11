@@ -6,7 +6,7 @@ import { FeaturedBadgesMode } from '../lib/featuredBadges';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { setHandle, redefineHandle } from '../lib/users';
-import { uploadProfileImage, removeProfileImage } from '../lib/storage';
+import { uploadProfileImage, removeProfileImage, getStorageErrorMessage } from '../lib/storage';
 
 export interface ProfileDraftState {
   bio: string;
@@ -236,7 +236,7 @@ export const useProfileDraft = (profile: UserProfile | null): UseProfileDraftRes
       return true;
     } catch (err) {
       console.error('Erro ao salvar alterações do perfil:', err);
-      showToast('Não foi possível salvar. Tente novamente.', 'error');
+      showToast(getStorageErrorMessage(err), 'error');
       setIsSaving(false);
       return false;
     }

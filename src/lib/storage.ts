@@ -15,6 +15,25 @@ import { storage } from './firebase';
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
+export const UPLOAD_TIMEOUT_MS = 45_000;
+export const DELETE_TIMEOUT_MS = 15_000;
+
+export class StorageTimeoutError extends Error {
+  readonly code = 'storage/timeout';
+  constructor(message = 'Tempo limite excedido ao comunicar com o Firebase Storage.') {
+    super(message);
+    this.name = 'StorageTimeoutError';
+  }
+}
+
+const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new StorageTimeoutError()), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+};
+
 export interface ImageValidationResult {
   valid: boolean;
   reason?: string;
@@ -58,8 +77,8 @@ export const uploadProfileImage = async (
   }
 
   const storageRef = ref(storage, `users/${uid}/${kind}`);
-  await uploadBytes(storageRef, file, { contentType: file.type });
-  return await getDownloadURL(storageRef);
+  await withTimeout(uploadBytes(storageRef, file, { contentType: file.type }), UPLOAD_TIMEOUT_MS);
+  return await withTimeout(getDownloadURL(storageRef), UPLOAD_TIMEOUT_MS);
 };
 
 /**
@@ -71,8 +90,30 @@ export const removeProfileImage = async (
 ): Promise<void> => {
   try {
     const storageRef = ref(storage, `users/${uid}/${kind}`);
-    await deleteObject(storageRef);
+    await withTimeout(deleteObject(storageRef), DELETE_TIMEOUT_MS);
   } catch (error) {
     console.error(`Erro ao remover imagem (${kind}) do Storage:`, error);
   }
+};
+
+/**
+ * Mapeia erros do Firebase Storage para mensagens acionáveis em português.
+ */
+export const getStorageErrorMessage = (error: unknown): string => {
+  const code = (error as { code?: string })?.code;
+
+  if (code === 'storage/unauthorized') {
+    return 'Sem permissão para enviar imagens. Verifique as regras do Firebase Storage.';
+  }
+  if (code === 'storage/bucket-not-found' || code === 'storage/unknown') {
+    return 'O bucket do Firebase Storage não foi encontrado. Confirme se o serviço está ativado no console do Firebase.';
+  }
+  if (code === 'storage/retry-limit-exceeded') {
+    return 'Não foi possível conectar ao Firebase Storage. Confirme se o serviço está ativado no console do Firebase.';
+  }
+  if (code === 'storage/timeout' || error instanceof StorageTimeoutError) {
+    return 'O envio da imagem demorou demais. Verifique sua conexão e tente novamente.';
+  }
+
+  return 'Não foi possível enviar a imagem. Tente novamente.';
 };

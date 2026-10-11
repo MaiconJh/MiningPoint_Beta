@@ -3,6 +3,8 @@ import {
   validateImageFile,
   MAX_IMAGE_BYTES,
   ACCEPTED_IMAGE_TYPES,
+  getStorageErrorMessage,
+  StorageTimeoutError,
 } from './storage';
 
 describe('validateImageFile', () => {
@@ -63,5 +65,52 @@ describe('validateImageFile', () => {
     const result = validateImageFile(file);
     expect(result.valid).toBe(false);
     expect(result.reason).toBe('Arquivo muito grande (7,4 MB). O limite é 5 MB.');
+  });
+});
+
+describe('getStorageErrorMessage', () => {
+  it('retorna mensagem de permissão para storage/unauthorized', () => {
+    expect(getStorageErrorMessage({ code: 'storage/unauthorized' })).toBe(
+      'Sem permissão para enviar imagens. Verifique as regras do Firebase Storage.'
+    );
+  });
+
+  it('retorna mensagem de bucket não encontrado para storage/bucket-not-found', () => {
+    expect(getStorageErrorMessage({ code: 'storage/bucket-not-found' })).toBe(
+      'O bucket do Firebase Storage não foi encontrado. Confirme se o serviço está ativado no console do Firebase.'
+    );
+  });
+
+  it('retorna mensagem de bucket não encontrado para storage/unknown', () => {
+    expect(getStorageErrorMessage({ code: 'storage/unknown' })).toBe(
+      'O bucket do Firebase Storage não foi encontrado. Confirme se o serviço está ativado no console do Firebase.'
+    );
+  });
+
+  it('retorna mensagem de conexão/serviço para storage/retry-limit-exceeded', () => {
+    expect(getStorageErrorMessage({ code: 'storage/retry-limit-exceeded' })).toBe(
+      'Não foi possível conectar ao Firebase Storage. Confirme se o serviço está ativado no console do Firebase.'
+    );
+  });
+
+  it('retorna mensagem de timeout para storage/timeout e StorageTimeoutError', () => {
+    expect(getStorageErrorMessage({ code: 'storage/timeout' })).toBe(
+      'O envio da imagem demorou demais. Verifique sua conexão e tente novamente.'
+    );
+    expect(getStorageErrorMessage(new StorageTimeoutError())).toBe(
+      'O envio da imagem demorou demais. Verifique sua conexão e tente novamente.'
+    );
+  });
+
+  it('retorna mensagem padrão para erro genérico ou sem code', () => {
+    expect(getStorageErrorMessage(new Error('erro genérico'))).toBe(
+      'Não foi possível enviar a imagem. Tente novamente.'
+    );
+    expect(getStorageErrorMessage(null)).toBe(
+      'Não foi possível enviar a imagem. Tente novamente.'
+    );
+    expect(getStorageErrorMessage({})).toBe(
+      'Não foi possível enviar a imagem. Tente novamente.'
+    );
   });
 });

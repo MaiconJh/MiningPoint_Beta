@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
 import { AccountPanelNav } from '../components/account/AccountPanelNav';
 import { OverviewSection } from '../components/account/sections/OverviewSection';
@@ -10,6 +10,14 @@ export const AccountPanel: React.FC = () => {
   const location = useLocation();
   const pathname = location.pathname.replace(/\/$/, '');
 
+  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false);
+
+  useEffect(() => {
+    if (pathname !== '/conta/perfil') {
+      setIsProfileEditOpen(false);
+    }
+  }, [pathname]);
+
   if (pathname === '/conta') {
     return <Navigate to="/conta/visao-geral" replace />;
   }
@@ -19,7 +27,10 @@ export const AccountPanel: React.FC = () => {
       case '/conta/perfil':
         return (
           <ProfileDraftProvider>
-            <ProfileSection />
+            <ProfileSection
+              isEditPanelOpen={isProfileEditOpen}
+              onEditPanelOpenChange={setIsProfileEditOpen}
+            />
           </ProfileDraftProvider>
         );
       case '/conta/preferencias':
@@ -30,10 +41,12 @@ export const AccountPanel: React.FC = () => {
     }
   };
 
-  const isProfileRoute = pathname === '/conta/perfil';
-
   return (
-    <div className={`w-full ${isProfileRoute ? 'max-w-[1620px]' : 'max-w-[1180px]'} mx-auto px-4 sm:px-6 py-8`}>
+    <div
+      className={`w-full mx-auto px-4 sm:px-6 py-8 transition-[max-width] duration-[250ms] ease-out ${
+        pathname === '/conta/perfil' && isProfileEditOpen ? 'max-w-[1620px]' : 'max-w-[1180px]'
+      }`}
+    >
       {/* Header with back arrow to /perfil */}
       <div className="flex items-center gap-3 mb-6">
         <Link
@@ -66,7 +79,7 @@ export const AccountPanel: React.FC = () => {
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         <AccountPanelNav />
 
-        <main className={`flex-1 ${isProfileRoute ? '' : 'max-w-[860px]'} w-full min-w-0`} id="account-panel-content">
+        <main className="flex-1 w-full min-w-0" id="account-panel-content">
           {renderSection()}
         </main>
       </div>
