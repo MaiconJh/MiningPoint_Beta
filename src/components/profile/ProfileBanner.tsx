@@ -2,45 +2,45 @@ import React from 'react';
 import { FeaturedBadgeItem } from '../../types/profile';
 import { FeaturedBadgesMode } from '../../lib/featuredBadges';
 import { BadgeCarousel } from './BadgeCarousel';
+import PencilIcon from 'lucide-react/dist/esm/icons/pencil';
 
 export interface ProfileBannerProps {
   featuredBadges: FeaturedBadgeItem[];
+  bannerUrl?: string | null;
   mode?: FeaturedBadgesMode;
   onModeChange?: (nextMode: FeaturedBadgesMode) => void;
   onReorder?: (newOrderIds: string[]) => void;
   showModeToggle?: boolean;
+  onEditBanner?: () => void;
 }
 
 export const ProfileBanner: React.FC<ProfileBannerProps> = ({
   featuredBadges,
+  bannerUrl,
   mode,
   onModeChange,
   onReorder,
   showModeToggle,
+  onEditBanner,
 }) => {
   return (
     <div className="relative w-full h-[200px] overflow-hidden">
-      {/* Texture & Gradients layer */}
+      {/* Background layer: neutral surface or custom banner image */}
       <div
         className="absolute inset-0 overflow-hidden pointer-events-none"
-        /* Textura gráfica deliberadamente escura em ambos os temas para contraste das insígnias */
         /* eslint-disable-next-line design-tokens/no-raw-color-literals */
         style={{
           backgroundColor: '#333B46',
-          backgroundImage: `
-            radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--brand-primary) 20%, transparent) 0%, transparent 64%),
-            radial-gradient(circle at 18% 32%, rgba(255, 255, 255, 0.30) 0 2px, transparent 3px),
-            radial-gradient(circle at 46% 68%, rgba(255, 255, 255, 0.26) 0 2px, transparent 3px),
-            radial-gradient(circle at 72% 26%, rgba(255, 255, 255, 0.28) 0 2px, transparent 3px),
-            radial-gradient(circle at 88% 74%, rgba(255, 255, 255, 0.22) 0 2px, transparent 3px),
-            repeating-radial-gradient(circle at 118% -28%, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 26px),
-            repeating-radial-gradient(circle at -18% 128%, rgba(255, 255, 255, 0.11) 0 1px, transparent 1px 34px),
-            repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 44px),
-            repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 32px),
-            linear-gradient(115deg, #333B46, #4A5563, #39424F)
-          `,
         }}
       >
+        {bannerUrl && (
+          <img
+            src={bannerUrl}
+            alt=""
+            aria-hidden="true"
+            className="w-full h-full object-cover img-thumb-transition"
+          />
+        )}
         {/* Shading overlay for readability */}
         <div
           className="absolute inset-0"
@@ -52,6 +52,21 @@ export const ProfileBanner: React.FC<ProfileBannerProps> = ({
           }}
         />
       </div>
+
+      {/* Edit button anchored at top-left */}
+      {onEditBanner && (
+        <div className="absolute top-3.5 left-4 sm:top-4 sm:left-6 z-20">
+          <button
+            type="button"
+            onClick={onEditBanner}
+            aria-label="Editar banner"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[var(--bg-surface-elevated)]/90 hover:bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] border border-[var(--border-default)] backdrop-blur-xs shadow-xs hover:border-[var(--brand-primary)] transition-all cursor-pointer"
+          >
+            <PencilIcon className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Editar banner</span>
+          </button>
+        </div>
+      )}
 
       {/* Badge Carousel ancorado no canto inferior direito do banner */}
       <div className="absolute right-4 sm:right-6 bottom-[14px] z-10">

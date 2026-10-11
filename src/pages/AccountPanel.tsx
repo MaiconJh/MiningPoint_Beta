@@ -4,6 +4,7 @@ import { AccountPanelNav } from '../components/account/AccountPanelNav';
 import { OverviewSection } from '../components/account/sections/OverviewSection';
 import { ProfileSection } from '../components/account/sections/ProfileSection';
 import { PreferencesSection } from '../components/account/sections/PreferencesSection';
+import { ProfileDraftProvider } from '../context/ProfileDraftContext';
 
 export const AccountPanel: React.FC = () => {
   const location = useLocation();
@@ -16,7 +17,11 @@ export const AccountPanel: React.FC = () => {
   const renderSection = () => {
     switch (pathname) {
       case '/conta/perfil':
-        return <ProfileSection />;
+        return (
+          <ProfileDraftProvider>
+            <ProfileSection />
+          </ProfileDraftProvider>
+        );
       case '/conta/preferencias':
         return <PreferencesSection />;
       case '/conta/visao-geral':

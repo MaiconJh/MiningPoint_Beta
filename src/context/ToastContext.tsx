@@ -25,7 +25,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setTimeout(() => {
       setToast((current) => (current?.id === id ? null : current));
-    }, 3500);
+    }, 2200);
   }, []);
 
   return (
@@ -35,7 +35,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-sm font-medium text-[var(--text-primary)] shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-200 max-w-sm"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-sm font-medium text-[var(--text-primary)] shadow-lg toast-transition max-w-sm"
         >
           {toast.type === 'success' ? (
             <CheckCircleIcon className="w-5 h-5 text-[var(--brand-primary)] shrink-0" />

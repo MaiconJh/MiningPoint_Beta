@@ -66,6 +66,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ userId, ownMode }) => 
         <div className="rounded-[16px] bg-[var(--bg-surface)] border border-[var(--border-default)] overflow-hidden shadow-sm">
           <ProfileBanner
             featuredBadges={featuredBadges}
+            bannerUrl={profile.bannerUrl}
             mode={displayMode}
             showModeToggle={false}
           />

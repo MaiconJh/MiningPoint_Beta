@@ -8,12 +8,14 @@ import { Chip } from '../chip/Chip';
 import { profileUrl } from '../../lib/handle';
 import Share2Icon from 'lucide-react/dist/esm/icons/share-2';
 import CheckIcon from 'lucide-react/dist/esm/icons/check';
+import PencilIcon from 'lucide-react/dist/esm/icons/pencil';
 
 interface ProfileHeaderProps {
   profile: UserProfile;
+  onEditAvatar?: () => void;
 }
 
-export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile }) => {
+export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile, onEditAvatar }) => {
   const [imgError, setImgError] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [resolvedTitle, setResolvedTitle] = useState<Title | null>(
@@ -63,24 +65,46 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile }) => {
     <div className="relative z-20 px-6 pt-0 pb-0">
       <div className="flex items-start gap-5">
         {/* Avatar: 80px de diâmetro, -40px de margem superior sobrepondo o banner */}
-        <div className="relative shrink-0 w-[80px] h-[80px] -mt-[40px] rounded-full overflow-hidden border-4 border-[var(--bg-surface)] shadow-[0_0_0_1px_var(--border-default)] bg-[var(--bg-surface-elevated)] flex items-center justify-center z-30">
-          {profile.photoURL && !imgError ? (
-            <img
-              src={profile.photoURL}
-              alt={displayName}
-              referrerPolicy="no-referrer"
-              onError={() => setImgError(true)}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div
-              style={{ backgroundColor: getAvatarColor(displayName) }}
-              /* Texto fixo de alto contraste sobre o avatar colorido gerado dinamicamente */
-              /* eslint-disable-next-line design-tokens/no-raw-color-literals */
-              className="w-full h-full flex items-center justify-center text-xl font-bold text-[#F7F7F8]"
+        <div className="relative shrink-0 w-[80px] h-[80px] -mt-[40px] z-30 group">
+          <div className="w-full h-full rounded-full overflow-hidden border-4 border-[var(--bg-surface)] shadow-[0_0_0_1px_var(--border-default)] bg-[var(--bg-surface-elevated)] flex items-center justify-center relative">
+            {profile.photoURL && !imgError ? (
+              <img
+                src={profile.photoURL}
+                alt={displayName}
+                referrerPolicy="no-referrer"
+                onError={() => setImgError(true)}
+                className="w-full h-full object-cover img-thumb-transition"
+              />
+            ) : (
+              <div
+                style={{ backgroundColor: getAvatarColor(displayName) }}
+                /* Texto fixo de alto contraste sobre o avatar colorido gerado dinamicamente */
+                /* eslint-disable-next-line design-tokens/no-raw-color-literals */
+                className="w-full h-full flex items-center justify-center text-xl font-bold text-[#F7F7F8]"
+              >
+                {getInitials(displayName)}
+              </div>
+            )}
+            {onEditAvatar && (
+              <div
+                onClick={onEditAvatar}
+                className="absolute inset-0 bg-[var(--bg-overlay)] opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200 cursor-pointer pointer-events-auto"
+                aria-hidden="true"
+              >
+                <PencilIcon className="w-4 h-4 text-[var(--text-primary)]" />
+              </div>
+            )}
+          </div>
+
+          {onEditAvatar && (
+            <button
+              type="button"
+              onClick={onEditAvatar}
+              aria-label="Editar imagem de perfil"
+              className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-[var(--bg-surface-elevated)] border border-[var(--border-default)] shadow-xs flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--brand-primary)] cursor-pointer transition-colors z-40"
             >
-              {getInitials(displayName)}
-            </div>
+              <PencilIcon className="w-3 h-3" />
+            </button>
           )}
         </div>
 
@@ -123,7 +147,7 @@ export const ProfileHeader: React.FC<ProfileHeaderProps> = ({ profile }) => {
               type="button"
               onClick={handleShareProfile}
               title="Copiar link do perfil"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] hover:border-[var(--brand-primary)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] hover:border-[var(--brand-primary)] text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
             >
               {copiedLink ? (
                 <>
