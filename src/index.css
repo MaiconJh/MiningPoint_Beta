@@ -147,9 +147,9 @@ body {
 
 /* 7 Microtransições aprovadas (Fase 2) */
 
-/* 1. Painel (abrir/fechar): width + opacity (250ms ease / 200ms) */
+/* 1. Painel (abrir/fechar): transform + opacity (250ms ease-out) */
 .edit-panel-transition {
-  transition: transform 250ms ease, opacity 250ms ease, width 250ms ease;
+  transition: transform 250ms ease-out, opacity 250ms ease-out;
 }
 
 /* 2. Banner e miniaturas de imagem: classe de estado (200ms) */
@@ -210,7 +210,9 @@ body {
   .bio-text-transition,
   .toast-transition,
   .dialog-transition,
-  .btn-save-transition {
+  .btn-save-transition,
+  [class*="transition-[max-width]"],
+  [class*="transition-transform"] {
     animation: none !important;
     transition: none !important;
     transform: none !important;

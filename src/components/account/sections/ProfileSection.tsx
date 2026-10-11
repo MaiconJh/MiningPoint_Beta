@@ -102,64 +102,71 @@ export const ProfileSection: React.FC = () => {
   }
 
   return (
-    <div
-      className={`flex flex-col gap-6 transition-all duration-250 ${
-        isEditPanelOpen ? 'lg:pr-[400px]' : ''
-      }`}
-    >
-      {/* Barra superior de ações */}
-      <div className="bg-[var(--bg-default)] py-3 px-6 rounded-xl border border-[var(--border-default)] flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold text-[var(--text-primary)] m-0">
-            Perfil
-          </h2>
-          {isDirty && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--feedback-warning)_10%,transparent)] border border-[color-mix(in_srgb,var(--feedback-warning)_30%,transparent)] text-[11px] font-semibold text-[var(--feedback-warning)]">
-              <span className="w-2 h-2 rounded-full bg-[var(--feedback-warning)] animate-pulse shrink-0" />
-              <span>Alterações pendentes</span>
-            </span>
-          )}
+    <>
+      <div
+        className={`w-full mx-auto flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-6 transition-[max-width] duration-[250ms] ease-out ${
+          isEditPanelOpen ? 'max-w-[1400px]' : 'max-w-[860px]'
+        }`}
+      >
+        {/* Coluna da vitrine + barra de ações */}
+        <div className="flex-1 min-w-0 flex flex-col gap-6">
+          {/* Barra superior de ações */}
+          <div className="bg-[var(--bg-default)] py-3 px-6 rounded-xl border border-[var(--border-default)] flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-bold text-[var(--text-primary)] m-0">
+                Perfil
+              </h2>
+              {isDirty && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[color-mix(in_srgb,var(--feedback-warning)_10%,transparent)] border border-[color-mix(in_srgb,var(--feedback-warning)_30%,transparent)] text-[11px] font-semibold text-[var(--feedback-warning)]">
+                  <span className="w-2 h-2 rounded-full bg-[var(--feedback-warning)] animate-pulse shrink-0" />
+                  <span>Alterações pendentes</span>
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowPreviewModal(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold border border-[var(--border-default)] bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--brand-primary)] transition-colors cursor-pointer"
+              >
+                <EyeIcon className="w-3.5 h-3.5" />
+                <span>Ver perfil</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsEditPanelOpen((v) => !v)}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:opacity-90 transition-opacity cursor-pointer shadow-xs ${
+                  isEditPanelOpen ? 'lg:hidden' : ''
+                }`}
+              >
+                <PencilIcon className="w-3.5 h-3.5" />
+                <span>Editar perfil</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Vitrine real do perfil */}
+          <div className="w-full">
+            <ProfilePreviewCard
+              profile={draftProfile}
+              featuredBadges={featuredBadgeItems}
+              onModeChange={(nextMode) => setField('featuredBadgesMode', nextMode)}
+              onReorder={handleReorderFeaturedBadges}
+              onEditBanner={() => setIsEditPanelOpen(true)}
+              onEditAvatar={() => setIsEditPanelOpen(true)}
+            />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowPreviewModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold border border-[var(--border-default)] bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--brand-primary)] transition-colors cursor-pointer"
-          >
-            <EyeIcon className="w-3.5 h-3.5" />
-            <span>Ver perfil</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsEditPanelOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
-          >
-            <PencilIcon className="w-3.5 h-3.5" />
-            <span>Editar perfil</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Vitrine real do perfil */}
-      <div className="w-full">
-        <ProfilePreviewCard
-          profile={draftProfile}
-          featuredBadges={featuredBadgeItems}
-          onModeChange={(nextMode) => setField('featuredBadgesMode', nextMode)}
-          onReorder={handleReorderFeaturedBadges}
-          onEditBanner={() => setIsEditPanelOpen(true)}
-          onEditAvatar={() => setIsEditPanelOpen(true)}
+        {/* Painel lateral de edição */}
+        <ProfileEditPanel
+          isOpen={isEditPanelOpen}
+          onClose={() => setIsEditPanelOpen(false)}
+          availableBadges={availableBadges}
         />
       </div>
-
-      {/* Painel lateral de edição */}
-      <ProfileEditPanel
-        isOpen={isEditPanelOpen}
-        onClose={() => setIsEditPanelOpen(false)}
-        availableBadges={availableBadges}
-      />
 
       {/* Modal de visualização */}
       <ProfilePreviewModal
@@ -171,6 +178,6 @@ export const ProfileSection: React.FC = () => {
         onModeChange={(nextMode) => setField('featuredBadgesMode', nextMode)}
         onReorder={handleReorderFeaturedBadges}
       />
-    </div>
+    </>
   );
 };

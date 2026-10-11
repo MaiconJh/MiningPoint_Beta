@@ -9,12 +9,14 @@ interface TitleSelectorProps {
   currentTitleId: string | null;
   onSelectTitle: (titleId: string | null) => void;
   onTitlesLoaded?: (titlesMap: Map<string, Title>) => void;
+  bare?: boolean;
 }
 
 export const TitleSelector: React.FC<TitleSelectorProps> = ({
   currentTitleId,
   onSelectTitle,
   onTitlesLoaded,
+  bare = false,
 }) => {
   const { user } = useAuth();
   const [userTitles, setUserTitles] = useState<Title[]>([]);
@@ -64,7 +66,7 @@ export const TitleSelector: React.FC<TitleSelectorProps> = ({
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-2 py-3 border-b border-[var(--border-subtle)]" aria-hidden="true">
+      <div className={`flex flex-col gap-2 ${bare ? 'py-1' : 'py-1'}`} aria-hidden="true">
         <SkeletonLine width={80} height={11} radius="3px" />
         <div className="flex flex-wrap items-center gap-2 mt-1">
           <SkeletonLine width={60} height={28} radius="6px" />
@@ -80,7 +82,7 @@ export const TitleSelector: React.FC<TitleSelectorProps> = ({
   }
 
   return (
-    <div className="flex flex-col gap-1 py-3 border-b border-[var(--border-subtle)]">
+    <div className={`flex flex-col gap-1 ${bare ? 'py-1' : 'py-1'}`}>
       <span className="text-xs text-[var(--text-secondary)] font-medium">
         Título exibido
       </span>

@@ -30,8 +30,10 @@ export const AccountPanel: React.FC = () => {
     }
   };
 
+  const isProfileRoute = pathname === '/conta/perfil';
+
   return (
-    <div className="w-full max-w-[1180px] mx-auto px-4 sm:px-6 py-8">
+    <div className={`w-full ${isProfileRoute ? 'max-w-[1620px]' : 'max-w-[1180px]'} mx-auto px-4 sm:px-6 py-8`}>
       {/* Header with back arrow to /perfil */}
       <div className="flex items-center gap-3 mb-6">
         <Link
@@ -64,7 +66,7 @@ export const AccountPanel: React.FC = () => {
       <div className="flex flex-col lg:flex-row gap-6 items-start">
         <AccountPanelNav />
 
-        <main className="flex-1 max-w-[860px] w-full min-w-0" id="account-panel-content">
+        <main className={`flex-1 ${isProfileRoute ? '' : 'max-w-[860px]'} w-full min-w-0`} id="account-panel-content">
           {renderSection()}
         </main>
       </div>

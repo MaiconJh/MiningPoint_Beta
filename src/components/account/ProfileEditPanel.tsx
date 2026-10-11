@@ -140,24 +140,26 @@ export const ProfileEditPanel: React.FC<ProfileEditPanelProps> = ({
 
   return (
     <>
-      {/* Backdrop overlay */}
+      {/* Backdrop overlay (apenas mobile) */}
       <div
-        className={`fixed inset-0 z-40 bg-[var(--bg-overlay)]/40 lg:bg-transparent transition-opacity duration-200 ${
+        className={`fixed inset-0 z-40 bg-[var(--bg-overlay)]/40 lg:hidden transition-opacity duration-200 ${
           isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={handleRequestClose}
         aria-hidden="true"
       />
 
-      {/* Drawer painel */}
+      {/* Drawer / Painel lateral */}
       <aside
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-label="Editar perfil"
         tabIndex={-1}
-        className={`edit-panel-transition fixed top-0 right-0 z-40 w-full lg:w-[400px] h-full bg-[var(--bg-surface)] border-l border-[var(--border-default)] shadow-2xl flex flex-col outline-none transform ${
-          isOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : 'translate-x-full opacity-0 pointer-events-none'
+        className={`edit-panel-transition fixed inset-y-0 right-0 z-50 w-full max-w-[400px] lg:static lg:inset-auto lg:z-auto lg:max-w-none lg:w-[400px] lg:shrink-0 lg:sticky lg:top-[calc(var(--nav-offset)+var(--nav-h)+16px)] lg:max-h-[calc(100vh-120px)] bg-[var(--bg-surface)] border-l lg:border border-[var(--border-default)] lg:rounded-[16px] shadow-2xl lg:shadow-sm flex flex-col outline-none transform ${
+          isOpen
+            ? 'translate-x-0 opacity-100 pointer-events-auto'
+            : 'translate-x-full opacity-0 pointer-events-none lg:hidden'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
@@ -177,7 +179,7 @@ export const ProfileEditPanel: React.FC<ProfileEditPanelProps> = ({
         </div>
 
         {/* Corpo rolável com as 3 seções */}
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8">
+        <div className="flex-1 overflow-y-auto lg:min-h-0 p-6 flex flex-col gap-8">
           {/* 1. Imagens */}
           <section className="flex flex-col gap-4">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] m-0">
@@ -385,10 +387,11 @@ export const ProfileEditPanel: React.FC<ProfileEditPanelProps> = ({
             )}
 
             {/* Seletor de Título */}
-            <div className="pt-2 border-t border-[var(--border-subtle)]">
+            <div className="mt-2">
               <TitleSelector
                 currentTitleId={draft.featuredTitleId}
                 onSelectTitle={(newTitleId) => setField('featuredTitleId', newTitleId)}
+                bare={true}
               />
             </div>
           </section>
@@ -428,7 +431,7 @@ export const ProfileEditPanel: React.FC<ProfileEditPanelProps> = ({
       {/* Diálogo de confirmação de descarte de alterações */}
       {showConfirmDiscard && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--bg-overlay)] backdrop-blur-xs"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[var(--bg-overlay)] backdrop-blur-xs"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setShowConfirmDiscard(false);

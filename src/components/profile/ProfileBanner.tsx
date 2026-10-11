@@ -24,7 +24,7 @@ export const ProfileBanner: React.FC<ProfileBannerProps> = ({
   onEditBanner,
 }) => {
   return (
-    <div className="relative w-full h-[200px] overflow-hidden">
+    <div className="relative w-full h-[200px] overflow-hidden group/banner">
       {/* Background layer: neutral surface or custom banner image */}
       <div
         className="absolute inset-0 overflow-hidden pointer-events-none"
@@ -55,7 +55,7 @@ export const ProfileBanner: React.FC<ProfileBannerProps> = ({
 
       {/* Edit button anchored at top-left */}
       {onEditBanner && (
-        <div className="absolute top-3.5 left-4 sm:top-4 sm:left-6 z-20">
+        <div className="absolute top-3.5 left-4 sm:top-4 sm:left-6 z-20 opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover/banner:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
           <button
             type="button"
             onClick={onEditBanner}
