@@ -16,6 +16,11 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
+const TOAST_DURATION_MS: Record<ToastType, number> = {
+  success: 2200,
+  error: 6000,
+};
+
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
@@ -25,7 +30,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setTimeout(() => {
       setToast((current) => (current?.id === id ? null : current));
-    }, 2200);
+    }, TOAST_DURATION_MS[type]);
   }, []);
 
   return (
