@@ -24,6 +24,7 @@ export interface UserProfile {
   displayName: string;
   email: string;
   photoURL: string | null;
+  bannerUrl: string | null;
   shortId: string;
   handle: string | null;
   hasRedefinedHandle?: boolean;

@@ -74,6 +74,7 @@ export const normalizeUserProfile = (data: DocumentData, uid: string): UserProfi
     displayName: data.displayName || '',
     email: data.email || '',
     photoURL: data.photoURL || null,
+    bannerUrl: data.bannerUrl || null,
     shortId: typeof data.shortId === 'string' ? data.shortId : '',
     handle: typeof data.handle === 'string' && data.handle ? data.handle : null,
     hasRedefinedHandle: data.hasRedefinedHandle === true,

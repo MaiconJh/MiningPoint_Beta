@@ -11,6 +11,7 @@ describe('ProfileSidebar', () => {
       displayName: 'Explorador Teste',
       email: 'teste@example.com',
       photoURL: null,
+      bannerUrl: null,
       primaryGroupId: 'membro',
       secondaryGroupIds: [],
       isStaff: false,

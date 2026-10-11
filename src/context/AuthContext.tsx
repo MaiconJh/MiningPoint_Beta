@@ -61,6 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           displayName: currentUser.displayName || '',
           email: currentUser.email || '',
           photoURL: currentUser.photoURL || null,
+          bannerUrl: null,
           shortId,
           handle: null,
           hasRedefinedHandle: false,

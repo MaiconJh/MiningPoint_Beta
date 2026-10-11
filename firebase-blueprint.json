@@ -48,6 +48,7 @@
         "displayName": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "photoURL": { "type": "string" },
+        "bannerUrl": { "type": "string" },
         "primaryGroupId": { "type": "string" },
         "secondaryGroupIds": { "type": "array", "items": { "type": "string" } },
         "isStaff": { "type": "boolean" },

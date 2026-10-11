@@ -18,6 +18,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { FeaturedBadgeItem } from '../../types/profile';
+import { CustomIcon } from '../../types/icon';
 import { Rarity } from '../../types/rarity';
 import { FeaturedBadgesMode, sortFeaturedBadges } from '../../lib/featuredBadges';
 import { resolveIcon } from '../../data/icons/iconRegistry';
@@ -80,7 +81,7 @@ interface SortableCarouselItemProps {
   isDraggable: boolean;
   activeTooltipId: string | null;
   setActiveTooltipId: (id: string | null) => void;
-  customIcons: Record<string, string>;
+  customIcons: CustomIcon[];
   rarityTheme?: EffectStack;
   effectStack?: EffectStack | ResolvedEffectStack;
   isPinned: boolean;

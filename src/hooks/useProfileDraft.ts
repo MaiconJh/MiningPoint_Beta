@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { UserProfile, UserVisibility } from '../types/profile';
@@ -6,6 +6,7 @@ import { FeaturedBadgesMode } from '../lib/featuredBadges';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { setHandle, redefineHandle } from '../lib/users';
+import { uploadProfileImage, removeProfileImage } from '../lib/storage';
 
 export interface ProfileDraftState {
   bio: string;
@@ -14,6 +15,10 @@ export interface ProfileDraftState {
   featuredBadges: string[];
   featuredBadgesMode: FeaturedBadgesMode;
   handle: string | null;
+  photoURL: string | null;
+  bannerUrl: string | null;
+  pendingAvatarFile: File | null;
+  pendingBannerFile: File | null;
 }
 
 export interface UseProfileDraftResult {
@@ -37,6 +42,10 @@ export const useProfileDraft = (profile: UserProfile | null): UseProfileDraftRes
       featuredBadges: profile?.featuredBadges || [],
       featuredBadgesMode: profile?.featuredBadgesMode === 'auto' ? 'auto' : 'manual',
       handle: profile?.handle || null,
+      photoURL: profile?.photoURL || null,
+      bannerUrl: profile?.bannerUrl || null,
+      pendingAvatarFile: null,
+      pendingBannerFile: null,
     };
   }, [
     profile?.bio,
@@ -45,6 +54,8 @@ export const useProfileDraft = (profile: UserProfile | null): UseProfileDraftRes
     profile?.featuredBadges,
     profile?.featuredBadgesMode,
     profile?.handle,
+    profile?.photoURL,
+    profile?.bannerUrl,
   ]);
 
   const [draft, setDraft] = useState<ProfileDraftState>(initialDraft);
@@ -55,12 +66,31 @@ export const useProfileDraft = (profile: UserProfile | null): UseProfileDraftRes
     setDraft(initialDraft);
   }, [initialDraft]);
 
-  const setField = useCallback(<K extends keyof ProfileDraftState>(key: K, value: ProfileDraftState[K]) => {
-    setDraft((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
+  // Limpeza de URLs do tipo blob criadas para preview local
+  const revokeIfBlob = useCallback((url: string | null | undefined) => {
+    if (url && typeof url === 'string' && url.startsWith('blob:')) {
+      try {
+        URL.revokeObjectURL(url);
+      } catch {
+        // Ignora caso a URL já tenha sido revogada ou ambiente não suporte
+      }
+    }
   }, []);
+
+  const setField = useCallback(<K extends keyof ProfileDraftState>(key: K, value: ProfileDraftState[K]) => {
+    setDraft((prev) => {
+      if (key === 'photoURL' && prev.photoURL !== value) {
+        revokeIfBlob(prev.photoURL);
+      }
+      if (key === 'bannerUrl' && prev.bannerUrl !== value) {
+        revokeIfBlob(prev.bannerUrl);
+      }
+      return {
+        ...prev,
+        [key]: value,
+      };
+    });
+  }, [revokeIfBlob]);
 
   const isDirty = useMemo(() => {
     if (!profile) return false;
@@ -78,12 +108,42 @@ export const useProfileDraft = (profile: UserProfile | null): UseProfileDraftRes
     const modeChanged =
       draft.featuredBadgesMode !== (profile.featuredBadgesMode || 'manual');
 
-    return bioChanged || titleChanged || visChanged || handleChanged || badgesChanged || modeChanged;
+    const photoChanged =
+      (draft.photoURL || null) !== (profile.photoURL || null) ||
+      draft.pendingAvatarFile !== null;
+
+    const bannerChanged =
+      (draft.bannerUrl || null) !== (profile.bannerUrl || null) ||
+      draft.pendingBannerFile !== null;
+
+    return (
+      bioChanged ||
+      titleChanged ||
+      visChanged ||
+      handleChanged ||
+      badgesChanged ||
+      modeChanged ||
+      photoChanged ||
+      bannerChanged
+    );
   }, [draft, profile]);
 
   const reset = useCallback(() => {
+    revokeIfBlob(draft.photoURL);
+    revokeIfBlob(draft.bannerUrl);
     setDraft(initialDraft);
-  }, [initialDraft]);
+  }, [initialDraft, draft.photoURL, draft.bannerUrl, revokeIfBlob]);
+
+  // Limpeza ao desmontar o hook
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+
+  useEffect(() => {
+    return () => {
+      revokeIfBlob(draftRef.current.photoURL);
+      revokeIfBlob(draftRef.current.bannerUrl);
+    };
+  }, [revokeIfBlob]);
 
   const save = useCallback(async (): Promise<boolean> => {
     if (!user?.uid || !db || !profile || !isDirty || isSaving) {
@@ -93,7 +153,25 @@ export const useProfileDraft = (profile: UserProfile | null): UseProfileDraftRes
     setIsSaving(true);
 
     try {
-      // 1. Handle handle changes if modified
+      // 1. Upload e remoção de imagens no Storage antes de atualizar o documento
+      let resolvedBannerUrl: string | null | undefined = undefined;
+      let resolvedPhotoURL: string | null | undefined = undefined;
+
+      if (draft.pendingBannerFile) {
+        resolvedBannerUrl = await uploadProfileImage(user.uid, 'banner', draft.pendingBannerFile);
+      } else if (draft.bannerUrl === null && (profile.bannerUrl || null) !== null) {
+        await removeProfileImage(user.uid, 'banner');
+        resolvedBannerUrl = null;
+      }
+
+      if (draft.pendingAvatarFile) {
+        resolvedPhotoURL = await uploadProfileImage(user.uid, 'avatar', draft.pendingAvatarFile);
+      } else if (draft.photoURL === null && (profile.photoURL || null) !== null) {
+        await removeProfileImage(user.uid, 'avatar');
+        resolvedPhotoURL = null;
+      }
+
+      // 2. Handle handle changes if modified
       const originalHandle = profile.handle || null;
       const targetHandle = draft.handle || null;
 
@@ -105,8 +183,15 @@ export const useProfileDraft = (profile: UserProfile | null): UseProfileDraftRes
         }
       }
 
-      // 2. Handle doc fields (bio, title, visibility, badges)
+      // 3. Handle doc fields (bio, title, visibility, badges, photoURL, bannerUrl)
       const updates: Record<string, unknown> = {};
+
+      if (resolvedBannerUrl !== undefined) {
+        updates.bannerUrl = resolvedBannerUrl;
+      }
+      if (resolvedPhotoURL !== undefined) {
+        updates.photoURL = resolvedPhotoURL;
+      }
 
       if (draft.bio !== (profile.bio || '')) {
         updates.bio = draft.bio;
@@ -135,7 +220,15 @@ export const useProfileDraft = (profile: UserProfile | null): UseProfileDraftRes
         await updateDoc(userRef, updates);
       }
 
-      // 3. Refresh user profile in AuthContext
+      // Revoga preview blob URLs locais após upload bem-sucedido
+      if (draft.pendingBannerFile && draft.bannerUrl) {
+        revokeIfBlob(draft.bannerUrl);
+      }
+      if (draft.pendingAvatarFile && draft.photoURL) {
+        revokeIfBlob(draft.photoURL);
+      }
+
+      // 4. Refresh user profile in AuthContext
       await refreshProfile();
 
       showToast('Alterações salvas.', 'success');
@@ -147,7 +240,7 @@ export const useProfileDraft = (profile: UserProfile | null): UseProfileDraftRes
       setIsSaving(false);
       return false;
     }
-  }, [user?.uid, profile, draft, isDirty, isSaving, refreshProfile, showToast]);
+  }, [user?.uid, profile, draft, isDirty, isSaving, refreshProfile, showToast, revokeIfBlob]);
 
   return {
     draft,
