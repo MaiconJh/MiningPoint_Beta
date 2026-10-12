@@ -26,12 +26,55 @@ export class StorageTimeoutError extends Error {
   }
 }
 
+export class StorageBucketNotFoundError extends Error {
+  readonly code = 'storage/bucket-not-found';
+  constructor(
+    message = 'O bucket do Firebase Storage não foi encontrado. Confirme se o serviço está ativado no console do Firebase.'
+  ) {
+    super(message);
+    this.name = 'StorageBucketNotFoundError';
+  }
+}
+
 const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
   let timer: ReturnType<typeof setTimeout>;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(() => reject(new StorageTimeoutError()), ms);
   });
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+};
+
+/**
+ * Valida se o bucket configurado existe no Firebase Storage.
+ * Em caso de bucket inexistente (404), falha rapidamente em vez de entrar
+ * no loop de retries de 45 segundos do Firebase SDK.
+ */
+export const checkBucketExists = async (bucketName: string): Promise<void> => {
+  if (!bucketName) {
+    throw new StorageBucketNotFoundError();
+  }
+
+  try {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = controller ? setTimeout(() => controller.abort(), 3500) : null;
+    const res = await fetch(
+      `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o?maxResults=1`,
+      controller ? { signal: controller.signal } : undefined
+    );
+    if (timer) clearTimeout(timer);
+
+    if (res.status === 404) {
+      throw new StorageBucketNotFoundError();
+    }
+  } catch (err: unknown) {
+    if (
+      err instanceof StorageBucketNotFoundError ||
+      (err as { code?: string })?.code === 'storage/bucket-not-found'
+    ) {
+      throw err;
+    }
+    // Falhas de rede transitórias ou ausência de fetch prosseguem para a tentativa padrão
+  }
 };
 
 export interface ImageValidationResult {
@@ -76,6 +119,13 @@ export const uploadProfileImage = async (
     throw new Error(validation.reason || 'Arquivo de imagem inválido.');
   }
 
+  const bucket = storage.app.options.storageBucket;
+  if (!bucket) {
+    throw new StorageBucketNotFoundError();
+  }
+
+  await checkBucketExists(bucket);
+
   const storageRef = ref(storage, `users/${uid}/${kind}`);
   await withTimeout(uploadBytes(storageRef, file, { contentType: file.type }), UPLOAD_TIMEOUT_MS);
   return await withTimeout(getDownloadURL(storageRef), UPLOAD_TIMEOUT_MS);
@@ -89,10 +139,14 @@ export const removeProfileImage = async (
   kind: ProfileImageKind
 ): Promise<void> => {
   try {
+    const bucket = storage.app.options.storageBucket;
+    if (bucket) {
+      await checkBucketExists(bucket);
+    }
     const storageRef = ref(storage, `users/${uid}/${kind}`);
     await withTimeout(deleteObject(storageRef), DELETE_TIMEOUT_MS);
   } catch (error) {
-    console.error(`Erro ao remover imagem (${kind}) do Storage:`, error);
+    console.warn(`Erro ao remover imagem (${kind}) do Storage:`, error);
   }
 };
 
@@ -105,7 +159,11 @@ export const getStorageErrorMessage = (error: unknown): string => {
   if (code === 'storage/unauthorized') {
     return 'Sem permissão para enviar imagens. Verifique as regras do Firebase Storage.';
   }
-  if (code === 'storage/bucket-not-found' || code === 'storage/unknown') {
+  if (
+    code === 'storage/bucket-not-found' ||
+    code === 'storage/unknown' ||
+    error instanceof StorageBucketNotFoundError
+  ) {
     return 'O bucket do Firebase Storage não foi encontrado. Confirme se o serviço está ativado no console do Firebase.';
   }
   if (code === 'storage/retry-limit-exceeded') {

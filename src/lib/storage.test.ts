@@ -1,10 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   validateImageFile,
   MAX_IMAGE_BYTES,
   ACCEPTED_IMAGE_TYPES,
   getStorageErrorMessage,
   StorageTimeoutError,
+  StorageBucketNotFoundError,
+  checkBucketExists,
 } from './storage';
 
 describe('validateImageFile', () => {
@@ -75,8 +77,11 @@ describe('getStorageErrorMessage', () => {
     );
   });
 
-  it('retorna mensagem de bucket não encontrado para storage/bucket-not-found', () => {
+  it('retorna mensagem de bucket não encontrado para storage/bucket-not-found e StorageBucketNotFoundError', () => {
     expect(getStorageErrorMessage({ code: 'storage/bucket-not-found' })).toBe(
+      'O bucket do Firebase Storage não foi encontrado. Confirme se o serviço está ativado no console do Firebase.'
+    );
+    expect(getStorageErrorMessage(new StorageBucketNotFoundError())).toBe(
       'O bucket do Firebase Storage não foi encontrado. Confirme se o serviço está ativado no console do Firebase.'
     );
   });
@@ -112,5 +117,29 @@ describe('getStorageErrorMessage', () => {
     expect(getStorageErrorMessage({})).toBe(
       'Não foi possível enviar a imagem. Tente novamente.'
     );
+  });
+});
+
+describe('checkBucketExists', () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('lança StorageBucketNotFoundError se bucketName for vazio', async () => {
+    await expect(checkBucketExists('')).rejects.toThrow(StorageBucketNotFoundError);
+  });
+
+  it('lança StorageBucketNotFoundError se fetch retornar 404', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ status: 404 } as Response);
+    await expect(checkBucketExists('bucket-inexistente')).rejects.toThrow(
+      StorageBucketNotFoundError
+    );
+  });
+
+  it('não lança erro se fetch retornar status diferente de 404 (ex: 200 ou 401)', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ status: 401 } as Response);
+    await expect(checkBucketExists('bucket-existente')).resolves.toBeUndefined();
   });
 });

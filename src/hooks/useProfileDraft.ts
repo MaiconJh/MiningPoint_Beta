@@ -235,7 +235,7 @@ export const useProfileDraft = (profile: UserProfile | null): UseProfileDraftRes
       setIsSaving(false);
       return true;
     } catch (err) {
-      console.error('Erro ao salvar alterações do perfil:', err);
+      console.warn('Erro ao salvar alterações do perfil:', err);
       showToast(getStorageErrorMessage(err), 'error');
       setIsSaving(false);
       return false;

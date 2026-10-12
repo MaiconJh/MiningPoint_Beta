@@ -30,6 +30,7 @@ export interface ListUsersOptions {
   lastDoc?: DocumentSnapshot | null;
   groupId?: string | null;
   searchQuery?: string | null;
+  onlyPublic?: boolean; // NOVO — opcional, default false
 }
 
 export interface ListUsersResult {
@@ -58,12 +59,16 @@ export const listUsers = async (options: ListUsersOptions = {}): Promise<ListUse
       const searchField = isEmailSearch ? 'email' : 'displayName';
 
       // Use Firestore prefix range trick
-      const constraints: unknown[] = [
+      const constraints: unknown[] = [];
+      if (options.onlyPublic) {
+        constraints.push(where('visibility', '==', 'public'));
+      }
+      constraints.push(
         where(searchField, '>=', rawQuery),
         where(searchField, '<=', rawQuery + '\uf8ff'),
         orderBy(searchField, 'asc'),
-        limit(pageSize + 1),
-      ];
+        limit(pageSize + 1)
+      );
 
       if (options.lastDoc) {
         constraints.push(startAfter(options.lastDoc));
@@ -72,10 +77,16 @@ export const listUsers = async (options: ListUsersOptions = {}): Promise<ListUse
       // @ts-expect-error query constraints spreading
       q = query(usersRef, ...constraints);
     } else {
-      const constraints: unknown[] = [
+      // Note: `where('visibility', '==', 'public')` + `orderBy('displayName', 'asc')`
+      // requires a composite index on `users`: `visibility` ASC, `displayName` ASC.
+      const constraints: unknown[] = [];
+      if (options.onlyPublic) {
+        constraints.push(where('visibility', '==', 'public'));
+      }
+      constraints.push(
         orderBy('displayName', 'asc'),
-        limit(pageSize + 1),
-      ];
+        limit(pageSize + 1)
+      );
 
       if (options.lastDoc) {
         constraints.push(startAfter(options.lastDoc));
