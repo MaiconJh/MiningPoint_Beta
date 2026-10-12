@@ -51,6 +51,10 @@ Auth: Google provider only. No email/password, no magic link, no anonymous.
 Firestore: single database, no Realtime Database. No Firebase Hosting.
 Hosting and deploy are decided separately.
 
+Firebase Storage:
+  Dedicated client module (`src/lib/storage.ts`) for profile assets (avatars
+  and banners). Covers upload, compression, deletion, and friendly error mapping.
+
 Firestore collections are lowercase plural English: users, events, threads,
 products. Field names are lowercase camelCase English.
 
@@ -58,7 +62,9 @@ Security rules are required for every collection. Never leave a collection
 with default-allow. Read rules and write rules are explicit.
 
 Never store secrets in the client. Firebase config comes from the
-environment, never hardcoded.
+environment, never hardcoded. In AI Studio preview runtime environments,
+falling back to `firebase-applet-config.json` when `VITE_*` variables are
+not injected is permitted.
 
 ## Firestore schema
 
@@ -82,7 +88,7 @@ users/{uid}
   bio: string
   featuredTitleId: string | null // null by default, chosen by user
   visibility: 'public' | 'private'  // 'public' by default
-  featuredBadges: string[]       // [] by default, max 8
+  featuredBadges: string[]       // [] by default, max 4
   featuredBadgesMode: 'manual' | 'auto' // 'manual' por padrão, ordenação no carrossel
   attributes: {
     exploration: number          // 0-100
@@ -101,6 +107,7 @@ groups/{groupId}
   name: string                    // "Visitante", "Membro", "VIP", "Admin"
   description: string
   color: string                   // hex code for badges and highlights
+  chipStyle?: ChipStyle           // optional custom badge/chip styling overrides
   priority: number                // 0-100 authority order
   isStaff: boolean                // access permission to /admin
   isDefault: boolean              // default for new users (only 1 default)
@@ -168,6 +175,7 @@ rarities/{rarityId}
   label: string                   // "Comum", "Rara", "Lendária"
   color: string                   // hex code para highlight da raridade
   order: number                   // 0-999 ordem de exibição/hierarquia
+  theme?: EffectStack             // optional visual theme preset/stack
   createdAt: timestamp
   createdBy: string
 
@@ -246,6 +254,18 @@ Title grant/revoke & display flow:
   - Users with at least one title choose which title to display in `/conta/perfil` (Título exibido).
   - Selected title ID is saved to `users/{uid}.featuredTitleId` and rendered above the user's name in `ProfileHeader` using the title's custom colour.
 
+Effect Stack:
+  - 8 GPU-accelerated visual effects defined in `src/lib/effects/` and `src/styles/effects.css`:
+    tilt, spotlight, holo, aurora, prism, shimmer, neon, ember.
+  - Restricts animations to `transform`, `opacity`, and CSS variable color mixing.
+  - Permitted on designated surfaces (`<EffectSurface>`), rarity badge themes, and banners.
+  - Disabled under `@media (prefers-reduced-motion: reduce)`.
+
+collectibleLinks:
+  - Unified module (`src/lib/collectibleLinks.ts`) managing badges and titles under `userCollectibles/{userId}_{kind}_{itemId}`.
+  - Grants persist `userId`, `kind`, `itemId`, `awardedAt`, and `awardedBy`.
+  - Revocations delete the link and automatically clear showcase references (`featuredBadges` or `featuredTitleId`).
+
 ## Chip system
 
   Every group and title may carry a `chipStyle` object. When absent, the
@@ -262,13 +282,18 @@ Title grant/revoke & display flow:
 ## Navigation & Account Routes
 
 - `/perfil` — Authenticated own profile view with 4 tabs: Feed, Sobre, Qualidades, Histórico.
-- `/perfil/:id` — Public profile view for any user.
+- `/perfil/:slug` — Public profile view resolving transparently by user UID, @nick handle, or shortId.
 - `/conta` — Account management panel with 240px sub-nav, redirects to `/conta/visao-geral`.
   - `/conta/visao-geral` — Overview info: Grupo, Cargo, Membro desde, Insígnias count.
   - `/conta/perfil` — Self-editing profile info: Bio, Título, Visibilidade, Insígnias destacadas.
   - `/conta/preferencias` — Preferences: Theme selector (Claro / Escuro).
 - Navbar Dropdown: Hovering avatar when authenticated opens dropdown menu with Perfil (/perfil), Conta (/conta), and Sair (with divider).
 - Admin Gear Icon: Displayed next to avatar button when user has `effectivePermissions.accessPanel === true`, linking to `/admin`.
+
+Handle & ShortId:
+  - Every user is assigned a unique alphanumeric shortId (`src/lib/shortId.ts`).
+  - Users may claim a unique `@nick` handle (`src/lib/handle.ts`) with a single self-service redefinition.
+  - Public profile routes (`/perfil/:slug`) resolve transparently against UID, `@nick`, or `shortId`.
 
 ## Colour tokens
 
@@ -279,10 +304,12 @@ Dark:
   Surface    #272C35  #38404C  #545E6E
   Text       #F7F7F8  #C2C6CC  #768193
   Border     #545E6E  #38404C
-  Brand      #8BD0EF  #BDDCEB  #E8D3B0
+  Brand      #8BD0EF  #BDDCEB  #B2E6E1 (secondary)  #E8D3B0 (community)
+  Feedback   #4ADE80 (success)  #FBBF24 (warning)  #F87171 (error)  #60A5FA (info)
 
 Light:
   Surface    #F7F7F8  #EFF0F0  #FCFCFD
   Text       #272C35  #545E6E  #9DA4AF
   Border     #DEE0E2  #EFF0F0
-  Brand      #177CE8  #0F80B3  #A9762D
+  Brand      #177CE8  #0F80B3  #108A80 (secondary)  #A9762D (community)
+  Feedback   #16A34A (success)  #D97706 (warning)  #DC2626 (error)  #2563EB (info)

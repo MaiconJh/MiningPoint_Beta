@@ -7,9 +7,9 @@ Este documento estabelece o plano de edição estruturado e executável para ali
 ## Resumo de Contagem
 
 - **Total de itens mapeados:** 16
-- **Itens `DOC` prontos para aplicação:** 9 (ND-01, ND-02, ND-03, ND-04, ND-05, ND-06, ND-07, ND-08, R-08)
-- **Itens `PENDENTE` (bloqueados por decisão):** 2 (R-02, R-03)
+- **Itens aplicados e corrigidos:** 11 (9 `DOC` + 2 resolvidos por decisões D1 e D2)
 - **Itens `CÓDIGO` fora de escopo (apenas registro):** 5 (R-01, R-04, R-05, R-06, R-07)
+- **Itens pendentes:** 0
 
 ---
 
@@ -17,7 +17,7 @@ Este documento estabelece o plano de edição estruturado e executável para ali
 
 ### 1. Seção `## Firebase`
 
-#### Item 1.1 — Suporte ao Firebase Storage para mídia de perfil
+#### [CORRIGIDO] Item 1.1 — Suporte ao Firebase Storage para mídia de perfil
 - **ID de origem:** `ND-02`
 - **Seção do documento:** `## Firebase`
 - **Trecho atual:**
@@ -25,55 +25,46 @@ Este documento estabelece o plano de edição estruturado e executável para ali
 > Hosting and deploy are decided separately.
 - **Trecho proposto:**
 > Firestore: single database, no Realtime Database. No Firebase Hosting.
-> Storage: Firebase Storage for user avatars and banners only via `src/lib/storage.ts`.
 > Hosting and deploy are decided separately.
+>
+> Firebase Storage:
+>   Dedicated client module (`src/lib/storage.ts`) for profile assets (avatars
+>   and banners). Covers upload, compression, deletion, and friendly error mapping.
 - **Justificativa:** Documenta o módulo ativo de armazenamento e upload de imagens no Cloud Storage, ausente na especificação original.
 - **Pré-requisito:** `—`
 
-#### Item 1.2 — [PENDENTE] Política de configuração do Firebase e fallback para JSON
+#### [CORRIGIDO — decisão: aceitar fallback] Item 1.2 — Política de configuração do Firebase e fallback para JSON
 - **ID de origem:** `R-03`
 - **Seção do documento:** `## Firebase`
 - **Trecho atual:**
 > Never store secrets in the client. Firebase config comes from the
 > environment, never hardcoded.
 - **Trecho proposto:**
-*(Pendente de definição pelo dono do produto — ver seção "Bloqueados por decisão" no final)*
-- **Justificativa:** Define se o fallback para `firebase-applet-config.json` em ambientes preview é uma exceção aceita no padrão ou deve ser removido do código.
-- **Pré-requisito:** Decisão em `R-03`
+> Never store secrets in the client. Firebase config comes from the
+> environment, never hardcoded. In AI Studio preview runtime environments,
+> falling back to `firebase-applet-config.json` when `VITE_*` variables are
+> not injected is permitted.
+- **Justificativa:** Documenta a exceção permitida para ambientes de preview onde variáveis `VITE_*` não estão injetadas (Decisão D2).
+- **Pré-requisito:** Decisão D2 (aceitar fallback)
 
 ---
 
 ### 2. Seção `## Firestore schema`
 
-#### Item 2.1 — Inclusão de campos de identificação amigável e banner no perfil do usuário
+#### [CORRIGIDO] Item 2.1 — Subseção Handle & ShortId e campos de identificação amigável no perfil
 - **ID de origem:** `ND-01`
-- **Seção do documento:** `## Firestore schema` (`users/{uid}`)
+- **Seção do documento:** `## Navigation & Account Routes` / `## Firestore schema`
 - **Trecho atual:**
-```
-users/{uid}
-  uid: string
-  displayName: string
-  email: string
-  photoURL: string | null
-  primaryGroupId: string         // required, drives the badge
-```
+"não existe"
 - **Trecho proposto:**
-```
-users/{uid}
-  uid: string
-  displayName: string
-  email: string
-  photoURL: string | null
-  bannerUrl: string | null       // null by default, uploaded via Firebase Storage
-  shortId: string                // unique 4-6 char alphanumeric identifier
-  handle: string | null          // user @nick, unique, null until set
-  hasRedefinedHandle: boolean    // default false, allows exactly 1 self-service rename
-  primaryGroupId: string         // required, drives the badge
-```
-- **Justificativa:** Reflete os campos do sistema de `@nick` e banners amplamente implementados em `UserProfile` e componentes de conta.
+> Handle & ShortId:
+>   - Every user is assigned a unique alphanumeric shortId (`src/lib/shortId.ts`).
+>   - Users may claim a unique `@nick` handle (`src/lib/handle.ts`) with a single self-service redefinition.
+>   - Public profile routes (`/perfil/:slug`) resolve transparently against UID, `@nick`, or `shortId`.
+- **Justificativa:** Reflete o sistema de identificadores amigáveis `@nick` e `shortId` implementado no perfil e rotas públicas.
 - **Pré-requisito:** `—`
 
-#### Item 2.2 — [PENDENTE] Harmonização do teto de insígnias destacadas (`featuredBadges`)
+#### [CORRIGIDO — decisão: max 4] Item 2.2 — Harmonização do teto de insígnias destacadas (featuredBadges)
 - **ID de origem:** `R-02`
 - **Seção do documento:** `## Firestore schema` (`users/{uid}`)
 - **Trecho atual:**
@@ -81,12 +72,14 @@ users/{uid}
   featuredBadges: string[]       // [] by default, max 8
 ```
 - **Trecho proposto:**
-*(Pendente de definição pelo dono do produto — ver seção "Bloqueados por decisão" no final)*
-- **Justificativa:** Resolve a divergência entre a linha 85 (máx 8), a linha 239 (máx 4) e a restrição da interface de edição (`ProfileEditPanel.tsx`).
-- **Pré-requisito:** Decisão em `R-02`
+```
+  featuredBadges: string[]       // [] by default, max 4
+```
+- **Justificativa:** Alinha o schema na linha 85 com a linha 239 do documento e com a restrição de UI em `ProfileEditPanel.tsx` (Decisão D1).
+- **Pré-requisito:** Decisão D1 (max 4)
 
-#### Item 2.3 — Suporte a `chipStyle` na coleção de grupos
-- **ID de origem:** `ND-08`
+#### [CORRIGIDO] Item 2.3 — Suporte a chipStyle na coleção de grupos
+- **ID de origem:** `ND-07`
 - **Seção do documento:** `## Firestore schema` (`groups/{groupId}`)
 - **Trecho atual:**
 ```
@@ -95,9 +88,6 @@ groups/{groupId}
   description: string
   color: string                   // hex code for badges and highlights
   priority: number                // 0-100 authority order
-  isStaff: boolean                // access permission to /admin
-  isDefault: boolean              // default for new users (only 1 default)
-  permissions: {
 ```
 - **Trecho proposto:**
 ```
@@ -107,14 +97,11 @@ groups/{groupId}
   color: string                   // hex code for badges and highlights
   chipStyle?: ChipStyle           // optional custom badge/chip styling overrides
   priority: number                // 0-100 authority order
-  isStaff: boolean                // access permission to /admin
-  isDefault: boolean              // default for new users (only 1 default)
-  permissions: {
 ```
-- **Justificativa:** Alinha o schema declarado de grupos com a tipagem `Group.chipStyle` e com a própria regra da linha 251 da seção "Chip system".
+- **Justificativa:** Alinha o schema declarado de grupos com a tipagem `Group.chipStyle` e com a regra da linha 251 da seção "Chip system".
 - **Pré-requisito:** `—`
 
-#### Item 2.4 — Inclusão de tema visual de raridade (`theme?: EffectStack`)
+#### [CORRIGIDO] Item 2.4 — Inclusão de tema visual de raridade (theme?: EffectStack)
 - **ID de origem:** `ND-04`
 - **Seção do documento:** `## Firestore schema` (`rarities/{rarityId}`)
 - **Trecho atual:**
@@ -132,94 +119,64 @@ rarities/{rarityId}
   label: string                   // "Comum", "Rara", "Lendária"
   color: string                   // hex code para highlight da raridade
   order: number                   // 0-999 ordem de exibição/hierarquia
-  theme?: EffectStack             // optional visual preset/stack (holo, aurora, ember, etc.)
+  theme?: EffectStack             // optional visual theme preset/stack
   createdAt: timestamp
   createdBy: string
 ```
-- **Justificativa:** Documenta o campo utilizado para aplicar estilos dinâmicos de raridade em insígnias vinculadas.
+- **Justificativa:** Documenta o campo utilizado para aplicar temas visuais de raridade em insígnias vinculadas.
 - **Pré-requisito:** `—`
 
 ---
 
-### 3. Seção `## Styling`
+### 3. Seção `## Badges & Icons`
 
-#### Item 3.1 — Especificação da fundação visual Effect Stack
+#### [CORRIGIDO] Item 3.1 — Especificação da fundação visual Effect Stack em Badges & Icons
 - **ID de origem:** `ND-03`
-- **Seção do documento:** `## Styling`
-- **Trecho atual:**
-> CSS custom properties in the global CSS file, exclusively for the colour and
-> theme system. Colours defined in :root. Never use Tailwind colour utilities
-> directly (no bg-slate-900, no text-blue-500).
-- **Trecho proposto:**
-> CSS custom properties in the global CSS file, exclusively for the colour and
-> theme system. Colours defined in :root. Never use Tailwind colour utilities
-> directly (no bg-slate-900, no text-blue-500).
->
-> Effect Stack system (`src/lib/effects/`, `src/styles/effects.css`):
-> High-performance GPU-accelerated visual effects (tilt, spotlight, holo, aurora,
-> prism, shimmer, neon, ember) restricted to `transform`, `opacity`, and CSS variable
-> color mixing. Permitted on designated surfaces (`<EffectSurface>`, rarity badges,
-> banners) with mandatory `@media (prefers-reduced-motion: reduce)` fallbacks.
-- **Justificativa:** Integra formalmente ao padrão a arquitetura de efeitos visuais criada em `src/lib/effects/` e `src/styles/effects.css`.
-- **Pré-requisito:** `—`
-
-#### Item 3.2 — Política de exceções para tokens de design com comentários inline
-- **ID de origem:** `ND-07`
-- **Seção do documento:** `## Styling`
+- **Seção do documento:** `## Badges & Icons`
 - **Trecho atual:**
 "não existe"
 - **Trecho proposto:**
-> Design token exceptions:
-> Surfaces that must remain dark regardless of active theme (e.g., banner backdrops,
-> high-contrast media overlays in `ProfileBanner.tsx` and `BadgeCarousel.tsx`) may carry
-> raw color literals exclusively via inline ESLint disables with an immediate preceding
-> justification comment:
-> `/* Sombreado fixo independente de tema para legibilidade */`
-> `/* eslint-disable-next-line design-tokens/no-raw-color-literals */`
-- **Justificativa:** Formaliza a prática exigida pelas regras locais do ESLint para camadas decorativas que não suportam inversão no tema claro.
+> Effect Stack:
+>   - 8 GPU-accelerated visual effects defined in `src/lib/effects/` and `src/styles/effects.css`:
+>     tilt, spotlight, holo, aurora, prism, shimmer, neon, ember.
+>   - Restricts animations to `transform`, `opacity`, and CSS variable color mixing.
+>   - Permitted on designated surfaces (`<EffectSurface>`), rarity badge themes, and banners.
+>   - Disabled under `@media (prefers-reduced-motion: reduce)`.
+- **Justificativa:** Integra formalmente ao padrão a arquitetura de 8 efeitos visuais em Badges & Icons sem duplicação de seções.
 - **Pré-requisito:** `—`
 
----
-
-### 4. Seção `## Badges & Icons`
-
-#### Item 4.1 — Consolidação do módulo unificado `userCollectibles`
+#### [CORRIGIDO] Item 3.2 — Consolidação do módulo unificado collectibleLinks
 - **ID de origem:** `ND-08`
 - **Seção do documento:** `## Badges & Icons`
 - **Trecho atual:**
-> Badge grant/revoke flow:
->   - Admin grants a badge to a user from `/admin/insignias/:badgeId`.
->   - Creates a doc in `userCollectibles/${userId}_badge_${badgeId}` with `userId`, `kind: 'badge'`, `itemId: badgeId`, `awardedAt: serverTimestamp()`, `awardedBy: adminUid`.
->   - Admin revoking a badge deletes the `userCollectibles/${userId}_badge_${badgeId}` doc.
+"não existe"
 - **Trecho proposto:**
-> Collectible grant/revoke architecture (`src/lib/collectibleLinks.ts`):
->   - Unified management for both badges and titles under `userCollectibles/{userId}_{kind}_{itemId}`.
->   - Grant operations persist `userId`, `kind`, `itemId`, `awardedAt`, and `awardedBy`.
->   - Revoke operations remove the document and automatically clear user showcase references:
->     revoking a badge strips it from `users/{uid}.featuredBadges`; revoking a title resets
->     `users/{uid}.featuredTitleId` to null if currently displayed.
-- **Justificativa:** Esclarece a automação de limpeza de destaques executada centralizadamente em `collectibleLinks.ts` ao revogar itens.
+> collectibleLinks:
+>   - Unified module (`src/lib/collectibleLinks.ts`) managing badges and titles under `userCollectibles/{userId}_{kind}_{itemId}`.
+>   - Grants persist `userId`, `kind`, `itemId`, `awardedAt`, and `awardedBy`.
+>   - Revocations delete the link and automatically clear showcase references (`featuredBadges` or `featuredTitleId`).
+- **Justificativa:** Formaliza a arquitetura unificada de colecionáveis e a automação de limpeza de destaques ao revogar itens.
 - **Pré-requisito:** `—`
 
 ---
 
-### 5. Seção `## Navigation & Account Routes`
+### 4. Seção `## Navigation & Account Routes`
 
-#### Item 5.1 — Rota de perfil público amigável com suporte a slugs (`/perfil/:slug`)
+#### [CORRIGIDO] Item 4.1 — Rota de perfil público amigável com suporte a slugs (/perfil/:slug)
 - **ID de origem:** `R-08`
 - **Seção do documento:** `## Navigation & Account Routes`
 - **Trecho atual:**
 > - `/perfil/:id` — Public profile view for any user.
 - **Trecho proposto:**
-> - `/perfil/:slug` — Public profile view resolving transparently by user UID, `@nick` handle, or unique `shortId`.
-- **Justificativa:** Atualiza a assinatura da rota para coincidir com a implementação real em `App.tsx` e `PublicProfile.tsx`.
+> - `/perfil/:slug` — Public profile view resolving transparently by user UID, @nick handle, or shortId.
+- **Justificativa:** Atualiza a assinatura da rota pública para refletir a resolução real por slug em `App.tsx` e `PublicProfile.tsx`.
 - **Pré-requisito:** `—`
 
 ---
 
-### 6. Seção `## Colour tokens`
+### 5. Seção `## Colour tokens`
 
-#### Item 6.1 — Inclusão de tokens semânticos de feedback
+#### [CORRIGIDO] Item 5.1 — Inclusão de tokens semânticos de feedback
 - **ID de origem:** `ND-05`
 - **Seção do documento:** `## Colour tokens`
 - **Trecho atual:**
@@ -242,62 +199,41 @@ Dark:
   Surface    #272C35  #38404C  #545E6E
   Text       #F7F7F8  #C2C6CC  #768193
   Border     #545E6E  #38404C
-  Brand      #8BD0EF  #BDDCEB  #E8D3B0
+  Brand      #8BD0EF  #BDDCEB  #B2E6E1 (secondary)  #E8D3B0 (community)
   Feedback   #4ADE80 (success)  #FBBF24 (warning)  #F87171 (error)  #60A5FA (info)
 
 Light:
   Surface    #F7F7F8  #EFF0F0  #FCFCFD
   Text       #272C35  #545E6E  #9DA4AF
   Border     #DEE0E2  #EFF0F0
-  Brand      #177CE8  #0F80B3  #A9762D
+  Brand      #177CE8  #0F80B3  #108A80 (secondary)  #A9762D (community)
   Feedback   #16A34A (success)  #D97706 (warning)  #DC2626 (error)  #2563EB (info)
 ```
-- **Justificativa:** Registra formalmente os tokens `--feedback-*` vigentes em `src/index.css` utilizados em toasts, alertas e chips.
+- **Justificativa:** Registra formalmente os tokens `--feedback-*` vigentes em `src/index.css`.
 - **Pré-requisito:** `—`
 
-#### Item 6.2 — Inclusão de tokens complementares de acento e bordas
+#### [CORRIGIDO] Item 5.2 — Inclusão de tokens complementares de marca secundária e comunitária
 - **ID de origem:** `ND-06`
 - **Seção do documento:** `## Colour tokens`
 - **Trecho atual:**
-"não existe"
+```
+  Brand      #8BD0EF  #BDDCEB  #E8D3B0
+```
 - **Trecho proposto:**
-> Secondary tokens defined in `:root` and `[data-theme="light"]`:
-> - `--brand-secondary`: `#B2E6E1` (Dark) / `#108A80` (Light)
-> - `--border-strong`: `#9DA4AF` (Dark) / `#C2C6CC` (Light)
-> - `--border-focus`: `#BDDCEB` (Dark) / `#BED3E9` (Light)
-> - `--text-inverse`: `#1A1D23` (Dark) / `#FCFCFD` (Light)
-- **Justificativa:** Documenta variáveis essenciais de contraste, foco e marcas secundárias presentes no CSS global e ausentes do texto do padrão.
+```
+  Brand      #8BD0EF  #BDDCEB  #B2E6E1 (secondary)  #E8D3B0 (community)
+```
+- **Justificativa:** Documenta explicitamente `--brand-secondary` (`#B2E6E1` / `#108A80`) e `--brand-community` (`#E8D3B0` / `#A9762D`) na tabela de tokens.
 - **Pré-requisito:** `—`
 
 ---
 
-## Bloqueados por decisão
+## Decisões resolvidas
 
-Esta seção reúne os itens cuja resolução depende de resposta mandatória do dono do produto antes de qualquer alteração no `PROJECT_STANDARDS.md`.
+As duas decisões pendentes foram deliberadas pelo dono do produto:
 
-### Decisão R-02: Teto de insígnias destacadas (`featuredBadges`)
-- **Pergunta ao dono do produto:**
-  Qual é o número máximo definitivo de insígnias que um usuário pode destacar no perfil (`featuredBadges`)?
-- **Contexto da contradição:**
-  - A linha 85 do `PROJECT_STANDARDS.md` estipula `max 8`.
-  - A linha 239 do próprio `PROJECT_STANDARDS.md` estipula *"choose up to 4 featured badges in /conta/perfil"*.
-  - A interface de usuário em `src/components/account/ProfileEditPanel.tsx:151,383,393` trava o limite rígido em 4.
-  - O carrossel visual no banner (`BadgeCarousel.tsx`) é dimensionado espacialmente para 4 slots.
-- **Opções disponíveis:**
-  - **Opção A (Recomendada):** Fixar em **4 insígnias**. Altera a linha 85 do `PROJECT_STANDARDS.md` de `max 8` para `max 4`, mantendo o código atual 100% inalterado.
-  - **Opção B:** Fixar em **8 insígnias**. Mantém a linha 85 do documento, corrige a linha 239 do documento e exige tarefa de `CÓDIGO` para refatorar `ProfileEditPanel.tsx` e o layout responsivo de `BadgeCarousel.tsx`.
-
----
-
-### Decisão R-03: Política de credenciais do Firebase e arquivo JSON em preview
-- **Pergunta ao dono do produto:**
-  Como o padrão deve governar a fonte de credenciais do Firebase SDK no cliente?
-- **Contexto da divergência:**
-  - O `PROJECT_STANDARDS.md` (linhas 60-61) proíbe configurações fixas: *"Firebase config comes from the environment, never hardcoded"*.
-  - O código em `src/lib/firebase.ts:7-13` realiza fallback automático para `firebase-applet-config.json` caso variáveis `VITE_*` não existam, garantindo que o applet funcione imediatamente no runtime AI Studio.
-- **Opções disponíveis:**
-  - **Opção A (Recomendada):** Formalizar o fallback como exceção permitida no `PROJECT_STANDARDS.md`: *"Firebase config is loaded from VITE_* environment variables, falling back to firebase-applet-config.json for AI Studio preview runtime environments"*.
-  - **Opção B:** Reafirmar a exigência estrita de ambiente no documento e abrir uma tarefa de `CÓDIGO` para remover a importação de `firebase-applet-config.json` em `src/lib/firebase.ts`, exigindo `.env` provisionado.
+- **Decisão R-02 (Teto de `featuredBadges`):** Resolvida como `max 4` (Decisão D1). A linha 85 do `PROJECT_STANDARDS.md` foi atualizada de `max 8` para `max 4`, alinhando-se com a linha 239 e com a trava da interface em `ProfileEditPanel.tsx`.
+- **Decisão R-03 (Fallback de credenciais Firebase):** Resolvida como `aceitar fallback` (Decisão D2). O documento agora formaliza o fallback para `firebase-applet-config.json` em ambientes de preview do AI Studio como exceção permitida.
 
 ---
 
@@ -310,3 +246,25 @@ Os itens abaixo foram classificados como `CÓDIGO` na matriz de correção. Eles
 3. **R-05:** Renomeação da chave de localStorage de `mp.tema` para `mp.theme` em `src/context/ThemeContext.tsx` e `index.html`.
 4. **R-06:** Ajuste em `src/components/NavBar.tsx:34` para ocultar o ícone da engrenagem quando o administrador estiver com status `isBanned === true`.
 5. **R-07:** Substituição da palavra-chave literal `white` por variável de tema semântica em regras de faísca de `src/styles/effects.css`.
+
+---
+
+## [O QUE FOI MODIFICADO]
+
+Lista de elementos alterados no PROJECT_STANDARDS.md e a abordagem de decisão adotada.
+
+| ID | Elemento alterado | Abordagem de decisão |
+|---|---|---|
+| R-02 | Teto de `featuredBadges` (linha 85) | Reduzido de 8 para 4, alinhando com a linha 239 e com `ProfileEditPanel.tsx` |
+| R-03 | Seção Firebase | Parágrafo adicionado documentando o fallback `firebase-applet-config.json` como exceção permitida para preview do AI Studio |
+| R-08 | Seção Navigation | Rota `/perfil/:id` → `/perfil/:slug` |
+| ND-01 | Nova subseção Handle & ShortId | Documenta `src/lib/handle.ts` e `src/lib/shortId.ts` |
+| ND-02 | Nova subseção Firebase Storage | Documenta `src/lib/storage.ts` |
+| ND-03 | Nova subseção Effect Stack | Documenta os 8 efeitos e a regra de aplicação |
+| ND-04 | Firestore schema → rarities | Adicionado `theme?: EffectStack` |
+| ND-05 | Colour tokens | Adicionados tokens `--feedback-*` |
+| ND-06 | Colour tokens | Adicionados tokens `--brand-secondary` e `--brand-community` |
+| ND-07 | Firestore schema → groups | Adicionado `chipStyle?: ChipStyle` |
+| ND-08 | Nova subseção collectibleLinks | Documenta `src/lib/collectibleLinks.ts` |
+
+Nenhum arquivo de código-fonte foi alterado nesta rodada. Os itens R-01, R-04, R-05, R-06 e R-07 permanecem pendentes por serem escopo de código.
