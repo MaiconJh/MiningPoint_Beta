@@ -28,6 +28,12 @@ export const ProfileBanner: React.FC<ProfileBannerProps> = ({
       {/* Background layer: neutral surface or custom banner image */}
       <div
         className="absolute inset-0 overflow-hidden pointer-events-none"
+        /* TOKEN-EXCEPTION 002
+           File:      src/components/profile/ProfileBanner.tsx
+           Reason:    Banner texture is decorative and must remain dark in both
+                      themes for badge legibility.
+           Reference: PROJECT_STANDARDS.md § Styling — Declared Exceptions
+        */
         /* eslint-disable-next-line design-tokens/no-raw-color-literals */
         style={{
           backgroundColor: '#333B46',
@@ -44,7 +50,12 @@ export const ProfileBanner: React.FC<ProfileBannerProps> = ({
         {/* Shading overlay for readability */}
         <div
           className="absolute inset-0"
-          /* Sombreado fixo independente de tema para legibilidade */
+          /* TOKEN-EXCEPTION 002
+             File:      src/components/profile/ProfileBanner.tsx
+             Reason:    Banner texture is decorative and must remain dark in both
+                        themes for badge legibility.
+             Reference: PROJECT_STANDARDS.md § Styling — Declared Exceptions
+          */
           /* eslint-disable-next-line design-tokens/no-raw-color-literals */
           style={{
             backgroundImage:

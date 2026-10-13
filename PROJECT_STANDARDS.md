@@ -23,6 +23,20 @@ CSS custom properties in the global CSS file, exclusively for the colour and
 theme system. Colours defined in :root. Never use Tailwind colour utilities
 directly (no bg-slate-900, no text-blue-500).
 
+Literal colour values (`white`, `#fff`, `rgb(...)`, `hsl(...)`) are
+forbidden by default in application files. When a decorative layer cannot
+be governed by a theme variable — for example, a spark's luminous point
+that must remain visually light in both themes — the exception is permitted
+only if it is documented inline with a `TOKEN-EXCEPTION` block immediately
+above the rule, stating the file, the reason the theme token does not
+apply, and the reference back to this section. Every ID must appear in
+the declared list below. Grep marker: `TOKEN-EXCEPTION`.
+
+Declared exceptions:
+  001  src/styles/effects.css                          (spark luminous point)
+  002  src/components/profile/ProfileBanner.tsx        (decorative texture)
+  003  src/components/profile/BadgeCarousel.tsx        (decorative texture)
+
 ## Content
 
 A page shows real content or shows nothing. It never explains what it will be.

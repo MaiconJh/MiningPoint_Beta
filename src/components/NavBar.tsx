@@ -31,7 +31,7 @@ export const NavBar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const lastScrollY = useRef(0);
 
-  const canAccessPanel = !!profile?.effectivePermissions?.accessPanel;
+  const canAccessPanel = !profile?.isBanned && !!profile?.effectivePermissions?.accessPanel;
 
   // Position the sliding indicator
   const updateIndicator = () => {

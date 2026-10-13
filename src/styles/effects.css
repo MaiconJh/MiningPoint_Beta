@@ -173,6 +173,13 @@
     ember-drift var(--sway-dur, 2.2s) infinite ease-in-out alternate;
 }
 
+/* TOKEN-EXCEPTION 001
+   File:      src/styles/effects.css
+   Reason:    Spark luminous point must stay visually light in both themes.
+              Theme tokens (e.g. --text-primary) render near-black in light
+              mode, breaking the glow.
+   Reference: PROJECT_STANDARDS.md § Styling — Declared Exceptions
+*/
 .ember-particle.is-spark {
   background: radial-gradient(
     circle,

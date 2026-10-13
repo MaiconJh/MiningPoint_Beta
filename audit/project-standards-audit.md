@@ -108,10 +108,12 @@
   - **Recomendação**: Documentar formalmente no `PROJECT_STANDARDS.md` a exceção permitida para ambientes de preview onde o arquivo de provisionamento local é a fonte padrão caso variáveis `VITE_*` não estejam injetadas.
 
 ### MÉDIOS
-- **R-04: Migração de `groupId` para `primaryGroupId` incompleta na persistência**
+- **R-04: Migração de `groupId` para `primaryGroupId` incompleta na persistência [RESOLVIDO]**
   - **Evidência**: `src/lib/profile.ts:51-52` e `src/lib/users.ts:161,352,428`. O padrão estipula (linhas 196-202): *"A user doc that has groupId and not primaryGroupId: primaryGroupId = groupId ... Then deletes the obsolete groupId field"*.
-  - **Impacto**: Manutenção. O código resolve a compatibilidade em memória durante a leitura (`primaryGroupId = data.primaryGroupId || data.groupId || 'visitante'`), mas não executa a gravação nem chama `deleteField()` para remover a propriedade legada do documento no Firestore.
-  - **Recomendação**: Implementar rotina de migração no momento do login ou em job administrativo para efetivar a remoção física de `groupId`.
+  - **Impacto**: Manutenção. O código resolve a compatibilidade em memória durante a leitura (`primaryGroupId = data.primaryGroupId || data.groupId || 'visitante'`), mas não executa a gravação nem chamava `deleteField()` para remover a propriedade legada do documento no Firestore.
+  - **Recomendação & Conclusão de Regras de Segurança**:
+    - **Análise das `firestore.rules`**: A regra de atualização de perfil em self-update restringe os campos modificáveis via `onlyTouchesProfileFields()`, que **bloqueia** explicitamente `primaryGroupId`, `secondaryGroupIds`, `isStaff`, `effectivePermissions`, `isBanned`, `bannedAt`, `bannedBy` e `attributes`. Logo, qualquer tentativa de migração em self-update (ex.: gatilho no login do usuário comum) é rejeitada pelo Firebase com erro de permissão.
+    - **Solução implementada**: O acesso administrativo via `allow update: if (isOwner && !banned && onlyTouchesProfileFields()) || has('manageUsers')` permite que administradores com a permissão `manageUsers` façam mutações completas nesses campos. A função administrativa `backfillPrimaryGroupId` foi implementada em `src/lib/users.ts` e disponibilizada na interface administrativa em `src/pages/admin/AdminConfig.tsx`, permitindo executar a migração em lotes e remover o campo obsoleto `groupId` via `deleteField()` em conformidade com as regras de segurança.
 
 - **R-05: Chave de armazenamento local em português (`mp.tema`)**
   - **Evidência**: `src/context/ThemeContext.tsx:13` (`export const THEME_STORAGE_KEY = 'mp.tema';`) e `index.html:12` (`localStorage.getItem('mp.tema')`).

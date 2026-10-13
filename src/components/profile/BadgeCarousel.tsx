@@ -162,7 +162,12 @@ const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
             ? `${badge.name}. Arraste para reordenar ou use as setas do teclado.`
             : badge.name
         }
-        /* Ícone com contraste deliberado sobre o banner escuro */
+        /* TOKEN-EXCEPTION 003
+           File:      src/components/profile/BadgeCarousel.tsx
+           Reason:    Carousel overlay must remain dark in both themes for badge
+                      contrast and illustration legibility.
+           Reference: PROJECT_STANDARDS.md § Styling — Declared Exceptions
+        */
         /* eslint-disable-next-line design-tokens/no-raw-color-literals */
         className={`w-10 h-10 max-sm:w-9 max-sm:h-9 rounded-full flex items-center justify-center text-[#eaf4fa] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] ${
           isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'
@@ -185,7 +190,12 @@ const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
           surface="tooltip"
           stack={resolvedEffectStack}
           className="absolute bottom-[calc(100%+8px)] right-0 w-max max-w-[220px] p-3 rounded-lg z-30 pointer-events-auto before:absolute before:inset-x-0 before:-bottom-2 before:h-2 before:content-['']"
-          /* Tooltip translúcido estilizado com fundo escuro fixo para contraste com o banner */
+          /* TOKEN-EXCEPTION 003
+             File:      src/components/profile/BadgeCarousel.tsx
+             Reason:    Carousel overlay must remain dark in both themes for badge
+                        contrast and illustration legibility.
+             Reference: PROJECT_STANDARDS.md § Styling — Declared Exceptions
+          */
           /* eslint-disable-next-line design-tokens/no-raw-color-literals */
           style={{
             backgroundColor: 'rgba(16, 19, 24, 0.85)',
@@ -199,12 +209,24 @@ const SortableCarouselItem: React.FC<SortableCarouselItemProps> = ({
             {badge.name}
           </p>
           {badge.description && (
+            /* TOKEN-EXCEPTION 003
+               File:      src/components/profile/BadgeCarousel.tsx
+               Reason:    Carousel overlay must remain dark in both themes for badge
+                          contrast and illustration legibility.
+               Reference: PROJECT_STANDARDS.md § Styling — Declared Exceptions
+            */
             /* eslint-disable-next-line design-tokens/no-raw-color-literals */
             <p className="text-xs text-[#f4f7fa] m-0 mt-1 leading-snug">
               {badge.description}
             </p>
           )}
           {awardedDate && (
+            /* TOKEN-EXCEPTION 003
+               File:      src/components/profile/BadgeCarousel.tsx
+               Reason:    Carousel overlay must remain dark in both themes for badge
+                          contrast and illustration legibility.
+               Reference: PROJECT_STANDARDS.md § Styling — Declared Exceptions
+            */
             /* eslint-disable-next-line design-tokens/no-raw-color-literals */
             <p className="text-[11px] text-[rgba(244,247,250,0.82)] font-mono mt-1.5 m-0 border-t border-[rgba(255,255,255,0.15)] pt-1">
               Concedida em {awardedDate}
@@ -315,7 +337,12 @@ export const BadgeCarousel: React.FC<BadgeCarouselProps> = ({
           role="group"
           aria-label="Modo de exibição das insígnias"
           className="flex items-center rounded-full p-0.5 border backdrop-blur-xs"
-          /* Contraste deliberado sobre o banner escuro */
+          /* TOKEN-EXCEPTION 003
+             File:      src/components/profile/BadgeCarousel.tsx
+             Reason:    Carousel overlay must remain dark in both themes for badge
+                        contrast and illustration legibility.
+             Reference: PROJECT_STANDARDS.md § Styling — Declared Exceptions
+          */
           /* eslint-disable-next-line design-tokens/no-raw-color-literals */
           style={{
             backgroundColor: 'rgba(16, 19, 24, 0.65)',

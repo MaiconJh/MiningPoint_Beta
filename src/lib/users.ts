@@ -12,6 +12,7 @@ import {
   startAfter,
   writeBatch,
   serverTimestamp,
+  deleteField,
   type DocumentSnapshot,
   type DocumentData,
 } from 'firebase/firestore';
@@ -637,4 +638,103 @@ export const backfillShortIds = async (
   }
 
   return { filledCount, alreadyHadCount, totalCount };
+};
+
+export interface BackfillPrimaryGroupIdResult {
+  migratedCount: number;
+  alreadyCleanCount: number;
+  totalCount: number;
+}
+
+export const backfillPrimaryGroupId = async (
+  onProgress?: (done: number, total: number) => void
+): Promise<BackfillPrimaryGroupIdResult> => {
+  if (!db) return { migratedCount: 0, alreadyCleanCount: 0, totalCount: 0 };
+
+  const allGroups = await listGroups();
+  const groupMap = new Map<string, Group>();
+  allGroups.forEach((g) => groupMap.set(g.id, g));
+
+  const usersSnap = await getDocs(collection(db, 'users'));
+  const allDocs = usersSnap.docs;
+  const totalCount = allDocs.length;
+
+  let migratedCount = 0;
+  let alreadyCleanCount = 0;
+  let processedCount = 0;
+
+  const BATCH_SIZE = 400;
+
+  for (let i = 0; i < allDocs.length; i += BATCH_SIZE) {
+    const chunk = allDocs.slice(i, i + BATCH_SIZE);
+    const batch = writeBatch(db);
+    let batchHasUpdates = false;
+
+    for (const d of chunk) {
+      const data = d.data();
+      const hasLegacyGroupId = data.groupId !== undefined;
+      const hasPrimaryGroupId =
+        typeof data.primaryGroupId === 'string' && data.primaryGroupId.trim().length > 0;
+
+      if (!hasPrimaryGroupId) {
+        const targetPrimaryId =
+          typeof data.groupId === 'string' && data.groupId.trim().length > 0
+            ? data.groupId.trim()
+            : 'visitante';
+        const secondaryIds: string[] = Array.isArray(data.secondaryGroupIds)
+          ? data.secondaryGroupIds
+          : [];
+
+        const userGroups: Group[] = [];
+        const primaryG = groupMap.get(targetPrimaryId);
+        if (primaryG) userGroups.push(primaryG);
+        for (const sid of secondaryIds) {
+          const secG = groupMap.get(sid);
+          if (secG) userGroups.push(secG);
+        }
+
+        const newIsStaff = deriveIsStaff(userGroups);
+        const newPerms = unionUserPermissions(userGroups);
+
+        const updatePayload: Record<string, unknown> = {
+          primaryGroupId: targetPrimaryId,
+          secondaryGroupIds: secondaryIds,
+          isStaff: newIsStaff,
+          effectivePermissions: newPerms,
+        };
+
+        if (hasLegacyGroupId) {
+          updatePayload.groupId = deleteField();
+        }
+
+        batch.update(d.ref, updatePayload);
+        batchHasUpdates = true;
+        migratedCount++;
+      } else if (hasLegacyGroupId) {
+        batch.update(d.ref, {
+          groupId: deleteField(),
+        });
+        batchHasUpdates = true;
+        migratedCount++;
+      } else {
+        alreadyCleanCount++;
+      }
+
+      processedCount++;
+    }
+
+    if (batchHasUpdates) {
+      try {
+        await batch.commit();
+      } catch (err) {
+        console.error('Error committing backfillPrimaryGroupId batch:', err);
+      }
+    }
+
+    if (onProgress) {
+      onProgress(processedCount, totalCount);
+    }
+  }
+
+  return { migratedCount, alreadyCleanCount, totalCount };
 };

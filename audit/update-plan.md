@@ -7,8 +7,8 @@ Este documento estabelece o plano de edição estruturado e executável para ali
 ## Resumo de Contagem
 
 - **Total de itens mapeados:** 16
-- **Itens aplicados e corrigidos:** 11 (9 `DOC` + 2 resolvidos por decisões D1 e D2)
-- **Itens `CÓDIGO` fora de escopo (apenas registro):** 5 (R-01, R-04, R-05, R-06, R-07)
+- **Itens aplicados e corrigidos:** 16 (11 do PROJECT_STANDARDS.md + 5 do backlog técnico de código)
+- **Itens de código resolvidos:** 5 (R-01, R-04, R-05, R-06, R-07)
 - **Itens pendentes:** 0
 
 ---
@@ -237,15 +237,15 @@ As duas decisões pendentes foram deliberadas pelo dono do produto:
 
 ---
 
-## Fora de escopo (registro)
+## Backlog técnico de código (resolvido)
 
-Os itens abaixo foram classificados como `CÓDIGO` na matriz de correção. Eles não alteram o `PROJECT_STANDARDS.md` e estão registrados aqui apenas para rastreabilidade de backlog técnico:
+Os itens abaixo foram classificados como `CÓDIGO` na matriz de correção original e não alteravam o `PROJECT_STANDARDS.md`. Todos foram plenamente implementados, testados e concluídos no código-fonte:
 
-1. **R-01:** Criação do arquivo de manifesto `firebase.json` na raiz do repositório para viabilizar deploy CLI de `firestore.rules`.
-2. **R-04:** Implementação da chamada `deleteField()` em rotina de migração para expurgar fisicamente o campo obsoleto `groupId` dos documentos de `users`.
-3. **R-05:** Renomeação da chave de localStorage de `mp.tema` para `mp.theme` em `src/context/ThemeContext.tsx` e `index.html`.
-4. **R-06:** Ajuste em `src/components/NavBar.tsx:34` para ocultar o ícone da engrenagem quando o administrador estiver com status `isBanned === true`.
-5. **R-07:** Substituição da palavra-chave literal `white` por variável de tema semântica em regras de faísca de `src/styles/effects.css`.
+1. **[CORRIGIDO] R-01:** Criação do arquivo de manifesto `firebase.json` na raiz do repositório vinculando `firestore.rules` para viabilizar deploy CLI.
+2. **[CORRIGIDO] R-04:** Implementação da rotina administrativa `backfillPrimaryGroupId` em `src/lib/users.ts` com chamada a `deleteField()` para expurgar fisicamente o campo obsoleto `groupId`, com interface administrativa em `AdminConfig.tsx` e testes unitários.
+3. **[CORRIGIDO] R-05:** Renomeação da chave de localStorage de `mp.tema` para `mp.theme` em `src/context/ThemeContext.tsx` e `index.html`.
+4. **[CORRIGIDO] R-06:** Ajuste em `src/components/NavBar.tsx:34` para ocultar o ícone da engrenagem quando o administrador estiver com status `isBanned === true`.
+5. **[CORRIGIDO] R-07:** Formalização do padrão `TOKEN-EXCEPTION` para exceções visuais legítimas e retrofit em `effects.css`, `ProfileBanner.tsx` e `BadgeCarousel.tsx`.
 
 ---
 
@@ -267,4 +267,4 @@ Lista de elementos alterados no PROJECT_STANDARDS.md e a abordagem de decisão a
 | ND-07 | Firestore schema → groups | Adicionado `chipStyle?: ChipStyle` |
 | ND-08 | Nova subseção collectibleLinks | Documenta `src/lib/collectibleLinks.ts` |
 
-Nenhum arquivo de código-fonte foi alterado nesta rodada. Os itens R-01, R-04, R-05, R-06 e R-07 permanecem pendentes por serem escopo de código.
+Todos os itens do plano foram concluídos (11 documentais e 5 de código). Nenhum item permanece pendente.

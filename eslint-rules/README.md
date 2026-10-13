@@ -31,6 +31,15 @@ Para garantir aderência estrita a essa diretriz e prevenir regressões visuais 
 ## Política de Exceções
 
 1. **Apenas desativações inline:** É terminantemente proibido adicionar `ignores` globais no `eslint.config.js` para silenciar as regras `design-tokens/*`.
-2. **Formato obrigatório:** Qualquer exceção pontual deve ser feita estritamente no local de uso com `/* eslint-disable-next-line <regra> */` acompanhado de um comentário de uma linha justificando a necessidade técnica.
+2. **Formato obrigatório (`TOKEN-EXCEPTION`):** Qualquer exceção pontual deve ser feita estritamente no local de uso com o marcador padronizado `TOKEN-EXCEPTION`, contendo a diretiva `/* eslint-disable-next-line <regra> */` acompanhada de um comentário justificando a necessidade técnica:
+   ```ts
+   /* TOKEN-EXCEPTION: justificativa técnica aqui */
+   /* eslint-disable-next-line design-tokens/no-raw-color-literals */
+   ```
+   No caso de arquivos CSS puros (como `src/styles/effects.css`), usa-se o marcador em formato de comentário CSS antes da declaração:
+   ```css
+   /* TOKEN-EXCEPTION: justificativa técnica aqui */
+   ```
 3. **Casos legítimos conhecidos:**
-   - `ProfileBanner.tsx` e `BadgeCarousel.tsx`: utilizam cores literais deliberadamente para criar a textura gráfica do banner decorativo (que deve permanecer escura em ambos os temas para manter a legibilidade das insígnias e ilustrações). Nesses casos, a desativação é feita inline com o comentário explicativo correspondente.
+   - `ProfileBanner.tsx` e `BadgeCarousel.tsx`: utilizam cores literais deliberadamente para criar a textura gráfica do banner decorativo (que deve permanecer escura em ambos os temas para manter a legibilidade das insígnias e ilustrações). Ambos utilizam o marcador `TOKEN-EXCEPTION`.
+   - `src/styles/effects.css`: utiliza a palavra-chave literal `white` em partículas de centelha (`.ember-particle.is-spark`) para manter contraste luminoso independente do tema, devidamente marcado com `TOKEN-EXCEPTION`.
