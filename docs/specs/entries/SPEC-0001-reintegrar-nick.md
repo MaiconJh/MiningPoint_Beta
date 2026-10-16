@@ -1,14 +1,14 @@
 ---
 id: SPEC-0001
 title: Reintegrar interface de definição/redefinição de @nick
-status: aprovado
+status: implementado
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-16
 author: MaiconJh
 reviewer: MaiconJh
-approved_at: 2026-10-14
-implemented_at: null
-commit: null
+approved_at: 2026-10-16
+implemented_at: 2026-10-16
+commit: 419c58a
 superseded_by: null
 supersedes: null
 last_audit: null
@@ -74,8 +74,35 @@ Progresso: `[2/2]`
 - Fluxo de suporte para segunda redefinição.
 - Alterar a rota pública `/perfil/:slug` ou o `resolveSlugToUid`.
 
+## Testes
+
+<!-- BEGIN AI STUDIO REPORT -->
+## Testes da Spec — SPEC-0001 — Reintegrar interface de definição/redefinição de @nick
+
+### T-01 — Montagem de HandleSettings no painel de edição
+
+- **Requisito:** R-01
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npx vitest run src/components/account/__tests__/ProfileEditPanel.test.tsx`
+- **Resultado:** passou
+- **Evidência:** 6 testes aprovados em src/components/account/__tests__/ProfileEditPanel.test.tsx
+- **Observações:** HandleSettings montado como primeira seção rolável de ProfileEditPanel.tsx
+
+### T-02 — Preservação de handle no draftProfile de preview
+
+- **Requisito:** R-02
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** `npm run check`
+- **Resultado:** passou
+- **Evidência:** verificação de lint e tipagem do TypeScript concluída com 0 erros; handle propagado em draftProfile
+- **Observações:** objeto draftProfile em ProfileSection.tsx inclui handle: draft.handle
+<!-- END AI STUDIO REPORT -->
+
 ## Histórico de revisões
 
 | Data | Autor | Mudança |
 |---|---|---|
 | 2026-10-14 | MaiconJh | Criação |
+| 2026-10-16 | MaiconJh | Implementação concluída |

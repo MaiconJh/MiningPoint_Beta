@@ -1,10 +1,10 @@
 # Índice de Specs
 
-Total: 1 · rascunho: 0 · em-leitura: 0 · aprovado: 1 · negado: 0 · implementado: 0 · obsoleto: 0
+Total: 1 · rascunho: 0 · em-leitura: 0 · aprovado: 0 · negado: 0 · implementado: 1 · obsoleto: 0
 
 | ID | Título | Status | Criada | Implementada | Commit | Arquivos |
 |---|---|---|---|---|---|---|
-| <a href="./entries/SPEC-0001-reintegrar-nick.md">SPEC-0001</a> | Reintegrar interface de @nick | aprovado | 2026-10-14 | — | — | 2 |
+| <a href="./entries/SPEC-0001-reintegrar-nick.md">SPEC-0001</a> | Reintegrar interface de @nick | implementado | 2026-10-14 | 2026-10-16 | 419c58a | 2 |
 
 ---
 
