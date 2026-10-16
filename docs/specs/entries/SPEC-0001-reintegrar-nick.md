@@ -6,7 +6,7 @@ created: 2026-10-14
 updated: 2026-10-16
 author: MaiconJh
 reviewer: MaiconJh
-approved_at: 2026-10-16
+approved_at: 2026-10-14
 implemented_at: 2026-10-16
 commit: 419c58a
 superseded_by: null
@@ -76,28 +76,51 @@ Progresso: `[2/2]`
 
 ## Testes
 
+> Preenchido **após** a execução no AI Studio. Cole aqui, **verbatim**, o
+> bloco retornado no formato definido em `_meta/AI-STUDIO-PROMPT.md`. Esta
+> seção é **append-only**: não edite o conteúdo colado — se precisar
+> corrigir, gere um novo relatório no AI Studio e substitua o bloco.
+
 <!-- BEGIN AI STUDIO REPORT -->
+
 ## Testes da Spec — SPEC-0001 — Reintegrar interface de definição/redefinição de @nick
 
-### T-01 — Montagem de HandleSettings no painel de edição
+### T-01 — Montagem do formulário @nick no painel de edição
 
 - **Requisito:** R-01
 - **Tipo:** unit
 - **Executado:** sim
 - **Comando:** `npx vitest run src/components/account/__tests__/ProfileEditPanel.test.tsx`
 - **Resultado:** passou
-- **Evidência:** 6 testes aprovados em src/components/account/__tests__/ProfileEditPanel.test.tsx
-- **Observações:** HandleSettings montado como primeira seção rolável de ProfileEditPanel.tsx
+- **Evidência:** 6 testes, 6 passaram, 0 falharam
 
-### T-02 — Preservação de handle no draftProfile de preview
+### T-02 — Checagem estática (lint e typecheck)
+
+- **Requisito:** R-01
+- **Tipo:** lint
+- **Executado:** sim
+- **Comando:** `npm run check`
+- **Resultado:** passou
+- **Evidência:** ESLint e tsc --noEmit sem erros
+
+### T-03 — Suíte completa (regressão)
+
+- **Requisito:** R-02
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npm test`
+- **Resultado:** passou
+- **Evidência:** 21 suítes, 139 testes aprovados, 0 falharam
+
+### T-04 — Compilação do bundle de produção
 
 - **Requisito:** R-02
 - **Tipo:** build
 - **Executado:** sim
-- **Comando:** `npm run check`
+- **Comando:** `compile_applet`
 - **Resultado:** passou
-- **Evidência:** verificação de lint e tipagem do TypeScript concluída com 0 erros; handle propagado em draftProfile
-- **Observações:** objeto draftProfile em ProfileSection.tsx inclui handle: draft.handle
+- **Evidência:** bundle de produção do applet compilado com sucesso
+
 <!-- END AI STUDIO REPORT -->
 
 ## Histórico de revisões
@@ -105,4 +128,4 @@ Progresso: `[2/2]`
 | Data | Autor | Mudança |
 |---|---|---|
 | 2026-10-14 | MaiconJh | Criação |
-| 2026-10-16 | MaiconJh | Implementação concluída |
+| 2026-10-16 | MaiconJh | Transição para `implementado`; relatório de testes anexado |
