@@ -13,7 +13,30 @@ superseded_by: null
 supersedes: null
 last_audit: null
 test_report: null
-files: []
+files:
+  - src/types/forum.ts
+  - src/lib/forums.ts
+  - src/lib/forumThreads.ts
+  - src/lib/forumReactions.ts
+  - src/lib/forumReports.ts
+  - src/lib/forumPermissions.ts
+  - src/hooks/useForums.ts
+  - src/hooks/useForumThreads.ts
+  - src/components/forum/ForumIndex.tsx
+  - src/components/forum/ForumView.tsx
+  - src/components/forum/ThreadView.tsx
+  - src/components/forum/ThreadListItem.tsx
+  - src/components/forum/NewThreadForm.tsx
+  - src/components/forum/CommentForm.tsx
+  - src/components/admin/ForumForm.tsx
+  - src/components/admin/ForumList.tsx
+  - src/components/admin/ForumPermissionEditor.tsx
+  - src/components/admin/ForumCategoryEditor.tsx
+  - src/lib/**tests**/forumPermissions.test.ts
+  - src/App.tsx
+  - src/pages/Forum.tsx
+  - src/pages/admin/AdminForum.tsx
+  - firestore.rules
 tags: [forum, admin, permissions, routing, community]
 ---
 
