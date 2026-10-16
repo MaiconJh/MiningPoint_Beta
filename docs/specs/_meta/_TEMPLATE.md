@@ -12,6 +12,7 @@ commit: null
 superseded_by: null
 supersedes: null
 last_audit: null
+test_report: null
 files: []
 tags: []
 ---
@@ -43,6 +44,17 @@ O que não pode ser feito. Convenções aplicáveis (PROJECT_STANDARDS.md).
 ## Fora de escopo
 
 O que explicitamente não faz parte desta spec.
+
+## Testes
+
+> Preenchido **após** a execução no AI Studio. Cole aqui, **verbatim**, o
+> bloco retornado no formato definido em `_meta/AI-STUDIO-PROMPT.md`. Esta
+> seção é **append-only**: não edite o conteúdo colado — se precisar
+> corrigir, gere um novo relatório no AI Studio e substitua o bloco.
+
+<!-- BEGIN AI STUDIO REPORT -->
+<!-- Cole o bloco "## Testes da Spec — SPEC-NNNN — <título>" abaixo -->
+<!-- END AI STUDIO REPORT -->
 
 ## Histórico de revisões
 

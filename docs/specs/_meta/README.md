@@ -39,6 +39,10 @@ rascunho ──► em-leitura ──► aprovado ──► implementado
 editado silenciosamente. Alterações materiais viram uma nova linha no
 Histórico de revisões ou uma nova spec que supersede.
 
+**Exceção — seção `## Testes`:** é **append-only**. Recebe, após a execução
+no AI Studio, o bloco de relatório colado verbatim. O texto de contexto,
+objetivo, requisitos, restrições e fora de escopo permanece congelado.
+
 ## Como criar uma spec
 
 1. Copie `_meta/_TEMPLATE.md` para `entries/SPEC-NNNN-slug.md`, onde `NNNN` é
@@ -46,6 +50,7 @@ Histórico de revisões ou uma nova spec que supersede.
    em kebab-case.
 2. Preencha o frontmatter com `status: rascunho`.
 3. Escreva contexto, objetivo, requisitos (R-xx), restrições e fora de escopo.
+   Deixe a seção `## Testes` vazia — ela será preenchida após a execução.
 4. Atualize `INDEX.md` com a nova linha.
 
 ## Como submeter para leitura
@@ -55,22 +60,31 @@ Histórico de revisões ou uma nova spec que supersede.
 3. O revisor preenche `reviewer` e `approved_at`, e troca o status para
    `aprovado` ou `negado`.
 
-## Como implementar
+## Como implementar e coletar testes
 
 1. Cole a spec no AI Studio.
-2. Commite o resultado.
-3. Marque os requisitos entregues no checklist R-xx.
-4. Atualize o contador no topo dos requisitos: [5/8].
-5. Preencha `commit`, `implemented_at` e troque `status` para `implementado`
+2. **Antes** da spec, cole o prompt de `_meta/AI-STUDIO-PROMPT.md`. Ele
+   instrui o modelo a devolver o relatório no formato aceito pelo fluxo.
+3. Commite o resultado da implementação.
+4. Cole o bloco `## Testes da Spec — ...` retornado pelo AI Studio na seção
+   `## Testes` da spec, entre os marcadores `<!-- BEGIN AI STUDIO REPORT -->`
+   e `<!-- END AI STUDIO REPORT -->`. **Não edite o conteúdo colado** — se
+   precisar corrigir, gere um novo relatório no AI Studio.
+5. Marque os requisitos entregues no checklist R-xx.
+6. Atualize o contador no topo dos requisitos: `[5/8]`.
+7. Preencha `commit`, `implemented_at` e troque `status` para `implementado`
    (só quando todos os R-xx estiverem marcados).
-6. Atualize `INDEX.md`.
+8. Atualize `INDEX.md`.
 
 ## Como auditar
 
 A skill `MiningPoint-Spec-Verifier` lê o frontmatter para localizar a spec,
-os arquivos declarados e o commit-alvo. Relatórios são gravados em
-`audits/SPEC-NNNN-YYYY-MM-DD.md`, e o frontmatter da spec recebe o campo
-`last_audit` apontando para o relatório mais recente.
+os arquivos declarados e o commit-alvo. Também lê a seção `## Testes` como
+**relatório de resultados**: o que o AI Studio observou na execução, sem
+promover a `PASSOU` — a skill distingue `RELATADO` de `PASSOU` conforme o
+estado `3.4`. Relatórios são gravados em `audits/SPEC-NNNN-YYYY-MM-DD.md`,
+e o frontmatter da spec recebe o campo `last_audit` apontando para o
+relatório mais recente.
 
 ## Convenções
 
@@ -79,3 +93,11 @@ os arquivos declarados e o commit-alvo. Relatórios são gravados em
 - O `INDEX.md` é atualizado a cada transição de estado.
 - Código em inglês; corpo da spec em português (PROJECT_STANDARDS.md,
   seção Language).
+- A seção `## Testes` é append-only e recebe o bloco verbatim do AI Studio.
+  Edições manuais quebram a rastreabilidade.
+- `test_report` no frontmatter é `null` por padrão. Só é preenchido se o
+  relatório for externalizado (arquivo separado); no fluxo padrão, ele vive
+  na própria spec.
+- O prompt `_meta/AI-STUDIO-PROMPT.md` é a **fonte canônica** do formato de
+  testes. Se o formato mudar, atualize o prompt **antes** do template e
+  trate a mudança como nova revisão da spec.
