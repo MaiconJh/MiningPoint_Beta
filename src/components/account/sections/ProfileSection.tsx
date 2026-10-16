@@ -5,9 +5,7 @@ import { useProfileDraftContext } from '../../../context/ProfileDraftContext';
 import { listUserBadges, listBadgesByIds } from '../../../lib/profile';
 import { ProfilePreviewCard } from '../ProfilePreviewCard';
 import { ProfileEditPanel } from '../ProfileEditPanel';
-import { ProfilePreviewModal } from '../ProfilePreviewModal';
 import { AccountSectionSkeleton } from '../../skeleton/AccountSectionSkeleton';
-import EyeIcon from 'lucide-react/dist/esm/icons/eye';
 import PencilIcon from 'lucide-react/dist/esm/icons/pencil';
 
 interface ProfileSectionProps {
@@ -25,7 +23,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   const [editFocusTarget, setEditFocusTarget] = useState<'banner' | 'avatar' | null>(null);
   const [focusNonce, setFocusNonce] = useState(0);
 
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [availableBadges, setAvailableBadges] = useState<Badge[]>([]);
   const [, setBadgesLoading] = useState(true);
@@ -101,6 +98,7 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
     if (!profile) return {} as UserProfile;
     return {
       ...profile,
+      handle: draft.handle,
       bio: draft.bio,
       photoURL: draft.photoURL,
       bannerUrl: draft.bannerUrl,
@@ -142,15 +140,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setShowPreviewModal(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold border border-[var(--border-default)] bg-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--brand-primary)] transition-colors cursor-pointer"
-              >
-                <EyeIcon className="w-3.5 h-3.5" />
-                <span>Ver perfil</span>
-              </button>
-
-              <button
-                type="button"
                 onClick={() => openEditPanel(null)}
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:opacity-90 transition-opacity cursor-pointer shadow-xs ${
                   isEditPanelOpen ? 'lg:hidden' : ''
@@ -184,17 +173,6 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
           focusNonce={focusNonce}
         />
       </div>
-
-      {/* Modal de visualização */}
-      <ProfilePreviewModal
-        isOpen={showPreviewModal}
-        onClose={() => setShowPreviewModal(false)}
-        profile={draftProfile}
-        featuredBadges={featuredBadgeItems}
-        visibility={draft.visibility}
-        onModeChange={(nextMode) => setField('featuredBadgesMode', nextMode)}
-        onReorder={handleReorderFeaturedBadges}
-      />
     </>
   );
 };

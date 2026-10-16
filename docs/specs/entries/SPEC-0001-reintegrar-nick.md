@@ -5,8 +5,8 @@ status: aprovado
 created: 2026-10-14
 updated: 2026-10-14
 author: MaiconJh
-reviewer: null
-approved_at: null
+reviewer: MaiconJh
+approved_at: 2026-10-14
 implemented_at: null
 commit: null
 superseded_by: null
@@ -46,15 +46,15 @@ perfil, reutilizando os componentes e a persistência existentes, e restaurar
 
 ## Requisitos
 
-Progresso: `[0/2]`
+Progresso: `[2/2]`
 
-- [ ] **R-01** — Montar `HandleSettings` como primeira seção do corpo
+- [x] **R-01** — Montar `HandleSettings` como primeira seção do corpo
       rolável de `ProfileEditPanel.tsx`, acima de Imagens, recebendo
       `profile`, `currentDraftHandle={draft.handle}` e
       `onUpdateDraftHandle={(h) => setField("handle", h)}`.
       **Critério:** `/conta/perfil` exibe a seção @nick no painel de
       edição, com o formulário funcional.
-- [ ] **R-02** — Restaurar `handle: draft.handle` no `useMemo` que monta
+- [x] **R-02** — Restaurar `handle: draft.handle` no `useMemo` que monta
       `draftProfile` em `ProfileSection.tsx`.
       **Critério:** o preview do perfil reflete o nick do draft.
 

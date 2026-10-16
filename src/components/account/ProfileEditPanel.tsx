@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext';
 import { validateImageFile } from '../../lib/storage';
 import { getAvatarColor, getInitials } from '../../lib/avatar';
 import { TitleSelector } from './TitleSelector';
+import { HandleSettings } from './HandleSettings';
 import { resolveIcon } from '../../data/icons/iconRegistry';
 import { useCustomIcons } from '../../hooks/useCustomIcons';
 import XIcon from 'lucide-react/dist/esm/icons/x';
@@ -207,8 +208,18 @@ export const ProfileEditPanel: React.FC<ProfileEditPanelProps> = ({
           </button>
         </div>
 
-        {/* Corpo rolável com as 3 seções */}
+        {/* Corpo rolável com as seções */}
         <div className="flex-1 overflow-y-auto lg:min-h-0 p-6 flex flex-col gap-8">
+          {/* Identificação pública (@nick) */}
+          {profile && (
+            <HandleSettings
+              profile={profile}
+              currentDraftHandle={draft.handle}
+              onUpdateDraftHandle={(h) => setField('handle', h)}
+              className="flex flex-col gap-4"
+            />
+          )}
+
           {/* 1. Imagens */}
           <section className="flex flex-col gap-4">
             <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)] m-0">
