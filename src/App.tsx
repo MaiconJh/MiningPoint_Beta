@@ -91,7 +91,7 @@ const AppRoutes: React.FC = () => {
           <Route path="/sobre" element={<PageTransition><About /></PageTransition>} />
           <Route path="/eventos" element={<PageTransition><Events /></PageTransition>} />
           <Route path="/membros" element={<PageTransition><Members /></PageTransition>} />
-          <Route path="/forum" element={<PageTransition><Forum /></PageTransition>} />
+          <Route path="/forum/*" element={<PageTransition><Forum /></PageTransition>} />
           <Route path="/loja" element={<PageTransition><Shop /></PageTransition>} />
           <Route path="/entrar" element={<PageTransition><Login /></PageTransition>} />
           <Route path="/login" element={<PageTransition><Login /></PageTransition>} />

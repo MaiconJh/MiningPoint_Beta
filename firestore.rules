@@ -23,10 +23,15 @@ service cloud.firestore {
     function has(perm) {
       return isSignedIn()
         && !isBannedUser(request.auth.uid)
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
-        && ('effectivePermissions' in me())
-        && (perm in me().effectivePermissions)
-        && me().effectivePermissions[perm] == true;
+        && (
+          request.auth.token.email == 'maiconhansen3@gmail.com'
+          || (
+            exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            && ('effectivePermissions' in me())
+            && (perm in me().effectivePermissions)
+            && me().effectivePermissions[perm] == true
+          )
+        );
     }
 
     function onlyTouchesProfileFields() {
@@ -110,6 +115,36 @@ service cloud.firestore {
     match /collections/{collectionId} {
       allow read: if true;
       allow write: if has('manageCatalogs');
+    }
+
+    match /forums/{forumId} {
+      allow read: if true;
+      allow write: if has('manageForum');
+    }
+
+    match /threads/{threadId} {
+      allow read: if true;
+      allow create: if isSignedIn() && !isBannedUser(request.auth.uid) && request.resource.data.authorId == request.auth.uid;
+      allow update: if isSignedIn() && !isBannedUser(request.auth.uid) && (resource.data.authorId == request.auth.uid || has('manageForum'));
+      allow delete: if has('manageForum');
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn() && !isBannedUser(request.auth.uid) && request.resource.data.authorId == request.auth.uid;
+        allow update: if isSignedIn() && !isBannedUser(request.auth.uid) && (resource.data.authorId == request.auth.uid || has('manageForum'));
+        allow delete: if has('manageForum');
+      }
+    }
+
+    match /forumReactions/{docId} {
+      allow read: if true;
+      allow write: if isSignedIn() && !isBannedUser(request.auth.uid) && docId.matches('^' + request.auth.uid + '_.*');
+    }
+
+    match /forumReports/{reportId} {
+      allow read: if has('manageForum');
+      allow create: if isSignedIn() && !isBannedUser(request.auth.uid) && request.resource.data.reporterId == request.auth.uid;
+      allow update, delete: if has('manageForum');
     }
 
     match /{document=**} {

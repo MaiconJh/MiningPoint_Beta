@@ -367,7 +367,175 @@ Progresso: `[0/21]`
 > corrigir, gere um novo relatório no AI Studio e substitua o bloco.
 
 <!-- BEGIN AI STUDIO REPORT -->
-<!-- Cole o bloco "## Testes da Spec — SPEC-0002 — Módulo de fóruns configuráveis" abaixo -->
+## Testes da Spec — SPEC-0002 — Módulo de fóruns configuráveis
+
+### T-01 — Modelo de fórum configurável
+- **Requisito:** R-01
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** `npm run check`
+- **Resultado:** passou
+- **Evidência:** `src/types/forum.ts` e `src/lib/forums.ts` declaram e persistem campos slug, title, description, focus, route, order, isActive, threadStructure, categories, features e permissions sem fórum hardcoded.
+
+### T-02 — Validação e configuração de rotas por fórum
+- **Requisito:** R-02
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npx vitest run src/lib/__tests__/forumPermissions.test.ts`
+- **Resultado:** passou
+- **Evidência:** `validateForumRoute` em `src/lib/forums.ts` rejeita rotas reservadas do sistema e duplicadas; `src/App.tsx` responde dinamicamente em `/forum/*`.
+
+### T-03 — Índice global com filtragem por permissão de visualização
+- **Requisito:** R-03
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npx vitest run src/lib/__tests__/forumPermissions.test.ts`
+- **Resultado:** passou
+- **Evidência:** `src/components/forum/ForumIndex.tsx` avalia `canViewForum` para cada fórum e exibe estado vazio se nenhum estiver visível para o usuário.
+
+### T-04 — Subdivisões internas por fórum
+- **Requisito:** R-04
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** `npm run check`
+- **Resultado:** passou
+- **Evidência:** `src/components/admin/ForumCategoryEditor.tsx` e `src/components/forum/ForumView.tsx` gerenciam e filtram por subdivisões internas opcionais.
+
+### T-05 — Avaliação de visibilidade do fórum
+- **Requisito:** R-05
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npx vitest run src/lib/__tests__/forumPermissions.test.ts`
+- **Resultado:** passou
+- **Evidência:** 5 testes em `src/lib/__tests__/forumPermissions.test.ts` cobrindo modos anyone, authenticated, groups, staff e fóruns inativos.
+
+### T-06 — Permissão de publicação de tópicos
+- **Requisito:** R-06
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npx vitest run src/lib/__tests__/forumPermissions.test.ts`
+- **Resultado:** passou
+- **Evidência:** `canCreateThread` valida permissão independente de visualização e bloqueia visitantes sem permissão.
+
+### T-07 — Permissão independente para comentários
+- **Requisito:** R-07
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npx vitest run src/lib/__tests__/forumPermissions.test.ts`
+- **Resultado:** passou
+- **Evidência:** Teste confirma usuário comentando em fórum onde criação de tópicos é restrita a staff.
+
+### T-08 — Moderação granular por ação (pin, lock, move, remove)
+- **Requisito:** R-08
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npx vitest run src/lib/__tests__/forumPermissions.test.ts`
+- **Resultado:** passou
+- **Evidência:** Teste unitário avalia independência entre `canPinThread`, `canLockThread`, `canMoveThread` e `canRemoveThread`.
+
+### T-09 — Criação de tópicos com persistência
+- **Requisito:** R-09
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** `npm run check`
+- **Resultado:** passou
+- **Evidência:** `createThread` em `src/lib/forumThreads.ts` e `<NewThreadForm>` suportam título, corpo, categoria opcional e ordenação com fixados.
+
+### T-10 — Estruturas de resposta plana, com citação e aninhada
+- **Requisito:** R-10
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** `npm run check`
+- **Resultado:** passou
+- **Evidência:** `<ThreadView>` e `<CommentCard>` implementam renderização conforme `threadStructure` (flat, quoted, nested) preservando árvore de respostas.
+
+### T-11 — Edição e exclusão lógica pelo autor
+- **Requisito:** R-11
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npx vitest run src/lib/__tests__/forumPermissions.test.ts`
+- **Resultado:** passou
+- **Evidência:** Testes cobrem edição e exclusão pelo autor e bloqueio de edição em tópicos trancados; exclusão lógica marca `isRemoved: true`.
+
+### T-12 — Execução de ações de moderação com auditoria
+- **Requisito:** R-12
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** `npm run check`
+- **Resultado:** passou
+- **Evidência:** `moderateThread` em `src/lib/forumThreads.ts` grava timestamp e moderador em pinnedBy, lockedBy, movedBy e removedBy.
+
+### T-13 — Marcação e destaque de solução
+- **Requisito:** R-13
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npx vitest run src/lib/__tests__/forumPermissions.test.ts`
+- **Resultado:** passou
+- **Evidência:** `canMarkSolution` valida flag `features.solution` e restringe permissão ao autor do tópico ou moderador.
+
+### T-14 — Reações em tópicos e comentários
+- **Requisito:** R-14
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npx vitest run src/lib/__tests__/forumPermissions.test.ts`
+- **Resultado:** passou
+- **Evidência:** `toggleReaction` em `src/lib/forumReactions.ts` gerencia documento `forumReactions` e contadores agregados; `canReact` testado.
+
+### T-15 — Denúncia de tópicos e comentários
+- **Requisito:** R-15
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npx vitest run src/lib/__tests__/forumPermissions.test.ts`
+- **Resultado:** passou
+- **Evidência:** `createReport`, `listReports` e `reviewReport` em `src/lib/forumReports.ts`; modal de moderação em `<ForumView>`.
+
+### T-16 — Gestão no painel Admin
+- **Requisito:** R-16
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** `npm run check`
+- **Resultado:** passou
+- **Evidência:** `src/pages/admin/AdminForum.tsx` gerencia ciclo de vida completo de fóruns sob a rota protegida `/admin/forum`.
+
+### T-17 — Conformidade com tokens e regras de design
+- **Requisito:** R-17
+- **Tipo:** lint
+- **Executado:** sim
+- **Comando:** `npm run lint`
+- **Resultado:** passou
+- **Evidência:** Zero violações das regras `design-tokens/no-tailwind-color-utilities` e `design-tokens/no-raw-color-literals`.
+
+### T-18 — Tratamento de estados vazios, carregamento e erro
+- **Requisito:** R-18
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** `npm run check`
+- **Resultado:** passou
+- **Evidência:** Todas as telas de índice, fórum, tópicos e admin possuem skeletons e mensagens amigáveis em pt-BR sem termos proibidos.
+
+### T-19 — Semântica de banimento e regras do Firestore
+- **Requisito:** R-19
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npx vitest run src/lib/__tests__/forumPermissions.test.ts`
+- **Resultado:** passou
+- **Evidência:** Teste específico confirma que banido lê o que tiver visibilidade, mas é bloqueado de postar, comentar, reagir, denunciar, editar e excluir; `firestore.rules` atualizado.
+
+### T-20 — Leituras resilientes e defaults seguros
+- **Requisito:** R-20
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npx vitest run src/lib/__tests__/forumPermissions.test.ts`
+- **Resultado:** passou
+- **Evidência:** `sanitizeForumDoc`, `sanitizeThreadDoc` e testes de default confirmam que nenhuma leitura lança erro com campos ausentes.
+
+### T-21 — Exposição integral de parâmetros no Admin
+- **Requisito:** R-21
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** `npm run check`
+- **Resultado:** passou
+- **Evidência:** `<ForumForm>` expõe rota, foco, ordem, estado, estrutura de respostas, subdivisões, visibilidade, publicação, comentário, moderação por ação e funcionalidades.
 <!-- END AI STUDIO REPORT -->
 
 ## Histórico de revisões

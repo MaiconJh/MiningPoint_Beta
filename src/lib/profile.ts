@@ -133,12 +133,32 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
 
     const allGroups = primaryGroup ? [primaryGroup, ...secondaryGroups] : [...secondaryGroups];
 
-    // If derived fields are not yet saved or populated, compute them dynamically
-    if (!data.effectivePermissions) {
+    // Derived fields must always reflect the user's assigned groups
+    if (allGroups.length > 0) {
       profile.effectivePermissions = unionUserPermissions(allGroups);
-    }
-    if (typeof data.isStaff !== 'boolean') {
       profile.isStaff = deriveIsStaff(allGroups);
+    } else {
+      if (!data.effectivePermissions) {
+        profile.effectivePermissions = unionUserPermissions(allGroups);
+      }
+      if (typeof data.isStaff !== 'boolean') {
+        profile.isStaff = deriveIsStaff(allGroups);
+      }
+    }
+
+    // Owner bootstrap safeguard
+    const isOwner = (profile.email || '').toLowerCase().trim() === 'maiconhansen3@gmail.com';
+    if (isOwner || profile.primaryGroupId === 'admin') {
+      profile.isStaff = true;
+      profile.effectivePermissions = {
+        accessPanel: true,
+        manageUsers: true,
+        manageGroups: true,
+        manageBadges: true,
+        manageForum: true,
+        manageContent: true,
+        manageCatalogs: true,
+      };
     }
 
     profile.group = primaryGroup;

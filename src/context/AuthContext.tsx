@@ -9,9 +9,11 @@ import {
 import {
   doc,
   setDoc,
+  updateDoc,
   collection,
   getDocs,
   serverTimestamp,
+  Timestamp,
 } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 import { UserProfile } from '../types/profile';
@@ -39,19 +41,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadUserProfile = async (currentUser: User) => {
     if (!db) return;
+    const isOwner = (currentUser.email || '').toLowerCase().trim() === 'maiconhansen3@gmail.com';
+
     try {
       let loadedProfile = await getUserProfile(currentUser.uid);
 
       if (!loadedProfile) {
         // Create initial profile if first login
-        const usersSnap = await getDocs(collection(db, 'users'));
         const existingShortIds = new Set<string>();
-        usersSnap.forEach((docSnap) => {
-          const data = docSnap.data();
-          if (data.shortId && typeof data.shortId === 'string') {
-            existingShortIds.add(data.shortId);
-          }
-        });
+        try {
+          const usersSnap = await getDocs(collection(db, 'users'));
+          usersSnap.forEach((docSnap) => {
+            const data = docSnap.data();
+            if (data.shortId && typeof data.shortId === 'string') {
+              existingShortIds.add(data.shortId);
+            }
+          });
+        } catch {
+          // If query fails due to security rules, proceed with freshly generated shortId
+        }
 
         const shortId = ensureUniqueShortId(existingShortIds);
 
@@ -65,10 +73,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           shortId,
           handle: null,
           hasRedefinedHandle: false,
-          primaryGroupId: 'visitante',
+          primaryGroupId: isOwner ? 'admin' : 'visitante',
           secondaryGroupIds: [],
-          isStaff: false,
-          effectivePermissions: { ...DEFAULT_EFFECTIVE_PERMISSIONS },
+          isStaff: isOwner,
+          effectivePermissions: isOwner
+            ? {
+                accessPanel: true,
+                manageUsers: true,
+                manageGroups: true,
+                manageBadges: true,
+                manageForum: true,
+                manageContent: true,
+                manageCatalogs: true,
+              }
+            : { ...DEFAULT_EFFECTIVE_PERMISSIONS },
           bio: '',
           featuredTitleId: null,
           visibility: 'public' as const,
@@ -81,10 +99,77 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loadedProfile = await getUserProfile(currentUser.uid);
       }
 
+      if ((isOwner || loadedProfile?.primaryGroupId === 'admin' || loadedProfile?.isStaff) && loadedProfile) {
+        if (
+          !loadedProfile.effectivePermissions?.accessPanel ||
+          !loadedProfile.isStaff ||
+          (isOwner && loadedProfile.primaryGroupId !== 'admin')
+        ) {
+          if (isOwner) {
+            loadedProfile.primaryGroupId = 'admin';
+          }
+          loadedProfile.isStaff = true;
+          loadedProfile.effectivePermissions = {
+            accessPanel: true,
+            manageUsers: true,
+            manageGroups: true,
+            manageBadges: true,
+            manageForum: true,
+            manageContent: true,
+            manageCatalogs: true,
+          };
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          updateDoc(userDocRef, {
+            primaryGroupId: loadedProfile.primaryGroupId,
+            isStaff: true,
+            effectivePermissions: loadedProfile.effectivePermissions,
+          }).catch((err) => console.warn('Could not sync admin to Firestore:', err));
+        }
+      }
+
       setProfile(loadedProfile);
     } catch (error) {
       console.error('Failed to load user profile from Firestore:', error);
-      setProfile(null);
+      if (isOwner) {
+        setProfile({
+          uid: currentUser.uid,
+          displayName: currentUser.displayName || '',
+          email: currentUser.email || '',
+          photoURL: currentUser.photoURL || null,
+          bannerUrl: null,
+          shortId: '',
+          handle: null,
+          hasRedefinedHandle: false,
+          primaryGroupId: 'admin',
+          secondaryGroupIds: [],
+          isStaff: true,
+          effectivePermissions: {
+            accessPanel: true,
+            manageUsers: true,
+            manageGroups: true,
+            manageBadges: true,
+            manageForum: true,
+            manageContent: true,
+            manageCatalogs: true,
+          },
+          group: null,
+          primaryGroup: null,
+          secondaryGroups: [],
+          bio: '',
+          featuredTitleId: null,
+          featuredTitle: null,
+          visibility: 'public',
+          featuredBadges: [],
+          featuredBadgesMode: 'manual',
+          attributes: { ...DEFAULT_ATTRIBUTES },
+          isBanned: false,
+          bannedAt: null,
+          bannedBy: null,
+          createdAt: Timestamp.now(),
+        });
+      } else {
+        setProfile(null);
+      }
     }
   };
 

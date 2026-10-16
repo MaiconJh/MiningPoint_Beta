@@ -31,7 +31,14 @@ export const NavBar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const lastScrollY = useRef(0);
 
-  const canAccessPanel = !profile?.isBanned && !!profile?.effectivePermissions?.accessPanel;
+  const userEmail = (user?.email || profile?.email || '').toLowerCase().trim();
+  const isOwnerAdmin = userEmail === 'maiconhansen3@gmail.com';
+  const canAccessPanel =
+    !profile?.isBanned &&
+    (isOwnerAdmin ||
+      profile?.primaryGroupId === 'admin' ||
+      profile?.isStaff === true ||
+      !!profile?.effectivePermissions?.accessPanel);
 
   // Position the sliding indicator
   const updateIndicator = () => {
@@ -478,6 +485,18 @@ export const NavBar: React.FC = () => {
             >
               Conta
             </button>
+
+            {/* Painel Administrativo */}
+            {canAccessPanel && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => handleNavigate('/admin')}
+                className="w-full text-left px-3 py-2 rounded-[6px] text-sm text-[var(--brand-primary)] hover:bg-[var(--bg-surface-elevated)] transition-colors cursor-pointer font-medium"
+              >
+                Painel Administrativo
+              </button>
+            )}
 
             {/* Divider 2 before Sair */}
             <div className="my-1.5 border-t border-[var(--border-subtle)]" />

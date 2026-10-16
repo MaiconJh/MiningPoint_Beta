@@ -18,7 +18,14 @@ export const RequireAdmin: React.FC<RequireAdminProps> = ({ children }) => {
     return <Navigate to="/entrar" replace />;
   }
 
-  const hasAccessPanel = !profile?.isBanned && !!profile?.effectivePermissions?.accessPanel;
+  const userEmail = (user?.email || profile?.email || '').toLowerCase().trim();
+  const isOwnerAdmin = userEmail === 'maiconhansen3@gmail.com';
+  const hasAccessPanel =
+    !profile?.isBanned &&
+    (isOwnerAdmin ||
+      profile?.primaryGroupId === 'admin' ||
+      profile?.isStaff === true ||
+      !!profile?.effectivePermissions?.accessPanel);
   if (!hasAccessPanel) {
     return <NotFound />;
   }
