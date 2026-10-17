@@ -4,9 +4,9 @@ title: Redesign visual e de interação do fórum
 status: aprovado
 created: 2026-10-16
 updated: 2026-10-17
-author: null
-reviewer: null
-approved_at: null
+author: MaiconJh
+reviewer: MaiconJh
+approved_at: 2026-10-17
 implemented_at: null
 commit: null
 superseded_by: null
