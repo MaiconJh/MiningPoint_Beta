@@ -55,6 +55,7 @@ import { createReport } from '../../lib/forumReports';
 import { getUserProfile } from '../../lib/profile';
 import { UserProfile } from '../../types/profile';
 import { CommentForm } from './CommentForm';
+import { Chip } from '../chip/Chip';
 
 interface ThreadViewProps {
   forum: Forum;
@@ -359,8 +360,6 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
     : thread.authorId
     ? `membro-${thread.authorId.slice(0, 5)}`
     : 'Membro';
-
-  const authorCargo = threadAuthor?.primaryGroup?.name || 'Membro';
   const authorInitial = (threadAuthor?.displayName || authorNick).charAt(0).toUpperCase();
 
   const formattedDate = thread.createdAt?.toDate
@@ -553,16 +552,13 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
                     <span className="forum-body font-bold text-[var(--text-primary)]">
                       {authorNick}
                     </span>
-                    <span
-                      className="px-2 py-0.5 forum-meta font-semibold rounded-md border"
-                      style={{
-                        borderColor: authorGroupColor,
-                        color: authorGroupColor,
-                        backgroundColor: 'var(--bg-surface)',
-                      }}
-                    >
-                      {authorCargo}
-                    </span>
+                    {threadAuthor?.primaryGroup && (
+                      <Chip
+                        label={threadAuthor.primaryGroup.name}
+                        color={threadAuthor.primaryGroup.color}
+                        style={threadAuthor.primaryGroup.chipStyle}
+                      />
+                    )}
                   </div>
                   <span className="forum-meta text-[var(--text-muted)] block">
                     Publicado em {formattedDate}
@@ -1091,8 +1087,6 @@ const CommentCard: React.FC<CommentCardProps> = ({
     : comment.authorId
     ? `membro-${comment.authorId.slice(0, 5)}`
     : 'Membro';
-
-  const authorCargo = commentAuthor?.primaryGroup?.name || 'Membro';
   const authorInitial = (commentAuthor?.displayName || authorNick).charAt(0).toUpperCase();
 
   return (
@@ -1124,16 +1118,13 @@ const CommentCard: React.FC<CommentCardProps> = ({
               <span className="forum-body font-bold text-[var(--text-primary)]">
                 {authorNick}
               </span>
-              <span
-                className="px-2 py-0.5 forum-meta font-semibold rounded-md border"
-                style={{
-                  borderColor: authorGroupColor,
-                  color: authorGroupColor,
-                  backgroundColor: 'var(--bg-default)',
-                }}
-              >
-                {authorCargo}
-              </span>
+              {commentAuthor?.primaryGroup && (
+                <Chip
+                  label={commentAuthor.primaryGroup.name}
+                  color={commentAuthor.primaryGroup.color}
+                  style={commentAuthor.primaryGroup.chipStyle}
+                />
+              )}
               {isSolution && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 forum-meta font-semibold rounded-md bg-[var(--feedback-success)] text-[var(--text-inverse)]">
                   <Check className="w-3 h-3" />
