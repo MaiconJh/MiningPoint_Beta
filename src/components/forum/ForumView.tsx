@@ -5,13 +5,12 @@ import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
 import ShieldAlert from 'lucide-react/dist/esm/icons/shield-alert';
 import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
 import XCircle from 'lucide-react/dist/esm/icons/x-circle';
-import { Forum, ForumThreadFormData } from '../../types/forum';
+import { Forum, ForumThreadFormData, ForumReport } from '../../types/forum';
 import { useAuth } from '../../context/AuthContext';
 import { useForumThreads } from '../../hooks/useForumThreads';
 import { canCreateThread, canReviewReports } from '../../lib/forumPermissions';
 import { createThread } from '../../lib/forumThreads';
 import { listReports, reviewReport } from '../../lib/forumReports';
-import { ForumReport } from '../../types/forum';
 import { ThreadListItem } from './ThreadListItem';
 import { NewThreadForm } from './NewThreadForm';
 
@@ -73,12 +72,12 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 forum-screen-fade">
       {/* Breadcrumb & Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <Link
           to="/forum"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors self-start"
+          className="inline-flex items-center gap-1.5 forum-meta font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors self-start"
         >
           <ArrowLeft className="w-4 h-4" />
           Todos os fóruns
@@ -89,7 +88,7 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
             <button
               type="button"
               onClick={handleOpenReports}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--bg-surface)] border border-[var(--border-default)] text-[var(--feedback-warning)] hover:bg-[var(--border-default)] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 forum-meta font-semibold rounded-lg bg-[var(--bg-surface)] border border-[var(--border-default)] text-[var(--feedback-warning)] hover:bg-[var(--border-default)] transition-colors cursor-pointer"
             >
               <ShieldAlert className="w-3.5 h-3.5" />
               Denúncias do Fórum
@@ -100,7 +99,7 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
             <button
               type="button"
               onClick={() => setIsCreatingThread(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 forum-body font-semibold rounded-lg bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               Novo tópico
@@ -112,20 +111,21 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
       {/* Forum Header Banner */}
       <div className="p-6 sm:p-8 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-[var(--bg-default)] border border-[var(--border-subtle)] text-[var(--brand-primary)]">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="px-2.5 py-0.5 forum-meta font-semibold rounded-full bg-[var(--bg-default)] border border-[var(--border-subtle)] text-[var(--brand-primary)]">
                 Foco: {forum.focus}
               </span>
-              <span className="text-xs text-[var(--text-muted)]">
-                {threads.length} {threads.length === 1 ? 'tópico' : 'tópicos'}
+              <span className="forum-meta text-[var(--text-muted)]">
+                <span className="forum-num">{threads.length}</span>{' '}
+                {threads.length === 1 ? 'tópico' : 'tópicos'}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] m-0">
+            <h1 className="forum-page text-[var(--text-primary)] m-0">
               {forum.title}
             </h1>
             {forum.description && (
-              <p className="text-sm text-[var(--text-secondary)] mt-2 mb-0 max-w-2xl">
+              <p className="forum-body text-[var(--text-secondary)] mt-2 mb-0 max-w-2xl">
                 {forum.description}
               </p>
             )}
@@ -143,13 +143,13 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
         />
       )}
 
-      {/* Internal Categories Tabs (R-04) */}
+      {/* Internal Categories Tabs */}
       {forum.categories.length > 0 && (
         <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-[var(--border-subtle)]">
           <button
             type="button"
             onClick={() => setSelectedCategory(null)}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
+            className={`px-3.5 py-1.5 forum-meta font-semibold rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
               selectedCategory === null
                 ? 'bg-[var(--brand-primary)] text-[var(--text-on-primary)]'
                 : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-default)]'
@@ -162,7 +162,7 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
               key={cat.id}
               type="button"
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
+              className={`px-3.5 py-1.5 forum-meta font-semibold rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
                 selectedCategory === cat.id
                   ? 'bg-[var(--brand-primary)] text-[var(--text-on-primary)]'
                   : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-default)]'
@@ -176,7 +176,7 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
 
       {/* Threads List */}
       {error && (
-        <div className="p-4 rounded-xl bg-[var(--feedback-error)] text-[var(--text-inverse)] text-sm font-semibold">
+        <div className="p-4 rounded-xl bg-[var(--feedback-error)] text-[var(--text-inverse)] forum-body font-semibold">
           {error}
         </div>
       )}
@@ -192,10 +192,10 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
         </div>
       ) : threads.length === 0 ? (
         <div className="p-10 rounded-xl border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] text-center">
-          <h3 className="text-base font-semibold text-[var(--text-primary)] m-0">
+          <h3 className="forum-title text-[var(--text-primary)] m-0">
             Nenhum tópico encontrado
           </h3>
-          <p className="text-xs text-[var(--text-muted)] mt-1.5 mb-4 max-w-sm mx-auto">
+          <p className="forum-meta text-[var(--text-muted)] mt-1.5 mb-4 max-w-sm mx-auto">
             {selectedCategory
               ? 'Nenhum tópico cadastrado nesta subdivisão interna.'
               : 'Nenhum tópico criado neste fórum. Seja o primeiro a abrir uma discussão!'}
@@ -204,7 +204,7 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
             <button
               type="button"
               onClick={() => setIsCreatingThread(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 forum-body font-semibold rounded-lg bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               Criar primeiro tópico
@@ -225,17 +225,17 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
           <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-6 max-w-2xl w-full shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
             <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)]">
               <div>
-                <h3 className="text-lg font-bold text-[var(--text-primary)] m-0">
+                <h3 className="forum-title text-[var(--text-primary)] m-0">
                   Denúncias do Fórum
                 </h3>
-                <p className="text-xs text-[var(--text-muted)] mt-0.5 mb-0">
+                <p className="forum-meta text-[var(--text-muted)] mt-0.5 mb-0">
                   Análise e resolução de denúncias enviadas pelos membros.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setShowReportsModal(false)}
-                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer text-sm font-bold"
+                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer forum-title"
               >
                 ✕
               </button>
@@ -243,11 +243,11 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
 
             <div className="flex-1 overflow-y-auto space-y-3 pr-1">
               {loadingReports ? (
-                <div className="p-6 text-center text-xs text-[var(--text-muted)]">
+                <div className="p-6 text-center forum-meta text-[var(--text-muted)]">
                   Carregando denúncias...
                 </div>
               ) : reports.length === 0 ? (
-                <div className="p-8 text-center text-xs text-[var(--text-muted)]">
+                <div className="p-8 text-center forum-meta text-[var(--text-muted)]">
                   Nenhuma denúncia registrada para este fórum.
                 </div>
               ) : (
@@ -258,11 +258,11 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 text-[11px] font-semibold rounded bg-[var(--bg-surface)] text-[var(--text-secondary)] uppercase">
+                        <span className="px-2 py-0.5 forum-meta font-semibold rounded bg-[var(--bg-surface)] text-[var(--text-secondary)] uppercase">
                           {report.kind === 'thread' ? 'Tópico' : 'Comentário'}
                         </span>
                         <span
-                          className={`px-2 py-0.5 text-[11px] font-semibold rounded ${
+                          className={`px-2 py-0.5 forum-meta font-semibold rounded ${
                             report.status === 'open'
                               ? 'bg-[var(--feedback-warning)] text-[var(--text-inverse)]'
                               : report.status === 'reviewed'
@@ -277,14 +277,14 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
                             : 'Ignorada'}
                         </span>
                       </div>
-                      <span className="text-[11px] text-[var(--text-muted)]">
+                      <span className="forum-meta text-[var(--text-muted)] forum-num">
                         {report.createdAt?.toDate
                           ? report.createdAt.toDate().toLocaleDateString('pt-BR')
                           : ''}
                       </span>
                     </div>
 
-                    <p className="text-xs text-[var(--text-primary)] m-0 font-medium">
+                    <p className="forum-body text-[var(--text-primary)] m-0 font-medium">
                       Motivo: &quot;{report.reason}&quot;
                     </p>
 
@@ -293,7 +293,7 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
                         <button
                           type="button"
                           onClick={() => handleReviewReportAction(report.id, 'dismissed')}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded bg-[var(--bg-surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 forum-meta font-semibold rounded bg-[var(--bg-surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
                         >
                           <XCircle className="w-3.5 h-3.5" />
                           Descartar
@@ -301,7 +301,7 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
                         <button
                           type="button"
                           onClick={() => handleReviewReportAction(report.id, 'reviewed')}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded bg-[var(--feedback-success)] text-[var(--text-inverse)] cursor-pointer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 forum-meta font-semibold rounded bg-[var(--feedback-success)] text-[var(--text-inverse)] cursor-pointer"
                         >
                           <CheckCircle className="w-3.5 h-3.5" />
                           Marcar como resolvida

@@ -8,20 +8,35 @@ import {
   increment,
 } from 'firebase/firestore';
 import { db } from './firebase';
+import type { FC } from 'react';
+import ThumbsUp from 'lucide-react/dist/esm/icons/thumbs-up';
+import Heart from 'lucide-react/dist/esm/icons/heart';
+import Flame from 'lucide-react/dist/esm/icons/flame';
+import Pickaxe from 'lucide-react/dist/esm/icons/pickaxe';
+import Lightbulb from 'lucide-react/dist/esm/icons/lightbulb';
 import { ForumReactionKind } from '../types/forum';
 
 export interface ForumReactionDefinition {
   id: string;
   label: string;
   emoji: string;
+  iconName: string;
 }
 
+export const REACTION_ICONS: Record<string, FC<{ className?: string }>> = {
+  like: ThumbsUp,
+  heart: Heart,
+  fire: Flame,
+  pickaxe: Pickaxe,
+  idea: Lightbulb,
+};
+
 export const FORUM_REACTIONS: ForumReactionDefinition[] = [
-  { id: 'like', label: 'Curtir', emoji: '👍' },
-  { id: 'heart', label: 'Amei', emoji: '❤️' },
-  { id: 'fire', label: 'Fogo', emoji: '🔥' },
-  { id: 'pickaxe', label: 'Mineração', emoji: '⛏️' },
-  { id: 'idea', label: 'Ideia', emoji: '💡' },
+  { id: 'like', label: 'Curtir', emoji: '👍', iconName: 'ThumbsUp' },
+  { id: 'heart', label: 'Amei', emoji: '❤️', iconName: 'Heart' },
+  { id: 'fire', label: 'Fogo', emoji: '🔥', iconName: 'Flame' },
+  { id: 'pickaxe', label: 'Mineração', emoji: '⛏️', iconName: 'Pickaxe' },
+  { id: 'idea', label: 'Ideia', emoji: '💡', iconName: 'Lightbulb' },
 ];
 
 export function getReactionDocId(userId: string, kind: ForumReactionKind, itemId: string): string {

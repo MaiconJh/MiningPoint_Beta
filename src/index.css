@@ -201,6 +201,69 @@ body {
   transition: opacity 150ms ease, border-color 150ms ease;
 }
 
+/* Escala tipográfica do fórum (SPEC-0003: R-01) */
+.forum-meta {
+  font-size: 0.75rem;
+  line-height: 1.125rem;
+}
+
+.forum-body {
+  font-size: 0.875rem;
+  line-height: 1.4rem;
+}
+
+.forum-title {
+  font-size: 1.125rem;
+  line-height: 1.5rem;
+  font-weight: 700;
+}
+
+.forum-page {
+  font-size: 1.75rem;
+  line-height: 2.125rem;
+  font-weight: 700;
+}
+
+.forum-num {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Micro-transições do fórum (SPEC-0003: R-06) */
+.forum-card-transition {
+  transition: transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+}
+
+.forum-card-transition:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-focus);
+  box-shadow: var(--sombra-1);
+}
+
+.forum-icon-hover {
+  transition: transform 200ms ease;
+}
+
+.forum-icon-hover:hover,
+.group:hover .forum-icon-hover {
+  transform: scale(1.1) rotate(4deg);
+}
+
+.forum-screen-fade {
+  animation: forum-fade-in 250ms ease-out forwards;
+}
+
+@keyframes forum-fade-in {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .chip-shimmer-overlay {
     animation: none !important;
@@ -211,6 +274,9 @@ body {
   .toast-transition,
   .dialog-transition,
   .btn-save-transition,
+  .forum-card-transition,
+  .forum-icon-hover,
+  .forum-screen-fade,
   [class*="transition-[max-width]"],
   [class*="transition-transform"] {
     animation: none !important;

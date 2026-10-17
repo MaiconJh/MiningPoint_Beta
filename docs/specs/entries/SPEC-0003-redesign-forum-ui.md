@@ -7,7 +7,7 @@ updated: 2026-10-17
 author: MaiconJh
 reviewer: MaiconJh
 approved_at: 2026-10-17
-implemented_at: null
+implemented_at: 2026-10-17
 commit: null
 superseded_by: null
 supersedes: null
@@ -85,7 +85,70 @@ Progresso: [0/7]
 > corrigir, gere um novo relatório no AI Studio e substitua o bloco.
 
 <!-- BEGIN AI STUDIO REPORT -->
-<!-- Cole o bloco "## Testes da Spec — SPEC-0003 — <título>" abaixo -->
+## Testes da Spec — SPEC-0003 — Redesign visual e de interação do fórum
+
+### T-01 — Escala tipográfica densa sem tamanhos hardcoded
+
+- **Requisito:** R-01
+- **Tipo:** lint
+- **Executado:** sim
+- **Comando:** grep -rnE "text-(xs|sm|base|lg|xl|2xl|3xl|4xl|\[[0-9]+px\])" src/components/forum/
+- **Resultado:** passou
+- **Evidência:** `src/index.css` define as 4 classes de peso (`.forum-meta`, `.forum-body`, `.forum-title`, `.forum-page`) e monoespaçado (`.forum-num`). O comando de busca retornou zero ocorrências de tamanhos de fonte utilitários ou hardcoded em todos os componentes de `src/components/forum/`.
+
+### T-02 — Organização em camadas de ForumIndex
+
+- **Requisito:** R-02
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** npm run check
+- **Resultado:** passou
+- **Evidência:** `src/components/forum/ForumIndex.tsx` estrutura a tela nas quatro zonas especificadas: barra horizontal de categorias com filtros de foco, grid responsivo de cards (`grid-cols-1 sm:grid-cols-2`), feed de tópicos recentes e aside contextual à direita (`hidden lg:block lg:w-80`) com estatísticas, ranking da semana e membros ativos.
+
+### T-03 — Identidade própria e interatividade nos cards de categoria
+
+- **Requisito:** R-03
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** npm run check
+- **Resultado:** passou
+- **Evidência:** `src/components/forum/ForumIndex.tsx` implementa cada card com capa temática, ícone à esquerda com classe `.forum-icon-hover`, pílula de foco à direita, título primário em `.forum-title`, descrição em `.forum-meta`, lista de subdivisões com contagem e rodapé com contadores em `.forum-num` e botão de acesso ao fórum.
+
+### T-04 — Thread list com autoria visível e sem rótulo genérico
+
+- **Requisito:** R-04
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** npm run check
+- **Resultado:** passou
+- **Evidência:** `src/components/forum/ThreadListItem.tsx` renderiza avatar com anel colorido pela cor do grupo primário do autor, `@handle` ou nick real, data formatada, tempo relativo com `.forum-num`, badges de estado (fixado, trancado, resolvido, subdivisão) e contador de comentários em monoespaçado, sem uso de rótulos genéricos.
+
+### T-05 — ThreadView com anatomia completa, reações Lucide e sidebar própria
+
+- **Requisito:** R-05
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** npm run check
+- **Resultado:** passou
+- **Evidência:** `src/components/forum/ThreadView.tsx` possui cabeçalho de autoria completo com avatar colorido pelo grupo, nick, cargo e métricas em `.forum-num`; reações ancoradas utilizando exclusivamente ícones da biblioteca `lucide-react` (`REACTION_ICONS`); banner de solução; respostas aninhadas com recuo e borda lateral em `.border-l-2`; toolbar de formatação no composer em `CommentForm.tsx` e sidebar com resumo e participantes.
+
+### T-06 — Micro-transições e suporte a prefers-reduced-motion
+
+- **Requisito:** R-06
+- **Tipo:** lint
+- **Executado:** sim
+- **Comando:** npm run check
+- **Resultado:** passou
+- **Evidência:** `src/index.css` define `.forum-card-transition`, `.forum-icon-hover` e `.forum-screen-fade`. A seção `@media (prefers-reduced-motion: reduce)` sobrescreve todas as 3 classes com `animation: none !important; transition: none !important; transform: none !important;`.
+
+### T-07 — Consistência de tokens de tema e ausência de utilitários de cor Tailwind
+
+- **Requisito:** R-07
+- **Tipo:** lint
+- **Executado:** sim
+- **Comando:** npm run check
+- **Resultado:** passou
+- **Evidência:** Validação do ESLint com regras locais de design tokens aprovada com zero erros. Todas as superfícies, bordas e textos utilizam CSS custom properties do tema (`var(--bg-*)`, `var(--text-*)`, `var(--border-*)`, `var(--brand-*)`, `var(--feedback-*)`) e respeitam o chaveamento claro/escuro.
 <!-- END AI STUDIO REPORT -->
 
 ## Histórico de revisões
