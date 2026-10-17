@@ -3,10 +3,8 @@ import { Link } from 'react-router-dom';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Layers from 'lucide-react/dist/esm/icons/layers';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import Users from 'lucide-react/dist/esm/icons/users';
 import Trophy from 'lucide-react/dist/esm/icons/trophy';
 import BarChart2 from 'lucide-react/dist/esm/icons/bar-chart-2';
-import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
 import Compass from 'lucide-react/dist/esm/icons/compass';
 import { Forum, ForumThread } from '../../types/forum';
 import { useAuth } from '../../context/AuthContext';
@@ -313,9 +311,9 @@ export const ForumIndex: React.FC<ForumIndexProps> = ({ forums, loading, error }
 
         {/* Zona 4: Sidebar contextual à direita (some em telas estreitas) (R-02) */}
         <aside className="hidden lg:block lg:w-80 shrink-0">
-          <div className="divide-y divide-[var(--border-subtle)]">
+          <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-5 space-y-4">
             {/* Bloco 1: Stats da Comunidade */}
-            <div className="pb-5 space-y-3">
+            <div className="space-y-3">
               <div className="flex items-center gap-2 text-[var(--brand-primary)]">
                 <BarChart2 className="w-4 h-4" />
                 <h4 className="forum-title text-[var(--text-primary)] m-0">
@@ -351,78 +349,41 @@ export const ForumIndex: React.FC<ForumIndexProps> = ({ forums, loading, error }
               </div>
             </div>
 
-            {/* Bloco 2: Ranking da semana */}
-            <div className="py-5 space-y-3">
-              <div className="flex items-center gap-2 text-[var(--brand-primary)]">
-                <Trophy className="w-4 h-4" />
-                <h4 className="forum-title text-[var(--text-primary)] m-0">
-                  Destaques da Semana
-                </h4>
-              </div>
-              <p className="forum-meta text-[var(--text-muted)] m-0">
-                Membros mais participativos nas discussões recentes.
-              </p>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="forum-num forum-meta font-bold text-[var(--brand-primary)]">#1</span>
-                    <div className="w-7 h-7 rounded-full bg-[var(--bg-surface)] border border-[var(--brand-primary)] flex items-center justify-center forum-meta font-bold text-[var(--brand-primary)]">
-                      M
-                    </div>
-                    <div>
-                      <span className="forum-body font-semibold text-[var(--text-primary)] block">
-                        MaiconJh
-                      </span>
-                      <span className="forum-meta text-[var(--text-muted)]">
-                        Fundador
-                      </span>
-                    </div>
-                  </div>
-                  <span className="forum-meta font-semibold text-[var(--feedback-success)] forum-num">
-                    +250 pts
-                  </span>
+            {recentThreads.length > 0 && (
+              <div className="pt-4 space-y-3 border-t border-[var(--border-default)]">
+                <div className="flex items-center gap-2 text-[var(--brand-primary)]">
+                  <Trophy className="w-4 h-4" />
+                  <h4 className="forum-title text-[var(--text-primary)] m-0">
+                    Tópicos em Alta
+                  </h4>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="forum-num forum-meta font-bold text-[var(--text-secondary)]">#2</span>
-                    <div className="w-7 h-7 rounded-full bg-[var(--bg-surface)] border border-[var(--border-default)] flex items-center justify-center forum-meta font-bold text-[var(--text-secondary)]">
-                      E
-                    </div>
-                    <div>
-                      <span className="forum-body font-semibold text-[var(--text-primary)] block">
-                        Explorador
-                      </span>
-                      <span className="forum-meta text-[var(--text-muted)]">
-                        Veterano
-                      </span>
-                    </div>
-                  </div>
-                  <span className="forum-meta font-semibold text-[var(--feedback-success)] forum-num">
-                    +180 pts
-                  </span>
+                <div className="divide-y divide-[var(--border-subtle)]">
+                  {[...recentThreads]
+                    .sort((a, b) => (b.thread.commentCount || 0) - (a.thread.commentCount || 0))
+                    .slice(0, 3)
+                    .map(({ thread, forum }) => (
+                      <Link
+                        key={thread.id}
+                        to={`/forum/${forum.slug}/${thread.id}`}
+                        className="flex items-start justify-between gap-3 group -mx-2 px-2 py-2 rounded-md hover:bg-[var(--bg-default)] transition-colors"
+                      >
+                        <div className="min-w-0">
+                          <span className="forum-body font-semibold text-[var(--text-primary)] block truncate group-hover:text-[var(--brand-primary)] transition-colors">
+                            {thread.title}
+                          </span>
+                          <span className="forum-meta text-[var(--text-muted)]">
+                            {forum.title}
+                          </span>
+                        </div>
+                        <span className="forum-meta font-semibold text-[var(--feedback-success)] forum-num shrink-0">
+                          {thread.commentCount || 0}
+                        </span>
+                      </Link>
+                    ))}
                 </div>
               </div>
-            </div>
-
-            {/* Bloco 3: Membros ativos */}
-            <div className="pt-5 space-y-3">
-              <div className="flex items-center gap-2 text-[var(--brand-primary)]">
-                <Users className="w-4 h-4" />
-                <h4 className="forum-title text-[var(--text-primary)] m-0">
-                  Membros Ativos
-                </h4>
-              </div>
-              <p className="forum-meta text-[var(--text-muted)] m-0">
-                Conectados e interagindo com a comunidade.
-              </p>
-
-              <div className="flex items-center gap-2 forum-meta">
-                <span className="w-2 h-2 rounded-full bg-[var(--feedback-success)]" />
-                <span className="text-[var(--text-secondary)] font-medium">Comunidade online</span>
-              </div>
-            </div>
+            )}
           </div>
         </aside>
       </div>
