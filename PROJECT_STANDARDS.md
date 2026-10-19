@@ -214,6 +214,15 @@ collections/{collectionId}
   createdAt: timestamp
   createdBy: string
 
+threads/{threadId}/revisions/{revisionId}
+  title: string                   // previous title value
+  body: string                    // previous body value
+  categoryId: string | null       // previous category ID
+  reason: string                  // mandatory reason provided by editor
+  editedBy: string                // user UID who made the edit
+  editedByStaff: boolean          // whether editor had staff/moderation privileges
+  editedAt: timestamp             // serverTimestamp()
+
 Reads never throw. Missing fields fall back to defaults defined above.
 Migration:
   A user doc that has `groupId` and not `primaryGroupId`:

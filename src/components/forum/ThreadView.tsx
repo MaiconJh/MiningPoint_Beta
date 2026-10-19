@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import Pin from 'lucide-react/dist/esm/icons/pin';
 import Lock from 'lucide-react/dist/esm/icons/lock';
@@ -7,6 +8,7 @@ import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
 import Edit2 from 'lucide-react/dist/esm/icons/edit-2';
 import Trash2 from 'lucide-react/dist/esm/icons/trash-2';
 import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
 import FolderInput from 'lucide-react/dist/esm/icons/folder-input';
 import CornerDownRight from 'lucide-react/dist/esm/icons/corner-down-right';
 import Quote from 'lucide-react/dist/esm/icons/quote';
@@ -15,11 +17,16 @@ import Check from 'lucide-react/dist/esm/icons/check';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Users from 'lucide-react/dist/esm/icons/users';
 import Info from 'lucide-react/dist/esm/icons/info';
+import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
+import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
+import History from 'lucide-react/dist/esm/icons/history';
+import X from 'lucide-react/dist/esm/icons/x';
 import {
   Forum,
   ForumThread,
   ForumComment,
   ForumCommentFormData,
+  ThreadRevision,
 } from '../../types/forum';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -38,6 +45,8 @@ import {
 } from '../../lib/forumPermissions';
 import {
   updateThread,
+  restoreThreadRevision,
+  getThreadRevisions,
   moderateThread,
   createComment,
   updateComment,
@@ -114,11 +123,34 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
   const [replyParentId, setReplyParentId] = useState<string | null>(null);
   const [replyQuote, setReplyQuote] = useState<{ id: string; text: string } | null>(null);
 
-  // Edit thread modal
+  // Edit thread modal & history states (SPEC-0004)
   const [isEditingThread, setIsEditingThread] = useState(false);
   const [editTitle, setEditTitle] = useState(thread.title);
   const [editBody, setEditBody] = useState(thread.body);
   const [editCategoryId, setEditCategoryId] = useState<string | null>(thread.categoryId);
+  const [editReason, setEditReason] = useState('');
+  const [savingThreadEdit, setSavingThreadEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [showRollbackConfirm, setShowRollbackConfirm] = useState<ThreadRevision | null>(null);
+  const [restoringRevision, setRestoringRevision] = useState(false);
+  const [revisions, setRevisions] = useState<ThreadRevision[]>([]);
+  const [loadingRevisions, setLoadingRevisions] = useState(false);
+  const [toastMessage, setToastMessage] = useState<{
+    type: 'success' | 'error' | 'warning';
+    text: string;
+  } | null>(null);
+
+  const triggerButtonRef = useRef<HTMLButtonElement | null>(null);
+  const modalContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const isStaffOrModerator = Boolean(profile?.isStaff || profile?.effectivePermissions?.manageForum);
+  const isAuthor = Boolean(user && thread.authorId === user.uid);
+  const isEditWindowExpired =
+    !isStaffOrModerator &&
+    Boolean(thread.createdAt && Date.now() - thread.createdAt.toMillis() > 2 * 3600 * 1000);
+  const canViewHistory = isStaffOrModerator || isAuthor;
+  const canRestoreHistory = isStaffOrModerator;
 
   // Move thread modal
   const [isMovingThread, setIsMovingThread] = useState(false);
@@ -221,19 +253,180 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
     }
   };
 
+  const openEditModal = () => {
+    setEditTitle(thread.title);
+    setEditBody(thread.body);
+    setEditCategoryId(thread.categoryId);
+    setEditReason('');
+    setEditError(null);
+    setShowDiscardConfirm(false);
+    setShowRollbackConfirm(null);
+    setIsEditingThread(true);
+  };
+
+  const closeEditModal = useCallback(() => {
+    setIsEditingThread(false);
+    setShowDiscardConfirm(false);
+    setShowRollbackConfirm(null);
+    setEditError(null);
+    if (triggerButtonRef.current) {
+      triggerButtonRef.current.focus();
+    }
+  }, []);
+
+  const isDirty = useMemo(() => {
+    return (
+      editTitle.trim() !== thread.title.trim() ||
+      editBody.trim() !== thread.body.trim() ||
+      (editCategoryId ?? null) !== (thread.categoryId ?? null) ||
+      editReason.trim().length > 0
+    );
+  }, [editTitle, editBody, editCategoryId, editReason, thread.title, thread.body, thread.categoryId]);
+
+  const handleAttemptClose = useCallback(() => {
+    if (isDirty) {
+      setShowDiscardConfirm(true);
+    } else {
+      closeEditModal();
+    }
+  }, [isDirty, closeEditModal]);
+
+  // Carregar histórico ao abrir modal se for autor ou staff (R-13)
+  useEffect(() => {
+    if (isEditingThread && canViewHistory) {
+      setLoadingRevisions(true);
+      getThreadRevisions(thread.id)
+        .then((revs) => setRevisions(revs))
+        .catch((err) => console.error('Erro ao carregar revisões:', err))
+        .finally(() => setLoadingRevisions(false));
+    }
+  }, [isEditingThread, canViewHistory, thread.id]);
+
+  // Focus trap acessível e tecla Esc (R-08)
+  useEffect(() => {
+    if (!isEditingThread) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (showRollbackConfirm) {
+          setShowRollbackConfirm(null);
+          return;
+        }
+        if (showDiscardConfirm) {
+          setShowDiscardConfirm(false);
+          return;
+        }
+        handleAttemptClose();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        const container = modalContainerRef.current;
+        if (!container) return;
+
+        const focusableElements = container.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isEditingThread, showDiscardConfirm, showRollbackConfirm, handleAttemptClose]);
+
+  // Toast timer (R-09: ~2.8s)
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => {
+      setToastMessage(null);
+    }, 2800);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
+
   const handleSaveThreadEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editTitle.trim() || !editBody.trim()) return;
+    if (!user) return;
+    if (isEditWindowExpired) {
+      setEditError('A janela de edição de 2 horas para este tópico expirou.');
+      return;
+    }
+    if (!editReason.trim()) {
+      setEditError('O preenchimento do motivo da edição é obrigatório.');
+      return;
+    }
+    if (!editTitle.trim() || !editBody.trim()) {
+      setEditError('Título e mensagem não podem estar vazios.');
+      return;
+    }
+    if (thread.isRemoved) {
+      setEditError('Este tópico foi removido por um moderador e não pode ser editado.');
+      return;
+    }
+
+    setSavingThreadEdit(true);
+    setEditError(null);
+
     try {
       await updateThread(thread.id, {
         title: editTitle.trim(),
         body: editBody.trim(),
         categoryId: editCategoryId,
+        reason: editReason.trim(),
+        editedBy: user.uid,
+        editedByStaff: isStaffOrModerator,
       });
-      setIsEditingThread(false);
+
+      closeEditModal();
+      setToastMessage({
+        type: 'success',
+        text: 'Alterações salvas com sucesso!',
+      });
       await onReload();
-    } catch (err) {
-      console.error('Failed to update thread:', err);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Falha ao salvar alterações.';
+      setEditError(errorMsg);
+    } finally {
+      setSavingThreadEdit(false);
+    }
+  };
+
+  const handleConfirmRollback = async () => {
+    if (!user || !showRollbackConfirm) return;
+    setRestoringRevision(true);
+    try {
+      await restoreThreadRevision(thread.id, showRollbackConfirm, user.uid, isStaffOrModerator);
+      setShowRollbackConfirm(null);
+      closeEditModal();
+      setToastMessage({
+        type: 'success',
+        text: 'Versão do tópico restaurada com sucesso!',
+      });
+      await onReload();
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Falha ao restaurar revisão.';
+      setToastMessage({
+        type: 'error',
+        text: errorMsg,
+      });
+    } finally {
+      setRestoringRevision(false);
     }
   };
 
@@ -430,13 +623,9 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
               <div className="flex items-center gap-1 flex-wrap self-start">
                 {allowEditThread && (
                   <button
+                    ref={triggerButtonRef}
                     type="button"
-                    onClick={() => {
-                      setEditTitle(thread.title);
-                      setEditBody(thread.body);
-                      setEditCategoryId(thread.categoryId);
-                      setIsEditingThread(true);
-                    }}
+                    onClick={openEditModal}
                     className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-default)] rounded-lg transition-colors cursor-pointer"
                     title="Editar tópico"
                     aria-label="Editar tópico"
@@ -840,78 +1029,366 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
         </aside>
       </div>
 
-      {/* Edit Thread Modal */}
-      {isEditingThread && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--bg-overlay)] backdrop-blur-xs">
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-6 max-w-lg w-full shadow-2xl space-y-4">
-            <h3 className="forum-title text-[var(--text-primary)] m-0">
-              Editar Tópico
-            </h3>
-            <form onSubmit={handleSaveThreadEdit} className="space-y-4">
-              <div>
-                <label className="block forum-meta font-semibold text-[var(--text-secondary)] mb-1">
-                  Título
-                </label>
-                <input
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  className="w-full px-3 py-2 forum-body rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--border-focus)]"
-                  required
-                />
+      {/* Edit Thread Modal Portal (SPEC-0004: R-01 a R-14) */}
+      {isEditingThread &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--bg-overlay)] backdrop-blur-xs"
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !savingThreadEdit && !restoringRevision) {
+                handleAttemptClose();
+              }
+            }}
+          >
+            <div
+              ref={modalContainerRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="edit-thread-modal-title"
+              className="dialog-transition bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-6 max-w-2xl w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
+            >
+              <div className="flex items-center justify-between border-b border-[var(--border-default)] pb-3">
+                <h3 id="edit-thread-modal-title" className="forum-title text-[var(--text-primary)] m-0">
+                  Editar Tópico
+                </h3>
+                <button
+                  type="button"
+                  onClick={handleAttemptClose}
+                  className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-lg cursor-pointer"
+                  aria-label="Fechar modal de edição"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              {forum.categories.length > 0 && (
-                <div>
-                  <label className="block forum-meta font-semibold text-[var(--text-secondary)] mb-1">
-                    Subdivisão
-                  </label>
-                  <select
-                    value={editCategoryId || ''}
-                    onChange={(e) => setEditCategoryId(e.target.value || null)}
-                    className="w-full px-3 py-2 forum-body rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--border-focus)]"
-                  >
-                    {forum.categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+              {/* Warning: Expired Edit Window (R-05) */}
+              {isEditWindowExpired && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2.5 p-3 rounded-lg bg-[var(--feedback-warning)]/15 border border-[var(--feedback-warning)] text-[var(--text-primary)] forum-body text-sm"
+                >
+                  <AlertTriangle className="w-4 h-4 text-[var(--feedback-warning)] shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-semibold">Janela de edição expirada</strong>
+                    <span>
+                      O prazo de edição de 2 horas para autores comuns encerrou. Apenas membros da moderação podem alterar este tópico.
+                    </span>
+                  </div>
                 </div>
               )}
 
-              <div>
-                <label className="block forum-meta font-semibold text-[var(--text-secondary)] mb-1">
-                  Mensagem
-                </label>
-                <textarea
-                  value={editBody}
-                  onChange={(e) => setEditBody(e.target.value)}
-                  rows={6}
-                  className="w-full px-3 py-2 forum-body rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--border-focus)] resize-y"
-                  required
-                />
-              </div>
+              {/* Error Alert: Post removed or failed operation (R-06) */}
+              {editError && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2.5 p-3 rounded-lg bg-[var(--feedback-error)]/15 border border-[var(--feedback-error)] text-[var(--text-primary)] forum-body text-sm"
+                >
+                  <AlertCircle className="w-4 h-4 text-[var(--feedback-error)] shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-semibold">Não foi possível salvar</strong>
+                    <span>{editError}</span>
+                  </div>
+                </div>
+              )}
 
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsEditingThread(false)}
-                  className="px-4 py-2 forum-body font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+              {thread.isRemoved && !editError && (
+                <div
+                  role="alert"
+                  className="flex items-start gap-2.5 p-3 rounded-lg bg-[var(--feedback-error)]/15 border border-[var(--feedback-error)] text-[var(--text-primary)] forum-body text-sm"
                 >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 forum-body font-semibold rounded-lg bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] cursor-pointer"
+                  <AlertCircle className="w-4 h-4 text-[var(--feedback-error)] shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-semibold">Tópico removido</strong>
+                    <span>Este tópico foi removido por um moderador e não aceita mais edições.</span>
+                  </div>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveThreadEdit} className="space-y-4">
+                <div>
+                  <label className="block forum-meta font-semibold text-[var(--text-secondary)] mb-1">
+                    Título
+                  </label>
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    disabled={isEditWindowExpired || thread.isRemoved || savingThreadEdit}
+                    className="w-full px-3 py-2 forum-body rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--border-focus)] disabled:opacity-50"
+                    required
+                  />
+                </div>
+
+                {forum.categories.length > 0 && (
+                  <div>
+                    <label className="block forum-meta font-semibold text-[var(--text-secondary)] mb-1">
+                      Subdivisão
+                    </label>
+                    <select
+                      value={editCategoryId || ''}
+                      onChange={(e) => setEditCategoryId(e.target.value || null)}
+                      disabled={isEditWindowExpired || thread.isRemoved || savingThreadEdit}
+                      className="w-full px-3 py-2 forum-body rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--border-focus)] disabled:opacity-50"
+                    >
+                      {forum.categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block forum-meta font-semibold text-[var(--text-secondary)] mb-1">
+                    Mensagem
+                  </label>
+                  <textarea
+                    value={editBody}
+                    onChange={(e) => setEditBody(e.target.value)}
+                    disabled={isEditWindowExpired || thread.isRemoved || savingThreadEdit}
+                    rows={6}
+                    className="w-full px-3 py-2 forum-body rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--border-focus)] resize-y disabled:opacity-50"
+                    required
+                  />
+                </div>
+
+                {/* Edit Reason (R-12: Mandatory) */}
+                <div>
+                  <label className="block forum-meta font-semibold text-[var(--text-secondary)] mb-1">
+                    Motivo da edição <span className="text-[var(--feedback-error)]">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editReason}
+                    onChange={(e) => setEditReason(e.target.value)}
+                    disabled={isEditWindowExpired || thread.isRemoved || savingThreadEdit}
+                    placeholder="Descreva resumidamente o que foi alterado"
+                    className="w-full px-3 py-2 forum-body rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--border-focus)] disabled:opacity-50"
+                    required
+                  />
+                  <p className="forum-meta text-xs text-[var(--text-muted)] mt-1">
+                    O motivo da edição é obrigatório e fica registrado no histórico auditável para autor e moderação.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-[var(--border-default)]">
+                  <button
+                    type="button"
+                    onClick={handleAttemptClose}
+                    disabled={savingThreadEdit}
+                    className="px-4 py-2 forum-body font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={
+                      isEditWindowExpired ||
+                      thread.isRemoved ||
+                      savingThreadEdit ||
+                      !editReason.trim() ||
+                      !editTitle.trim() ||
+                      !editBody.trim()
+                    }
+                    className="btn-save-transition inline-flex items-center gap-2 px-4 py-2 forum-body font-semibold rounded-lg bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {savingThreadEdit ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Salvando...</span>
+                      </>
+                    ) : (
+                      <span>Salvar alterações</span>
+                    )}
+                  </button>
+                </div>
+              </form>
+
+              {/* History Panel (R-13) */}
+              {canViewHistory && (
+                <div className="border-t border-[var(--border-default)] pt-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <History className="w-4 h-4 text-[var(--text-secondary)]" />
+                    <h4 className="forum-title text-sm font-semibold text-[var(--text-primary)] m-0">
+                      Histórico de edições
+                    </h4>
+                  </div>
+
+                  {loadingRevisions ? (
+                    <div className="flex items-center justify-center p-4 text-[var(--text-muted)] gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="forum-meta text-sm">Carregando histórico...</span>
+                    </div>
+                  ) : revisions.length === 0 ? (
+                    <p className="forum-meta text-sm text-[var(--text-muted)] m-0 p-3 bg-[var(--bg-default)] rounded-lg">
+                      Nenhuma revisão registrada até o momento.
+                    </p>
+                  ) : (
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {revisions.map((rev) => {
+                        const revDate = rev.editedAt
+                          ? new Intl.DateTimeFormat('pt-BR', {
+                              dateStyle: 'short',
+                              timeStyle: 'short',
+                            }).format(rev.editedAt.toDate())
+                          : 'Data desconhecida';
+
+                        return (
+                          <div
+                            key={rev.id}
+                            className="p-3 rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)] flex items-start justify-between gap-3"
+                          >
+                            <div className="space-y-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="forum-meta font-semibold text-[var(--text-primary)] text-xs">
+                                  {rev.editedByStaff ? 'Moderador' : 'Autor'}
+                                </span>
+                                <span className="forum-meta text-xs text-[var(--text-muted)]">
+                                  · {revDate}
+                                </span>
+                              </div>
+                              <p className="forum-body text-xs text-[var(--text-secondary)] m-0 break-words">
+                                <strong className="text-[var(--text-primary)]">Motivo:</strong> {rev.reason}
+                              </p>
+                            </div>
+
+                            {canRestoreHistory && (
+                              <button
+                                type="button"
+                                onClick={() => setShowRollbackConfirm(rev)}
+                                disabled={restoringRevision || savingThreadEdit}
+                                className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 text-xs forum-body font-semibold rounded bg-[var(--bg-surface)] hover:bg-[var(--border-default)] text-[var(--text-primary)] border border-[var(--border-default)] cursor-pointer disabled:opacity-50"
+                                title="Restaurar esta versão anterior"
+                              >
+                                <RotateCcw className="w-3 h-3 text-[var(--brand-primary)]" />
+                                <span>Restaurar</span>
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Discard Confirmation Dialog (R-07) */}
+              {showDiscardConfirm && (
+                <div
+                  role="alertdialog"
+                  aria-modal="true"
+                  aria-labelledby="discard-title"
+                  className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-[var(--bg-overlay)] backdrop-blur-xs"
                 >
-                  Salvar alterações
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                  <div className="dialog-transition bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-5 max-w-sm w-full shadow-2xl space-y-4">
+                    <div className="flex items-center gap-2.5 text-[var(--feedback-warning)]">
+                      <AlertTriangle className="w-5 h-5" />
+                      <h4 id="discard-title" className="forum-title text-base font-semibold text-[var(--text-primary)] m-0">
+                        Descartar alterações?
+                      </h4>
+                    </div>
+                    <p className="forum-body text-sm text-[var(--text-secondary)] m-0">
+                      Existem alterações não salvas no tópico. Deseja realmente descartá-las e fechar o modal?
+                    </p>
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowDiscardConfirm(false)}
+                        className="px-3 py-1.5 forum-body text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+                      >
+                        Continuar editando
+                      </button>
+                      <button
+                        type="button"
+                        onClick={closeEditModal}
+                        className="px-3 py-1.5 forum-body text-sm font-semibold rounded-lg bg-[var(--feedback-error)] text-[var(--text-on-primary)] hover:opacity-90 cursor-pointer"
+                      >
+                        Descartar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Rollback Confirmation Dialog (R-14) */}
+              {showRollbackConfirm && (
+                <div
+                  role="alertdialog"
+                  aria-modal="true"
+                  aria-labelledby="rollback-title"
+                  className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-[var(--bg-overlay)] backdrop-blur-xs"
+                >
+                  <div className="dialog-transition bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-5 max-w-md w-full shadow-2xl space-y-4">
+                    <div className="flex items-center gap-2.5 text-[var(--brand-primary)]">
+                      <RotateCcw className="w-5 h-5" />
+                      <h4 id="rollback-title" className="forum-title text-base font-semibold text-[var(--text-primary)] m-0">
+                        Restaurar esta versão?
+                      </h4>
+                    </div>
+                    <p className="forum-body text-sm text-[var(--text-secondary)] m-0">
+                      Esta ação irá restaurar o título, mensagem e subdivisão deste tópico para a versão selecionada. Uma cópia do estado atual será preservada automaticamente no histórico antes da restauração.
+                    </p>
+                    <div className="p-2.5 rounded bg-[var(--bg-default)] text-xs font-mono text-[var(--text-muted)] space-y-1">
+                      <div>Título a restaurar: {showRollbackConfirm.title}</div>
+                      <div>Motivo da versão: {showRollbackConfirm.reason}</div>
+                    </div>
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowRollbackConfirm(null)}
+                        disabled={restoringRevision}
+                        className="px-3 py-1.5 forum-body text-sm font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleConfirmRollback}
+                        disabled={restoringRevision}
+                        className="btn-save-transition inline-flex items-center gap-2 px-3 py-1.5 forum-body text-sm font-semibold rounded-lg bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] cursor-pointer disabled:opacity-50"
+                      >
+                        {restoringRevision ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Restaurando...</span>
+                          </>
+                        ) : (
+                          <span>Confirmar restauração</span>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Toast feedback (R-09, R-10) */}
+      {toastMessage &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div role="alert" className="fixed bottom-6 right-6 z-70 pointer-events-none">
+            <div
+              className={`toast-transition pointer-events-auto flex items-center gap-2 px-4 py-3 rounded-lg shadow-xl text-sm font-semibold ${
+                toastMessage.type === 'success'
+                  ? 'bg-[var(--brand-primary)] text-[var(--text-on-primary)]'
+                  : toastMessage.type === 'warning'
+                  ? 'bg-[var(--feedback-warning)] text-[var(--text-primary)]'
+                  : 'bg-[var(--feedback-error)] text-[var(--text-on-primary)]'
+              }`}
+            >
+              {toastMessage.type === 'success' && <Check className="w-4 h-4 shrink-0" />}
+              {toastMessage.type === 'warning' && <AlertTriangle className="w-4 h-4 shrink-0" />}
+              {toastMessage.type === 'error' && <AlertCircle className="w-4 h-4 shrink-0" />}
+              <span>{toastMessage.text}</span>
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* Move Thread Modal */}
       {isMovingThread && (

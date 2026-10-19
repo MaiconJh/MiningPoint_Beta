@@ -5,10 +5,12 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  runTransaction,
   serverTimestamp,
   query,
   where,
   orderBy,
+  limit,
   increment,
   Timestamp,
 } from 'firebase/firestore';
@@ -18,6 +20,7 @@ import {
   ForumThreadFormData,
   ForumComment,
   ForumCommentFormData,
+  ThreadRevision,
 } from '../types/forum';
 
 export function sanitizeThreadDoc(id: string, data: Record<string, unknown>): ForumThread {
@@ -47,6 +50,7 @@ export function sanitizeThreadDoc(id: string, data: Record<string, unknown>): Fo
       data.reactionCounts && typeof data.reactionCounts === 'object'
         ? (data.reactionCounts as Record<string, number>)
         : {},
+    editReason: typeof data.editReason === 'string' ? data.editReason : null,
   };
 }
 
@@ -159,25 +163,134 @@ export async function createThread(
 
 export async function updateThread(
   threadId: string,
-  data: Partial<ForumThreadFormData>
+  data: Partial<ForumThreadFormData> & {
+    reason?: string;
+    editedBy?: string;
+    editedByStaff?: boolean;
+  }
 ): Promise<void> {
   if (!db) throw new Error('Firestore não inicializado.');
   const threadRef = doc(db, 'threads', threadId);
-  const updatePayload: Record<string, unknown> = {
-    updatedAt: serverTimestamp(),
-  };
 
-  if (typeof data.title === 'string') {
-    updatePayload.title = data.title.trim().slice(0, 150);
-  }
-  if (typeof data.body === 'string') {
-    updatePayload.body = data.body.trim().slice(0, 10000);
-  }
-  if (data.categoryId !== undefined) {
-    updatePayload.categoryId = data.categoryId;
-  }
+  await runTransaction(db, async (transaction) => {
+    const threadSnap = await transaction.get(threadRef);
+    if (!threadSnap.exists()) {
+      throw new Error('Tópico não encontrado.');
+    }
+    const currentData = threadSnap.data();
+    if (currentData.isRemoved) {
+      throw new Error('Este tópico foi removido por um moderador.');
+    }
 
-  await updateDoc(threadRef, updatePayload);
+    if (data.reason && data.editedBy) {
+      const revisionColRef = collection(db, 'threads', threadId, 'revisions');
+      const newRevRef = doc(revisionColRef);
+      transaction.set(newRevRef, {
+        title: typeof currentData.title === 'string' ? currentData.title : '',
+        body: typeof currentData.body === 'string' ? currentData.body : '',
+        categoryId: typeof currentData.categoryId === 'string' ? currentData.categoryId : null,
+        reason: data.reason.trim(),
+        editedBy: data.editedBy,
+        editedByStaff: Boolean(data.editedByStaff),
+        editedAt: serverTimestamp(),
+      });
+    }
+
+    const updatePayload: Record<string, unknown> = {
+      updatedAt: serverTimestamp(),
+    };
+
+    if (typeof data.title === 'string') {
+      updatePayload.title = data.title.trim().slice(0, 150);
+    }
+    if (typeof data.body === 'string') {
+      updatePayload.body = data.body.trim().slice(0, 10000);
+    }
+    if (data.categoryId !== undefined) {
+      updatePayload.categoryId = data.categoryId;
+    }
+    if (data.reason) {
+      updatePayload.editReason = data.reason.trim();
+    }
+
+    transaction.update(threadRef, updatePayload);
+  });
+}
+
+export async function restoreThreadRevision(
+  threadId: string,
+  revision: ThreadRevision,
+  restoredByUid: string,
+  restoredByStaff: boolean = true
+): Promise<void> {
+  if (!db) throw new Error('Firestore não inicializado.');
+  const threadRef = doc(db, 'threads', threadId);
+
+  await runTransaction(db, async (transaction) => {
+    const threadSnap = await transaction.get(threadRef);
+    if (!threadSnap.exists()) {
+      throw new Error('Tópico não encontrado.');
+    }
+    const currentData = threadSnap.data();
+    if (currentData.isRemoved) {
+      throw new Error('Este tópico foi removido por um moderador.');
+    }
+
+    const revisionColRef = collection(db, 'threads', threadId, 'revisions');
+
+    // 1. Grava o estado atual como nova revisão preservando evidência
+    const preserveRevRef = doc(revisionColRef);
+    transaction.set(preserveRevRef, {
+      title: typeof currentData.title === 'string' ? currentData.title : '',
+      body: typeof currentData.body === 'string' ? currentData.body : '',
+      categoryId: typeof currentData.categoryId === 'string' ? currentData.categoryId : null,
+      reason: `Estado anterior preservado antes da restauração da revisão ${revision.id.slice(0, 7)}`,
+      editedBy: restoredByUid,
+      editedByStaff: restoredByStaff,
+      editedAt: serverTimestamp(),
+    });
+
+    // 2. Grava a revisão referente ao ato de restauração
+    const restoreRevRef = doc(revisionColRef);
+    transaction.set(restoreRevRef, {
+      title: revision.title,
+      body: revision.body,
+      categoryId: revision.categoryId ?? null,
+      reason: `Restauração aplicada a partir da revisão ${revision.id.slice(0, 7)}`,
+      editedBy: restoredByUid,
+      editedByStaff: restoredByStaff,
+      editedAt: serverTimestamp(),
+    });
+
+    // 3. Atualiza o tópico com os dados da revisão restaurada
+    transaction.update(threadRef, {
+      title: revision.title.trim().slice(0, 150),
+      body: revision.body.trim().slice(0, 10000),
+      categoryId: revision.categoryId ?? null,
+      editReason: `Restaurado para a versão ${revision.id.slice(0, 7)}`,
+      updatedAt: serverTimestamp(),
+    });
+  });
+}
+
+export async function getThreadRevisions(threadId: string): Promise<ThreadRevision[]> {
+  if (!db) return [];
+  const revisionsRef = collection(db, 'threads', threadId, 'revisions');
+  const q = query(revisionsRef, orderBy('editedAt', 'desc'), limit(50));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((docSnap) => {
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      title: typeof data.title === 'string' ? data.title : '',
+      body: typeof data.body === 'string' ? data.body : '',
+      categoryId: typeof data.categoryId === 'string' ? data.categoryId : null,
+      reason: typeof data.reason === 'string' ? data.reason : '',
+      editedBy: typeof data.editedBy === 'string' ? data.editedBy : '',
+      editedByStaff: Boolean(data.editedByStaff),
+      editedAt: (data.editedAt as Timestamp) || Timestamp.now(),
+    };
+  });
 }
 
 export type ModerationAction =

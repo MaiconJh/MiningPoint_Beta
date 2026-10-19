@@ -106,12 +106,34 @@ export interface ForumThread {
   commentCount: number;
   solutionCommentId: string | null;
   reactionCounts: Record<string, number>;
+  editReason?: string | null;
+}
+
+export interface ThreadRevision {
+  id: string;
+  title: string;
+  body: string;
+  categoryId: string | null;
+  reason: string;
+  editedBy: string;
+  editedByStaff: boolean;
+  editedAt: Timestamp;
+}
+
+export interface ThreadRevisionFormData {
+  title: string;
+  body: string;
+  categoryId: string | null;
+  reason: string;
+  editedBy: string;
+  editedByStaff: boolean;
 }
 
 export interface ForumThreadFormData {
   title: string;
   body: string;
   categoryId: string | null;
+  editReason?: string;
 }
 
 export interface ForumComment {

@@ -134,6 +134,14 @@ service cloud.firestore {
         allow update: if isSignedIn() && !isBannedUser(request.auth.uid) && (resource.data.authorId == request.auth.uid || has('manageForum'));
         allow delete: if has('manageForum');
       }
+
+      match /revisions/{revisionId} {
+        allow read: if isSignedIn() && !isBannedUser(request.auth.uid)
+                    && (get(/databases/$(database)/documents/threads/$(threadId)).data.authorId == request.auth.uid || has('manageForum'));
+        allow create: if isSignedIn() && !isBannedUser(request.auth.uid)
+                    && (request.resource.data.editedBy == request.auth.uid || has('manageForum'));
+        allow update, delete: if false;
+      }
     }
 
     match /forumReactions/{docId} {
