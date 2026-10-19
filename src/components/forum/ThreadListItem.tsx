@@ -9,6 +9,7 @@ import Clock from 'lucide-react/dist/esm/icons/clock';
 import { Forum, ForumThread } from '../../types/forum';
 import { getUserProfile } from '../../lib/profile';
 import { UserProfile } from '../../types/profile';
+import { MarkdownBody } from './MarkdownBody';
 
 interface ThreadListItemProps {
   thread: ForumThread;
@@ -157,9 +158,9 @@ export const ThreadListItem: React.FC<ThreadListItemProps> = ({ thread, forum })
             {thread.title}
           </Link>
 
-          <p className="forum-meta text-[var(--text-muted)] line-clamp-2 m-0">
-            {thread.body}
-          </p>
+          <div className="forum-meta text-[var(--text-muted)] line-clamp-2 m-0">
+            <MarkdownBody content={thread.body} compact />
+          </div>
 
           <div className="flex items-center gap-3 forum-meta text-[var(--text-muted)] pt-1 flex-wrap">
             <span className="font-semibold text-[var(--text-secondary)]">

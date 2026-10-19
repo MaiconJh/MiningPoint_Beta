@@ -14,7 +14,6 @@ import Smile from 'lucide-react/dist/esm/icons/smile';
 import Check from 'lucide-react/dist/esm/icons/check';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
 import Users from 'lucide-react/dist/esm/icons/users';
-import Eye from 'lucide-react/dist/esm/icons/eye';
 import Info from 'lucide-react/dist/esm/icons/info';
 import {
   Forum,
@@ -56,6 +55,7 @@ import { getUserProfile } from '../../lib/profile';
 import { UserProfile } from '../../types/profile';
 import { CommentForm } from './CommentForm';
 import { Chip } from '../chip/Chip';
+import { MarkdownBody } from './MarkdownBody';
 
 interface ThreadViewProps {
   forum: Forum;
@@ -353,14 +353,12 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
   const category = forum.categories?.find((c) => c.id === thread.categoryId);
 
   const authorGroupColor = threadAuthor?.primaryGroup?.color || 'var(--brand-primary)';
-  const authorNick = threadAuthor
-    ? threadAuthor.handle
-      ? `@${threadAuthor.handle}`
-      : threadAuthor.displayName || 'Membro'
-    : thread.authorId
-    ? `membro-${thread.authorId.slice(0, 5)}`
-    : 'Membro';
-  const authorInitial = (threadAuthor?.displayName || authorNick).charAt(0).toUpperCase();
+  const authorLabel: string | null = threadAuthor?.handle
+    ? `@${threadAuthor.handle}`
+    : threadAuthor?.displayName || null;
+  const authorInitial = threadAuthor?.displayName
+    ? threadAuthor.displayName.charAt(0).toUpperCase()
+    : null;
 
   const formattedDate = thread.createdAt?.toDate
     ? thread.createdAt.toDate().toLocaleDateString('pt-BR', {
@@ -534,24 +532,26 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
                   {threadAuthor?.photoURL ? (
                     <img
                       src={threadAuthor.photoURL}
-                      alt={authorNick}
+                      alt={authorLabel ?? ''}
                       className="w-full h-full object-cover"
                     />
-                  ) : (
+                  ) : authorInitial ? (
                     <span
                       className="forum-title font-bold"
                       style={{ color: authorGroupColor }}
                     >
                       {authorInitial}
                     </span>
-                  )}
+                  ) : null}
                 </div>
 
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="forum-body font-bold text-[var(--text-primary)]">
-                      {authorNick}
-                    </span>
+                    {authorLabel && (
+                      <span className="forum-body font-bold text-[var(--text-primary)]">
+                        {authorLabel}
+                      </span>
+                    )}
                     {threadAuthor?.primaryGroup && (
                       <Chip
                         label={threadAuthor.primaryGroup.name}
@@ -560,19 +560,16 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
                       />
                     )}
                   </div>
-                  <span className="forum-meta text-[var(--text-muted)] block">
-                    Publicado em {formattedDate}
-                  </span>
+                  {formattedDate && (
+                    <span className="forum-meta text-[var(--text-muted)] block">
+                      Publicado em {formattedDate}
+                    </span>
+                  )}
                 </div>
               </div>
 
               {/* Métricas do cabeçalho */}
               <div className="flex items-center gap-3 forum-meta text-[var(--text-muted)]">
-                <div className="flex items-center gap-1">
-                  <Eye className="w-3.5 h-3.5" />
-                  <span className="forum-num font-semibold">124</span> views
-                </div>
-                <span>·</span>
                 <div className="flex items-center gap-1">
                   <MessageSquare className="w-3.5 h-3.5" />
                   <span className="forum-num font-semibold">{thread.commentCount}</span> respostas
@@ -581,9 +578,7 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
             </div>
 
             {/* Thread body com peso de leitura (R-05) */}
-            <div className="pt-2 text-[var(--text-secondary)] forum-body leading-relaxed whitespace-pre-wrap">
-              {thread.body}
-            </div>
+            <MarkdownBody content={thread.body} className="pt-2" />
 
             {/* Reações com contagem e picker ancorado (R-05) */}
             {forum.features?.reactions && (
@@ -656,9 +651,7 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
                   Resposta Marcada como Solução
                 </h2>
               </div>
-              <p className="forum-body text-[var(--text-secondary)] whitespace-pre-wrap m-0">
-                {solutionComment.body}
-              </p>
+              <MarkdownBody content={solutionComment.body} className="m-0" />
             </div>
           )}
 
@@ -668,7 +661,7 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
               Respostas (<span className="forum-num">{comments.length}</span>)
             </h2>
             <span className="forum-meta text-[var(--text-muted)]">
-              Estrutura: {forum.threadStructure}
+              Estrutura: {forum.threadStructure === 'nested' ? 'Aninhada' : forum.threadStructure === 'quoted' ? 'Com citações' : 'Plana'}
             </span>
           </div>
 
@@ -803,8 +796,10 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
             <div className="space-y-2 pt-1">
               {participants.map((p) => {
                 const pColor = p.primaryGroup?.color || 'var(--brand-primary)';
-                const pNick = p.handle ? `@${p.handle}` : p.displayName || 'Membro';
-                const pInitial = (p.displayName || pNick).charAt(0).toUpperCase();
+                const pLabel: string | null = p.handle ? `@${p.handle}` : p.displayName || null;
+                const pInitial = p.displayName
+                  ? p.displayName.charAt(0).toUpperCase()
+                  : null;
 
                 return (
                   <div
@@ -816,20 +811,26 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
                       style={{ borderColor: pColor }}
                     >
                       {p.photoURL ? (
-                        <img src={p.photoURL} alt={pNick} className="w-full h-full object-cover" />
-                      ) : (
+                        <img src={p.photoURL} alt={pLabel ?? ''} className="w-full h-full object-cover" />
+                      ) : pInitial ? (
                         <span className="forum-meta font-bold" style={{ color: pColor }}>
                           {pInitial}
                         </span>
-                      )}
+                      ) : null}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <span className="forum-meta font-semibold text-[var(--text-primary)] truncate block">
-                        {pNick}
-                      </span>
-                      <span className="forum-meta text-[var(--text-muted)] block truncate">
-                        {p.primaryGroup?.name || 'Membro'}
-                      </span>
+                      {pLabel && (
+                        <span className="forum-meta font-semibold text-[var(--text-primary)] truncate block">
+                          {pLabel}
+                        </span>
+                      )}
+                      {p.primaryGroup && (
+                        <Chip
+                          label={p.primaryGroup.name}
+                          color={p.primaryGroup.color}
+                          style={p.primaryGroup.chipStyle}
+                        />
+                      )}
                     </div>
                   </div>
                 );
@@ -1080,14 +1081,12 @@ const CommentCard: React.FC<CommentCardProps> = ({
     : '';
 
   const authorGroupColor = commentAuthor?.primaryGroup?.color || 'var(--brand-primary)';
-  const authorNick = commentAuthor
-    ? commentAuthor.handle
-      ? `@${commentAuthor.handle}`
-      : commentAuthor.displayName || 'Membro'
-    : comment.authorId
-    ? `membro-${comment.authorId.slice(0, 5)}`
-    : 'Membro';
-  const authorInitial = (commentAuthor?.displayName || authorNick).charAt(0).toUpperCase();
+  const authorLabel: string | null = commentAuthor?.handle
+    ? `@${commentAuthor.handle}`
+    : commentAuthor?.displayName || null;
+  const authorInitial = commentAuthor?.displayName
+    ? commentAuthor.displayName.charAt(0).toUpperCase()
+    : null;
 
   return (
     <div
@@ -1105,19 +1104,21 @@ const CommentCard: React.FC<CommentCardProps> = ({
             style={{ borderColor: authorGroupColor }}
           >
             {commentAuthor?.photoURL ? (
-              <img src={commentAuthor.photoURL} alt={authorNick} className="w-full h-full object-cover" />
-            ) : (
+              <img src={commentAuthor.photoURL} alt={authorLabel ?? ''} className="w-full h-full object-cover" />
+            ) : authorInitial ? (
               <span className="forum-meta font-bold" style={{ color: authorGroupColor }}>
                 {authorInitial}
               </span>
-            )}
+            ) : null}
           </div>
 
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="forum-body font-bold text-[var(--text-primary)]">
-                {authorNick}
-              </span>
+              {authorLabel && (
+                <span className="forum-body font-bold text-[var(--text-primary)]">
+                  {authorLabel}
+                </span>
+              )}
               {commentAuthor?.primaryGroup && (
                 <Chip
                   label={commentAuthor.primaryGroup.name}
@@ -1137,9 +1138,11 @@ const CommentCard: React.FC<CommentCardProps> = ({
                 </span>
               )}
             </div>
-            <span className="forum-meta text-[var(--text-muted)] forum-num">
-              {formattedDate}
-            </span>
+            {formattedDate && (
+              <span className="forum-meta text-[var(--text-muted)] forum-num">
+                {formattedDate}
+              </span>
+            )}
           </div>
         </div>
 
@@ -1224,7 +1227,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
       </div>
 
       {/* Body or removed placeholder */}
-      <div className="pt-3 forum-body text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed">
+      <div className="pt-3 forum-body text-[var(--text-secondary)] leading-relaxed">
         {comment.isRemoved ? (
           <span className="italic text-[var(--text-muted)]">
             [Mensagem removida pelo autor ou moderação]
@@ -1255,7 +1258,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
             </div>
           </div>
         ) : (
-          comment.body
+          <MarkdownBody content={comment.body} />
         )}
       </div>
 
