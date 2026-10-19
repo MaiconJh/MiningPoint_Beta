@@ -1,6 +1,6 @@
 # Índice de Specs
 
-Total: 5 · rascunho: 0 · em-leitura: 1 · aprovado: 2 · negado: 0 · implementado: 2 · obsoleto: 0
+Total: 5 · rascunho: 0 · em-leitura: 0 · aprovado: 2 · negado: 0 · implementado: 3 · obsoleto: 0
 
 | ID | Título | Status | Criada | Implementada | Commit | Arquivos |
 |---|---|---|---|---|---|---|
@@ -8,7 +8,7 @@ Total: 5 · rascunho: 0 · em-leitura: 1 · aprovado: 2 · negado: 0 · implemen
 | <a href="./entries/SPEC-0002-foruns-configuraveis.md">SPEC-0002</a> | Módulo de fóruns configuráveis | aprovado | 2026-10-16 | — | — | 0 |
 | <a href="./entries/SPEC-0003-redesign-forum-ui.md">SPEC-0003</a> | Redesign visual e de interação do fórum | aprovado | 2026-10-16 | — | — | 0 |
 | <a href="./entries/SPEC-0004-edicao-post-forum-modal.md">SPEC-0004</a> | Edição de post no fórum com modal fixo, feedback responsável e transições suaves | implementado | 2026-10-19 | 2026-10-19 | — | 5 |
-| <a href="./entries/SPEC-0005-camadas-card-topico.md">SPEC-0005</a> | Camadas de responsabilidade no card de tópico do fórum | em-leitura | 2026-10-19 | — | — | 2 |
+| <a href="./entries/SPEC-0005-camadas-card-topico.md">SPEC-0005</a> | Camadas de responsabilidade no card de tópico do fórum | implementado | 2026-10-19 | 2026-10-19 | — | 1 |
 
 ---
 

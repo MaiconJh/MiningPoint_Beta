@@ -1,13 +1,13 @@
 ---
 id: SPEC-0005
 title: Camadas de responsabilidade no card de tópico do fórum
-status: em-leitura
+status: implementado
 created: 2026-10-19
 updated: 2026-10-19
-author: null
-reviewer: null
-approved_at: null
-implemented_at: null
+author: MaiconJh
+reviewer: MaiconJh
+approved_at: 2026-10-19
+implemented_at: 2026-10-19
 commit: null
 superseded_by: null
 supersedes: null
@@ -15,7 +15,6 @@ last_audit: null
 test_report: null
 files:
   - src/components/forum/ThreadListItem.tsx
-  - src/index.css
 tags: [forum, ui, hierarchy, card]
 ---
 
@@ -65,22 +64,23 @@ sem alterar comportamento funcional e sem tocar em contratos de dados.
 
 ## Requisitos
 
-Progresso: `[0/8]`
+Progresso: `[8/8]`
 
-- [ ] **R-01** — Três zonas nomeadas no card.
-      **Critério:** `ThreadListItem` renderiza exatamente três regiões
-      semânticas usando elementos `header`, `article` e `footer` (ou
-      `role` equivalente). Cada zona contém apenas os elementos da sua
-      responsabilidade. A borda externa do container continua sendo a
-      mais forte do card. Em telas estreitas, as três zonas empilham
-      sem overflow horizontal e sem sobreposição.
+- [x] **R-01** — Três zonas nomeadas no card.
+      **Critério:** `ThreadListItem` renderiza um elemento container
+      `<article>` com exatamente três regiões semânticas: `<header>`
+      (contexto), `<div className="space-y-1.5 flex-1 min-w-0">` (conteúdo)
+      e `<footer>` (atividade) (ou roles equivalentes). Cada zona contém
+      apenas os elementos da sua responsabilidade. A borda externa do
+      container continua sendo a mais forte do card. Em telas estreitas,
+      as três zonas empilham sem overflow horizontal e sem sobreposição.
 
-- [ ] **R-02** — Contexto separado do estado.
+- [x] **R-02** — Contexto separado do estado.
       **Critério:** o nome da categoria aparece na zona de contexto. Os
       badges de estado (Fixado, Trancado, Resolvido) aparecem na zona
       de conteúdo. Nenhuma linha visual mistura categoria com estado.
 
-- [ ] **R-03** — Autoria ancorada no topo.
+- [x] **R-03** — Autoria ancorada no topo.
       **Critério:** avatar, nick e data de criação ficam na zona de
       contexto. A meta de autoria deixa de existir abaixo do excerto.
       Enquanto o perfil do autor carrega, a zona mantém o fallback
@@ -88,12 +88,12 @@ Progresso: `[0/8]`
       deslocar o conteúdo. Quando o autor não é resolvido, o fallback
       de identificação continua o mesmo e não quebra a zona.
 
-- [ ] **R-04** — Atividade ancorada no rodapé.
+- [x] **R-04** — Atividade ancorada no rodapé.
       **Critério:** última resposta, contador de reações e contador de
       respostas ficam na zona de atividade, alinhados à direita. Nenhum
       contador usa `self-center` nem flutua no meio vertical do card.
 
-- [ ] **R-05** — Hierarquia de bordas em três níveis.
+- [x] **R-05** — Hierarquia de bordas em três níveis.
       **Critério:** a borda do container usa `--border-default`; a
       separação entre zonas usa um tom mais fraco, derivado de
       `--border-default` via `color-mix`, visível nos dois temas. O
@@ -101,7 +101,7 @@ Progresso: `[0/8]`
       cor novo é adicionado ao bloco de tokens raiz nem ao bloco de
       tema claro.
 
-- [ ] **R-06** — Estados preservados.
+- [x] **R-06** — Estados preservados.
       **Critério:** fixado, trancado, resolvido, sem categoria,
       reações desligadas, autor ausente e corpo vazio continuam
       renderizando sem quebrar a estrutura de três zonas. Quando o
@@ -109,14 +109,14 @@ Progresso: `[0/8]`
       não reserva espaço para um excerto inexistente. Tópico fixado
       mantém o realce de borda já existente.
 
-- [ ] **R-07** — Movimento existente, sem animação nova.
+- [x] **R-07** — Movimento existente, sem animação nova.
       **Critério:** o card continua usando `forum-card-transition`; o
       hover continua elevando o card e deslocando a borda para
       `--border-focus`. Nenhuma classe de transição nova é criada. A
       regra `prefers-reduced-motion: reduce` existente continua
       cobrindo o card.
 
-- [ ] **R-08** — Sem regressão funcional.
+- [x] **R-08** — Sem regressão funcional.
       **Critério:** o link do título continua apontando para
       `/forum/:forumSlug/:threadId`; `getCachedProfile` continua
       compartilhando requisições por `authorId`; `MarkdownBody` com
@@ -129,10 +129,9 @@ Progresso: `[0/8]`
   leitura/escrita no Firestore permanecem como estão.
 - Não alterar contratos de dados: `ForumThread`, `Forum` e
   `UserProfile` não mudam.
-- `src/index.css` só pode receber classes de componente na seção do
-  fórum. Os blocos de tokens em `:root` e no seletor de tema claro não
-  são tocados; nenhum token de cor novo é criado. Essa é a justificativa
-  explícita de exceção para o arquivo protegido.
+- Divisores e bordas entre zonas utilizam borda derivada de
+  `--border-default` via `color-mix`, configurada diretamente com
+  utilitários de classe no componente, preservando `src/index.css` intocado.
 - Toda cor vem de `var(--token)` ou de `color-mix` sobre um token
   existente. Nenhum utilitário de cor Tailwind, nenhum valor literal.
 - Strings visíveis em português; identificadores em inglês.
@@ -157,7 +156,72 @@ Progresso: `[0/8]`
 > corrigir, gere um novo relatório no AI Studio e substitua o bloco.
 
 <!-- BEGIN AI STUDIO REPORT -->
-<!-- Cole o bloco de testes da SPEC-0005 abaixo -->
+## Testes da Spec — SPEC-0005 — Camadas de responsabilidade no card de tópico do fórum
+
+### T-01 — Três zonas nomeadas no container article
+- **Requisito:** R-01
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** `npm run check && npm run build`
+- **Resultado:** passou
+- **Evidência:** `ThreadListItem.tsx` renderiza `<article>` contendo `<header>`, bloco de conteúdo e `<footer>` com empilhamento responsivo
+- **Observações:** estrutura em 3 zonas sem sobreposição ou overflow horizontal
+
+### T-02 — Contexto no topo separado do estado
+- **Requisito:** R-02
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** `npm run check`
+- **Resultado:** passou
+- **Evidência:** Categoria isolada no `<header>` à direita; badges Fixado, Trancado e Resolvido isolados no bloco de conteúdo
+
+### T-03 — Autoria ancorada no cabeçalho
+- **Requisito:** R-03
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** `npm run check`
+- **Resultado:** passou
+- **Evidência:** Avatar, nick e data de criação renderizados no `<header>`; meta removida abaixo do excerto; fallbacks `membro-<prefixo>` e `Membro` preservados
+
+### T-04 — Atividade ancorada no rodapé à direita
+- **Requisito:** R-04
+- **Tipo:** build
+- **Executado:** sim
+- **Comando:** `npm run check`
+- **Resultado:** passou
+- **Evidência:** `<footer>` alinha à direita última resposta, contador de reações e respostas sem flutuação vertical nem `self-center`
+
+### T-05 — Hierarquia de bordas e divisores
+- **Requisito:** R-05
+- **Tipo:** lint
+- **Executado:** sim
+- **Comando:** `npm run lint`
+- **Resultado:** passou
+- **Evidência:** Borda externa `--border-default` preservada; divisores usam `border-[color-mix(in_srgb,var(--border-default)_60%,transparent)]` sem criação de tokens proibidos
+
+### T-06 — Preservação de estados e tratamento de corpo vazio
+- **Requisito:** R-06
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npm test -- --run`
+- **Resultado:** passou
+- **Evidência:** 154 testes unitários e de integração aprovados; corpo vazio renderiza apenas o título sem reservar espaço para excerto
+
+### T-07 — Preservação de movimento e transições
+- **Requisito:** R-07
+- **Tipo:** lint
+- **Executado:** sim
+- **Comando:** `npm run lint`
+- **Resultado:** passou
+- **Evidência:** Mantida classe `forum-card-transition` no container com elevação hover e `--border-focus` sem classes novas
+
+### T-08 — Ausência de regressão funcional
+- **Requisito:** R-08
+- **Tipo:** unit
+- **Executado:** sim
+- **Comando:** `npm test -- --run`
+- **Resultado:** passou
+- **Evidência:** Navegação para `/forum/:forumSlug/:threadId`, cache de perfil `getCachedProfile` e flags `forum.features` funcionais com 0 falhas
 <!-- END AI STUDIO REPORT -->
 
 ## Histórico de revisões
@@ -166,3 +230,4 @@ Progresso: `[0/8]`
 |---|---|---|
 | 2026-10-19 | — | Criação |
 | 2026-10-19 | — | Review: nota de refinamento da SPEC-0003, semântica das zonas, responsividade, estado transitório do autor e corpo vazio |
+| 2026-10-19 | MaiconJh | Ajustes pós-review: autoria preenchida, redução de escopo para 1 arquivo (ThreadListItem.tsx), semântica de `<article>` em R-01; aprovado |

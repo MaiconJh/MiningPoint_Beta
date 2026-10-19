@@ -87,19 +87,26 @@ export const ThreadListItem: React.FC<ThreadListItemProps> = ({ thread, forum })
 
   const authorInitial = (author?.displayName || authorNick).charAt(0).toUpperCase();
 
+  const hasStateBadges =
+    thread.isPinned ||
+    thread.isLocked ||
+    Boolean(forum.features?.solution && thread.solutionCommentId);
+
+  const hasBodyContent = Boolean(thread.body && thread.body.trim().length > 0);
+
   return (
-    <div
-      className={`p-4 sm:p-5 rounded-xl border forum-card-transition ${
+    <article
+      className={`rounded-xl border forum-card-transition flex flex-col ${
         thread.isPinned
           ? 'border-[var(--brand-primary)] bg-[var(--bg-surface-elevated)]'
           : 'border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-[var(--border-focus)]'
       }`}
     >
-      <div className="flex items-start justify-between gap-4">
-        {/* Author Avatar with group color border */}
-        <div className="shrink-0 pt-0.5">
+      {/* Zona 1: Contexto (Header) */}
+      <header className="px-4 py-3 sm:px-5 flex items-center justify-between gap-3 border-b border-[color-mix(in_srgb,var(--border-default)_60%,transparent)]">
+        <div className="flex items-center gap-2.5 min-w-0">
           <div
-            className="w-10 h-10 rounded-full border-2 overflow-hidden flex items-center justify-center bg-[var(--bg-default)]"
+            className="w-8 h-8 rounded-full border-2 overflow-hidden flex items-center justify-center bg-[var(--bg-default)] shrink-0"
             style={{ borderColor: authorGroupColor }}
             title={author?.primaryGroup?.name || 'Membro'}
           >
@@ -118,10 +125,36 @@ export const ThreadListItem: React.FC<ThreadListItemProps> = ({ thread, forum })
               </span>
             )}
           </div>
+
+          <div className="flex items-center gap-1.5 forum-meta text-[var(--text-muted)] min-w-0 flex-wrap">
+            <span className="font-semibold text-[var(--text-secondary)] truncate">
+              {authorNick}
+            </span>
+            {formattedDate && (
+              <>
+                <span>·</span>
+                <span className="forum-num">{formattedDate}</span>
+              </>
+            )}
+            {relativeCreated && (
+              <>
+                <span>·</span>
+                <span className="forum-num">{relativeCreated}</span>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Thread Content & Meta */}
-        <div className="space-y-1.5 flex-1 min-w-0">
+        {category && (
+          <span className="shrink-0 px-2 py-0.5 forum-meta font-medium rounded-md bg-[var(--bg-default)] text-[var(--text-secondary)] border border-[var(--border-subtle)]">
+            {category.name}
+          </span>
+        )}
+      </header>
+
+      {/* Zona 2: Conteúdo (Article Body) */}
+      <div className="p-4 sm:p-5 space-y-2 flex-1 min-w-0">
+        {hasStateBadges && (
           <div className="flex items-center gap-2 flex-wrap">
             {thread.isPinned && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 forum-meta font-semibold rounded-md bg-[var(--brand-primary)] text-[var(--text-on-primary)]">
@@ -143,64 +176,46 @@ export const ThreadListItem: React.FC<ThreadListItemProps> = ({ thread, forum })
                 Resolvido
               </span>
             )}
-
-            {category && (
-              <span className="px-2 py-0.5 forum-meta font-medium rounded-md bg-[var(--bg-default)] text-[var(--text-secondary)] border border-[var(--border-subtle)]">
-                {category.name}
-              </span>
-            )}
           </div>
+        )}
 
-          <Link
-            to={`/forum/${forum.slug}/${thread.id}`}
-            className="forum-title text-[var(--text-primary)] hover:text-[var(--brand-primary)] transition-colors line-clamp-2 block"
-          >
-            {thread.title}
-          </Link>
+        <Link
+          to={`/forum/${forum.slug}/${thread.id}`}
+          className="forum-title text-[var(--text-primary)] hover:text-[var(--brand-primary)] transition-colors line-clamp-2 block"
+        >
+          {thread.title}
+        </Link>
 
+        {hasBodyContent && (
           <div className="forum-meta text-[var(--text-muted)] line-clamp-2 m-0">
             <MarkdownBody content={thread.body} compact />
           </div>
+        )}
+      </div>
 
-          <div className="flex items-center gap-3 forum-meta text-[var(--text-muted)] pt-1 flex-wrap">
-            <span className="font-semibold text-[var(--text-secondary)]">
-              {authorNick}
+      {/* Zona 3: Atividade (Footer) */}
+      <footer className="px-4 py-2.5 sm:px-5 flex items-center justify-end gap-3 border-t border-[color-mix(in_srgb,var(--border-default)_60%,transparent)]">
+        <div className="flex items-center gap-3 ml-auto flex-wrap justify-end">
+          {thread.commentCount > 0 && relativeUpdated && (
+            <span className="inline-flex items-center gap-1 text-[var(--text-secondary)] forum-meta">
+              <Clock className="w-3 h-3 text-[var(--text-muted)]" />
+              <span className="forum-num">Última resposta {relativeUpdated}</span>
             </span>
-            <span>·</span>
-            <span className="forum-num">{formattedDate}</span>
-            {relativeCreated && (
-              <>
-                <span>·</span>
-                <span className="forum-num">{relativeCreated}</span>
-              </>
-            )}
-            {thread.commentCount > 0 && relativeUpdated && (
-              <>
-                <span>·</span>
-                <span className="inline-flex items-center gap-1 text-[var(--text-secondary)]">
-                  <Clock className="w-3 h-3" />
-                  <span className="forum-num">Última resposta {relativeUpdated}</span>
-                </span>
-              </>
-            )}
-          </div>
-        </div>
+          )}
 
-        {/* Counts & Reactions Badge */}
-        <div className="flex items-center gap-2.5 shrink-0 self-center">
           {forum.features?.reactions && totalReactions > 0 && (
-            <div className="flex items-center gap-1 forum-meta text-[var(--text-secondary)] bg-[var(--bg-default)] px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)]">
+            <div className="flex items-center gap-1 forum-meta text-[var(--text-secondary)] bg-[var(--bg-default)] px-2.5 py-1 rounded-lg border border-[var(--border-subtle)]">
               <ThumbsUp className="w-3.5 h-3.5 text-[var(--brand-primary)]" />
               <span className="forum-num font-semibold">{totalReactions}</span>
             </div>
           )}
 
-          <div className="flex items-center gap-1 forum-meta text-[var(--text-secondary)] bg-[var(--bg-default)] px-2.5 py-1.5 rounded-lg border border-[var(--border-subtle)]">
+          <div className="flex items-center gap-1 forum-meta text-[var(--text-secondary)] bg-[var(--bg-default)] px-2.5 py-1 rounded-lg border border-[var(--border-subtle)]">
             <MessageSquare className="w-3.5 h-3.5 text-[var(--text-muted)]" />
             <span className="forum-num font-semibold">{thread.commentCount}</span>
           </div>
         </div>
-      </div>
-    </div>
+      </footer>
+    </article>
   );
 };
