@@ -258,28 +258,17 @@ verdade, e (opcionalmente) o codebase.
 
 ## 7. Checklist antes de emitir
 
-- □  
-Frontmatter da spec lido e `status` verificado.
-- □  
-`PROJECT_STANDARDS.md` lido integralmente.
-- □  
-`AGENTS.md` lido integralmente.
-- □  
-`docs/specs/_meta/README.md` lido integralmente.
-- □  
-Spec lida integralmente.
-- □  
-Eixos A, B, C, E executados.
-- □  
-Eixo D executado ou marcado como `NÃO EXECUTADO`/`INCONCLUSIVO`.
-- □  
-Todo achado `VIOLADO` tem evidência (linha/seção) e regra-fonte.
-- □  
-Veredito consistente com os achados (bloqueante → REPROVADO).
-- □  
-Nenhuma operação de escrita realizada.
-- □  
-Limitações declaradas explicitamente.
+- [ ] Frontmatter da spec lido e `status` verificado.
+- [ ] `PROJECT_STANDARDS.md` lido integralmente.
+- [ ] `AGENTS.md` lido integralmente.
+- [ ] `docs/specs/_meta/README.md` lido integralmente.
+- [ ] Spec lida integralmente.
+- [ ] Eixos A, B, C, E executados.
+- [ ] Eixo D executado ou marcado como `NÃO EXECUTADO`/`INCONCLUSIVO`.
+- [ ] Todo achado `VIOLADO` tem evidência (linha/seção) e regra-fonte.
+- [ ] Veredito consistente com os achados (bloqueante → REPROVADO).
+- [ ] Nenhuma operação de escrita realizada.
+- [ ] Limitações declaradas explicitamente.
 
 ## 8. Referências cruzadas
 

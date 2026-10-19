@@ -285,31 +285,18 @@ algo, use `apply_patch` com `*** Delete File:`.
 
 ## 7. Checklist antes de emitir
 
-- □
-Parecer lido integralmente e veredito confirmado (`REPROVADO` ou
-`COM RESSALVAS`).
-- □
-Spec lida integralmente.
-- □
-`PROJECT_STANDARDS.md` lido integralmente.
-- □
-`AGENTS.md` lido integralmente.
-- □
-`docs/specs/_meta/README.md` lido integralmente.
-- □
-Cada achado classificado (mecânico vs fallback).
-- □
-Cada correção tem evidência (linha/seção da spec).
-- □
-Dry-run executado antes de cada `confirm=true`.
-- □
-Fallback documentado registra escolha e alternativa descartada.
-- □
-Status só foi transitado se não houver fallback pendente.
-- □
-Nenhum arquivo fora da spec foi alterado.
-- □
-Limitações declaradas explicitamente.
+- [ ] Parecer lido integralmente e veredito confirmado (`REPROVADO` ou `COM RESSALVAS`).
+- [ ] Spec lida integralmente.
+- [ ] `PROJECT_STANDARDS.md` lido integralmente.
+- [ ] `AGENTS.md` lido integralmente.
+- [ ] `docs/specs/_meta/README.md` lido integralmente.
+- [ ] Cada achado classificado (mecânico vs fallback).
+- [ ] Cada correção tem evidência (linha/seção da spec).
+- [ ] Dry-run executado antes de cada `confirm=true`.
+- [ ] Fallback documentado registra escolha e alternativa descartada.
+- [ ] Status só foi transitado se não houver fallback pendente.
+- [ ] Nenhum arquivo fora da spec foi alterado.
+- [ ] Limitações declaradas explicitamente.
 
 ## 8. Referências cruzadas
 
