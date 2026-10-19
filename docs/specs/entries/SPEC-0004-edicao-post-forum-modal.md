@@ -5,8 +5,8 @@ status: rascunho
 created: 2026-10-19
 updated: 2026-10-19
 author: MaiconJh
-reviewer: MaiconJh
-approved_at: 2026-10-19
+reviewer: null
+approved_at: null
 implemented_at: null
 commit: null
 superseded_by: null
@@ -15,7 +15,6 @@ last_audit: null
 test_report: null
 files:
   - src/components/forum/ThreadView.tsx
-  - src/index.css
 tags: [forum, edicao, modal, feedback, motion, acessibilidade]
 ---
 
@@ -39,9 +38,9 @@ carregamento ou concorrência.
 A pesquisa em fóruns de referência mostrou que não existe padrão universal:
 Discourse usa modal fora do container; Reddit usa inline; Flarum recusou
 inline; BuddyPress usa híbrido. A decisão desta spec é **modal em overlay
-fixo via portal** para o corpo do tópico, com as salvaguardas que a pesquisa
-recomenda (janela de edição, sinalização de editado, confirmação de descarte,
-histórico para staff).
+fixo via portal** para o corpo do tópico, com salvaguardas essenciais de UX
+(janela de edição defensiva, confirmação de descarte de rascunho e feedback
+resiliente a falhas).
 
 ## Objetivo
 
@@ -52,7 +51,7 @@ alterar o comportamento de permissões existente.
 
 ## Requisitos
 
-Progresso: `[0/12]`
+Progresso: `[0/10]`
 
 - [ ] **R-01** — O modal de edição deve ser renderizado fora do card do post,
       em um overlay `position: fixed` no nível do `<body>` (equivalente a
@@ -82,48 +81,41 @@ Progresso: `[0/12]`
       normal e mostra feedback.
 
 - [ ] **R-05** — O modal deve exibir um alerta inline âmbar (`--feedback-warning`)
-      quando a janela de edição tiver expirado para usuário comum, e
-      desabilitar o botão "Salvar alterações" nesse estado.
-      **Critério:** com papel "usuário comum" e janela expirada, o alerta
-      aparece e o botão fica `disabled`; com papel "admin", o alerta não
-      aparece e o botão permanece habilitado.
+      quando a janela de edição (calculada no componente como
+      `Date.now() - thread.createdAt.toMillis() > 2 * 3600 * 1000`) tiver expirado
+      para autor sem privilégios de staff/moderação, desabilitando o salvamento.
+      **Critério:** para autor comum com post criado há mais de 2 horas, o
+      alerta aparece e o botão "Salvar alterações" fica `disabled`; para
+      usuários staff ou moderadores (`isStaff` ou `manageForum`), o alerta não
+      aparece e o salvamento permanece permitido.
 
-- [ ] **R-06** — O modal deve exibir um alerta inline vermelho
-      (`--feedback-error`) quando o post for removido por um moderador
-      durante a edição, e bloquear o salvamento.
-      **Critério:** com o modal aberto, ao remover o post, o alerta aparece
-      e o botão "Salvar alterações" fica `disabled`; tentar salvar mostra
-      toast de erro.
+- [ ] **R-06** — O modal deve tratar encerramento ou remoção concorrente do
+      tópico na tentativa de submissão, exibindo alerta inline vermelho
+      (`--feedback-error`) ou toast de erro e bloqueando o salvamento.
+      **Critério:** se a thread estiver marcada como removida ou se a chamada
+      a `updateThread` falhar por post removido/inválido, o erro é exibido no
+      modal com feedback claro e o salvamento é interrompido.
 
-- [ ] **R-07** — O histórico de revisões deve ser visível apenas para admin,
-      com autor, data/hora e resumo da alteração.
-      **Critério:** com papel "admin", o bloco de revisões aparece; com papel
-      "usuário comum", o bloco fica oculto.
-
-- [ ] **R-08** — O modal deve incluir um campo opcional "Motivo da edição"
-      com hint "Visível para moderadores no histórico de revisões".
-      **Critério:** o campo existe, é opcional, e o hint aparece abaixo dele.
-
-- [ ] **R-09** — Ao fechar o modal com alterações não salvas, o sistema deve
+- [ ] **R-07** — Ao fechar o modal com alterações não salvas, o sistema deve
       pedir confirmação de descarte.
       **Critério:** alterar título ou corpo e clicar em "Cancelar" (ou
       pressionar `Esc`, ou clicar fora do modal) abre confirmação; confirmar
       descarta, cancelar mantém o modal aberto.
 
-- [ ] **R-10** — O modal deve implementar focus trap: `Tab` e `Shift+Tab`
+- [ ] **R-08** — O modal deve implementar focus trap: `Tab` e `Shift+Tab`
       ciclam apenas entre os elementos focáveis do modal; `Esc` fecha com
       confirmação; ao fechar, o foco retorna ao elemento que abriu o modal.
       **Critério:** com o modal aberto, `Tab` não escapa para a página;
       `Esc` fecha; o foco volta ao botão de edição.
 
-- [ ] **R-11** — O toast de sucesso deve usar `toast-transition`
+- [ ] **R-09** — O toast de sucesso deve usar `toast-transition`
       (300ms, `translateY(80px) → 0`, `cubic-bezier(.2,.8,.2,1)`) e
       desaparecer após ~2,8s; toasts de erro/aviso usam a mesma transição
       com cor correspondente.
       **Critério:** ao salvar com sucesso, o toast anima de baixo para cima;
       com `prefers-reduced-motion: reduce`, aparece sem animação.
 
-- [ ] **R-12** — Todos os estados de feedback devem ter `role="alert"` (ou
+- [ ] **R-10** — Todos os estados de feedback devem ter `role="alert"` (ou
       live region equivalente) para leitores de tela, e a informação não
       deve ser comunicada apenas por cor.
       **Critério:** inspecionar o DOM dos alertas e toasts; cada um tem
@@ -136,8 +128,9 @@ Progresso: `[0/12]`
   `canEditThread`/`canEditComment`. A spec cobre a apresentação e o
   comportamento do modal, não a lógica de autorização.
 - **Reutilizar os tokens e as microtransições** já definidos em
-  `src/index.css`. Não criar novas variáveis CSS, novas classes de transição
-  ou novas durações/easings fora do catálogo aprovado.
+  `src/index.css`. Não alterar o arquivo global `src/index.css`, não criar
+  novas variáveis CSS, novas classes de transição ou novas durações/easings fora
+  do catálogo aprovado.
 - **Não introduzir bibliotecas novas** de UI ou de animação. Usar React
   puro e os utilitários já presentes no projeto.
 - **Preservar a ordem de renderização** do código real (badges/título à
@@ -152,10 +145,13 @@ Progresso: `[0/12]`
 ## Fora de escopo
 
 - Edição inline de título ou comentário (fica para spec futura).
-- Histórico de revisões público (esta spec cobre apenas staff).
-- Mudança na janela de edição configurável (o valor de 2h é o atual; a
-  spec apenas representa o estado expirado).
-- Alterações no backend/Firestore (`updateThread` já existe).
+- Histórico de revisões e persistência de motivo de edição (exigiriam
+  mudanças de schema em `ForumThread` e expansão de `updateThread` no
+  backend/Firestore, além de violar a regra de dados reais sem mocks).
+- Listener contínuo em tempo real (`onSnapshot`) no modal aberto (a
+  concorrência é tratada de forma resiliente na abertura e na submissão de
+  `updateThread`).
+- Alterações no backend/Firestore (`updateThread` é consumido como está).
 - Notificações por e-mail ou push sobre edição.
 - Internacionalização (i18n) das mensagens.
 
@@ -175,3 +171,4 @@ Progresso: `[0/12]`
 | Data | Autor | Mudança |
 |---|---|---|
 | 2026-10-19 | — | Criação |
+| 2026-10-19 | miningpoint-spec-fixer | Correções com base no parecer SPEC-0004-review.md: saneamento do frontmatter (reviewer/approved_at para null), remoção de src/index.css de files:, clarificação de cálculo de janela de 2h no componente, tratamento de concorrência na submissão e transferência de histórico de revisões para fora de escopo. |
