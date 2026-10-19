@@ -34,6 +34,19 @@ service cloud.firestore {
         );
     }
 
+    function isStaffUser() {
+      return isSignedIn()
+        && !isBannedUser(request.auth.uid)
+        && (
+          request.auth.token.email == 'maiconhansen3@gmail.com'
+          || (
+            exists(/databases/$(database)/documents/users/$(request.auth.uid))
+            && ('isStaff' in me())
+            && me().isStaff == true
+          )
+        );
+    }
+
     function onlyTouchesProfileFields() {
       let changed = request.resource.data.diff(resource.data).affectedKeys();
       return !changed.hasAny([
@@ -137,9 +150,18 @@ service cloud.firestore {
 
       match /revisions/{revisionId} {
         allow read: if isSignedIn() && !isBannedUser(request.auth.uid)
-                    && (get(/databases/$(database)/documents/threads/$(threadId)).data.authorId == request.auth.uid || has('manageForum'));
+                    && (
+                      (exists(/databases/$(database)/documents/threads/$(threadId))
+                        && get(/databases/$(database)/documents/threads/$(threadId)).data.authorId == request.auth.uid)
+                      || isStaffUser()
+                      || has('manageForum')
+                    );
         allow create: if isSignedIn() && !isBannedUser(request.auth.uid)
-                    && (request.resource.data.editedBy == request.auth.uid || has('manageForum'));
+                    && (
+                      request.resource.data.editedBy == request.auth.uid
+                      || isStaffUser()
+                      || has('manageForum')
+                    );
         allow update, delete: if false;
       }
     }

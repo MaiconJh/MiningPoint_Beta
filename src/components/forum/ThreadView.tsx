@@ -293,14 +293,17 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
 
   // Carregar histórico ao abrir modal se for autor ou staff (R-13)
   useEffect(() => {
-    if (isEditingThread && canViewHistory) {
+    if (isEditingThread && canViewHistory && user) {
       setLoadingRevisions(true);
       getThreadRevisions(thread.id)
         .then((revs) => setRevisions(revs))
-        .catch((err) => console.error('Erro ao carregar revisões:', err))
+        .catch((err) => {
+          console.error('Erro ao carregar revisões:', err);
+          setRevisions([]);
+        })
         .finally(() => setLoadingRevisions(false));
     }
-  }, [isEditingThread, canViewHistory, thread.id]);
+  }, [isEditingThread, canViewHistory, user, thread.id]);
 
   // Focus trap acessível e tecla Esc (R-08)
   useEffect(() => {
