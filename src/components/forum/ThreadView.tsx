@@ -1492,6 +1492,7 @@ interface CommentCardProps {
   thread: ForumThread;
   comment: ForumComment;
   childComments: ForumComment[];
+  isNested?: boolean;
   onQuote: (comment: ForumComment) => void;
   onReplyParent: (parentId: string) => void;
   onToggleSolution: (commentId: string) => void;
@@ -1515,6 +1516,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
   thread,
   comment,
   childComments,
+  isNested = false,
   onQuote,
   onReplyParent,
   onToggleSolution,
@@ -1568,14 +1570,25 @@ const CommentCard: React.FC<CommentCardProps> = ({
     ? commentAuthor.displayName.charAt(0).toUpperCase()
     : null;
 
+  const hasChildren = childComments.length > 0;
+
   return (
     <div
-      className={`p-4 sm:p-5 rounded-xl border forum-card-transition ${
+      className={`relative p-4 sm:p-5 rounded-xl border forum-card-transition ${
         isSolution
           ? 'border-[var(--feedback-success)] bg-[var(--bg-surface-elevated)]'
+          : isNested
+          ? 'border-transparent bg-transparent hover:bg-[var(--bg-surface)]/30'
           : 'border-[var(--border-default)] bg-[var(--bg-surface)]'
       }`}
     >
+      {hasChildren && (
+        <span
+          aria-hidden="true"
+          className="absolute w-px bg-[var(--border-subtle)] pointer-events-none left-[2.125rem] sm:left-[2.375rem] top-[2.125rem] sm:top-[2.375rem] bottom-0"
+        />
+      )}
+
       <div className="flex items-start justify-between gap-4">
         {/* Anatomia de autoria da resposta (R-05) */}
         <div className="flex items-center gap-3">
@@ -1801,8 +1814,8 @@ const CommentCard: React.FC<CommentCardProps> = ({
       )}
 
       {/* Respostas aninhadas com barra lateral de indentação (R-05) */}
-      {childComments && childComments.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-[var(--border-subtle)] pl-4 sm:pl-6 border-l-2 border-l-[var(--border-subtle)] space-y-3">
+      {hasChildren && (
+        <div className="mt-4 pt-4 border-t border-[var(--border-subtle)] pl-6 space-y-3">
           {childComments.map((child) => (
             <CommentCard
               key={child.id}
@@ -1810,6 +1823,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
               thread={thread}
               comment={child}
               childComments={[]}
+              isNested={true}
               onQuote={onQuote}
               onReplyParent={onReplyParent}
               onToggleSolution={onToggleSolution}
