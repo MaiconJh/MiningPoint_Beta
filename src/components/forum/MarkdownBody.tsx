@@ -9,7 +9,7 @@ interface MarkdownBodyProps {
 }
 
 const PROSE_CLASSES = [
-  'prose prose-sm max-w-none prose-invert',
+  'prose prose-sm max-w-none text-[var(--text-secondary)]',
   'prose-headings:text-[var(--text-primary)]',
   'prose-p:text-[var(--text-secondary)]',
   'prose-strong:text-[var(--text-primary)]',
@@ -19,8 +19,8 @@ const PROSE_CLASSES = [
   'prose-pre:bg-[var(--bg-default)] prose-pre:border prose-pre:border-[var(--border-default)]',
   'prose-blockquote:border-l-[var(--brand-primary)] prose-blockquote:text-[var(--text-muted)]',
   'prose-hr:border-[var(--border-subtle)]',
-  'prose-li:marker:text-[var(--brand-primary)]',
-  'prose-ul:my-2 prose-ol:my-2',
+  'prose-li:marker:text-[var(--brand-primary)] prose-li:text-[var(--text-secondary)]',
+  'prose-ul:my-2 prose-ul:text-[var(--text-secondary)] prose-ol:my-2 prose-ol:text-[var(--text-secondary)]',
 ].join(' ')
 
 const COMPACT_CLASSES = [
