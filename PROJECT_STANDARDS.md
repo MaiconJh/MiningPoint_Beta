@@ -324,10 +324,10 @@ Defined in :root in the global CSS file. Dark is the default theme; light
 overrides via [data-theme="light"].
 
 Dark:
-  Surface    #272C35  #38404C  #545E6E
-  Text       #F7F7F8  #C2C6CC  #768193
-  Border     #545E6E  #38404C
-  Brand      #8BD0EF  #BDDCEB  #B2E6E1 (secondary)  #E8D3B0 (community)
+  Surface    #25262A  #2E2F33  #393A3E
+  Text       #F5F5F7  #B7B8BC  #8E8F96
+  Border     #45464B  #2E2F33
+  Brand      #8BD0EF  #A9DEF4  #9FD9D4 (secondary)  #DCC7A8 (community)
   Feedback   #4ADE80 (success)  #FBBF24 (warning)  #F87171 (error)  #60A5FA (info)
 
 Light:

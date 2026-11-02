@@ -4,29 +4,29 @@
 
 :root {
   /* Surfaces */
-  --bg-default: #272C35;
-  --bg-surface: #38404C;
-  --bg-surface-elevated: #545E6E;
-  --bg-overlay: rgba(26, 29, 35, 0.78);
+  --bg-default: #25262A;
+  --bg-surface: #2E2F33;
+  --bg-surface-elevated: #393A3E;
+  --bg-overlay: rgba(15, 16, 18, 0.80);
 
   /* Text */
-  --text-primary: #F7F7F8;
-  --text-secondary: #C2C6CC;
-  --text-muted: #768193;
-  --text-inverse: #1A1D23;
-  --text-on-primary: #1A1D23;
+  --text-primary: #F5F5F7;
+  --text-secondary: #B7B8BC;
+  --text-muted: #8E8F96;
+  --text-inverse: #25262A;
+  --text-on-primary: #25262A;
 
   /* Borders */
-  --border-default: #4A5466;
-  --border-subtle: #38404C;
-  --border-strong: #9DA4AF;
-  --border-focus: #BDDCEB;
+  --border-default: #45464B;
+  --border-subtle: #2E2F33;
+  --border-strong: #7A7B80;
+  --border-focus: #8BD0EF;
 
   /* Brand */
   --brand-primary: #8BD0EF;
-  --brand-primary-hover: #BDDCEB;
-  --brand-secondary: #B2E6E1;
-  --brand-community: #E8D3B0;
+  --brand-primary-hover: #A9DEF4;
+  --brand-secondary: #9FD9D4;
+  --brand-community: #DCC7A8;
 
   /* Feedback */
   --feedback-success: #4ADE80;
