@@ -292,6 +292,17 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
     }
   }, [isDirty, closeEditModal]);
 
+  const isAnyModalOpen = isEditingThread || isMovingThread || Boolean(reportingItem);
+
+  useEffect(() => {
+    if (!isAnyModalOpen || typeof document === 'undefined') return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isAnyModalOpen]);
+
   // Carregar histórico ao abrir modal se for autor ou staff (R-13)
   useEffect(() => {
     if (isEditingThread && canViewHistory && user) {
@@ -1412,95 +1423,124 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
         )}
 
       {/* Move Thread Modal */}
-      {isMovingThread && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--bg-overlay)] backdrop-blur-xs">
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-6 max-w-sm w-full shadow-2xl space-y-4">
-            <h3 className="forum-title text-[var(--text-primary)] m-0">
-              Mover Tópico
-            </h3>
-            <p className="forum-meta text-[var(--text-secondary)] m-0">
-              Escolha a nova subdivisão interna para este tópico:
-            </p>
-            <select
-              value={targetCategory || ''}
-              onChange={(e) => setTargetCategory(e.target.value || null)}
-              className="w-full px-3 py-2 forum-body rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--border-focus)]"
+      {isMovingThread &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--bg-overlay)] backdrop-blur-xs"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setIsMovingThread(false);
+              }
+            }}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="dialog-transition bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-6 max-w-sm w-full shadow-2xl space-y-4"
             >
-              {forum.categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsMovingThread(false)}
-                className="px-4 py-2 forum-body font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+              <h3 className="forum-title text-[var(--text-primary)] m-0">
+                Mover Tópico
+              </h3>
+              <p className="forum-meta text-[var(--text-secondary)] m-0">
+                Escolha a nova subdivisão interna para este tópico:
+              </p>
+              <select
+                value={targetCategory || ''}
+                onChange={(e) => setTargetCategory(e.target.value || null)}
+                className="w-full px-3 py-2 forum-body rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--border-focus)]"
               >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveMove}
-                className="px-4 py-2 forum-body font-semibold rounded-lg bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] cursor-pointer"
-              >
-                Confirmar
-              </button>
+                {forum.categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsMovingThread(false)}
+                  className="px-4 py-2 forum-body font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveMove}
+                  className="px-4 py-2 forum-body font-semibold rounded-lg bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] cursor-pointer"
+                >
+                  Confirmar
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* Report Modal */}
-      {reportingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--bg-overlay)] backdrop-blur-xs">
-          <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-6 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="forum-title text-[var(--text-primary)] m-0">
-              Denunciar Conteúdo
-            </h3>
-            <p className="forum-meta text-[var(--text-secondary)] m-0">
-              Explique brevemente por que este conteúdo viola as diretrizes da comunidade:
-            </p>
+      {reportingItem &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--bg-overlay)] backdrop-blur-xs"
+            onClick={(e) => {
+              if (e.target === e.currentTarget && !submittingReport) {
+                setReportingItem(null);
+                setReportReason('');
+              }
+            }}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="dialog-transition bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-6 max-w-md w-full shadow-2xl space-y-4"
+            >
+              <h3 className="forum-title text-[var(--text-primary)] m-0">
+                Denunciar Conteúdo
+              </h3>
+              <p className="forum-meta text-[var(--text-secondary)] m-0">
+                Explique brevemente por que este conteúdo viola as diretrizes da comunidade:
+              </p>
 
-            {reportSuccess ? (
-              <div className="p-4 rounded-lg bg-[var(--feedback-success)] text-[var(--text-inverse)] forum-meta font-semibold text-center">
-                Denúncia enviada com sucesso para moderação.
-              </div>
-            ) : (
-              <form onSubmit={handleSubmitReport} className="space-y-4">
-                <textarea
-                  value={reportReason}
-                  onChange={(e) => setReportReason(e.target.value)}
-                  rows={4}
-                  placeholder="Motivo da denúncia..."
-                  className="w-full px-3 py-2 forum-body rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--border-focus)]"
-                  required
-                />
-                <div className="flex items-center justify-end gap-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setReportingItem(null);
-                      setReportReason('');
-                    }}
-                    className="px-4 py-2 forum-body font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submittingReport}
-                    className="px-4 py-2 forum-body font-semibold rounded-lg bg-[var(--feedback-error)] text-[var(--text-inverse)] hover:opacity-90 cursor-pointer disabled:opacity-50"
-                  >
-                    {submittingReport ? 'Enviando...' : 'Enviar denúncia'}
-                  </button>
+              {reportSuccess ? (
+                <div className="p-4 rounded-lg bg-[var(--feedback-success)] text-[var(--text-inverse)] forum-meta font-semibold text-center">
+                  Denúncia enviada com sucesso para moderação.
                 </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
+              ) : (
+                <form onSubmit={handleSubmitReport} className="space-y-4">
+                  <textarea
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    rows={4}
+                    placeholder="Motivo da denúncia..."
+                    className="w-full px-3 py-2 forum-body rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--border-focus)]"
+                    required
+                  />
+                  <div className="flex items-center justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReportingItem(null);
+                        setReportReason('');
+                      }}
+                      className="px-4 py-2 forum-body font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submittingReport}
+                      className="px-4 py-2 forum-body font-semibold rounded-lg bg-[var(--feedback-error)] text-[var(--text-inverse)] hover:opacity-90 cursor-pointer disabled:opacity-50"
+                    >
+                      {submittingReport ? 'Enviando...' : 'Enviar denúncia'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

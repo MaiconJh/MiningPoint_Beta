@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import CheckCircleIcon from 'lucide-react/dist/esm/icons/check-circle-2';
 import AlertCircleIcon from 'lucide-react/dist/esm/icons/alert-circle';
 
@@ -36,20 +37,23 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      {toast && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-sm font-medium text-[var(--text-primary)] shadow-lg toast-transition max-w-sm"
-        >
-          {toast.type === 'success' ? (
-            <CheckCircleIcon className="w-5 h-5 text-[var(--brand-primary)] shrink-0" />
-          ) : (
-            <AlertCircleIcon className="w-5 h-5 text-[var(--feedback-error)] shrink-0" />
-          )}
-          <span className="leading-snug">{toast.message}</span>
-        </div>
-      )}
+      {toast &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            role="status"
+            aria-live="polite"
+            className="fixed bottom-6 right-6 z-[70] flex items-center gap-3 px-4 py-3 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-sm font-medium text-[var(--text-primary)] shadow-lg toast-transition max-w-sm"
+          >
+            {toast.type === 'success' ? (
+              <CheckCircleIcon className="w-5 h-5 text-[var(--brand-primary)] shrink-0" />
+            ) : (
+              <AlertCircleIcon className="w-5 h-5 text-[var(--feedback-error)] shrink-0" />
+            )}
+            <span className="leading-snug">{toast.message}</span>
+          </div>,
+          document.body
+        )}
     </ToastContext.Provider>
   );
 };

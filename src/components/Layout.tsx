@@ -19,7 +19,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       <NavBar />
 
-      <main id="conteudo" className="flex-1 flex flex-col pt-24 overflow-x-hidden">
+      <main id="conteudo" className="flex-1 flex flex-col pt-24 overflow-x-clip">
         {children || <Outlet />}
       </main>
 
