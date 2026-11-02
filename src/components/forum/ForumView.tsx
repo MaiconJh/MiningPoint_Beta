@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
@@ -46,25 +46,34 @@ function getCachedReporterProfile(uid: string): Promise<UserProfile | null> {
   return reporterProfileCache.get(uid)!;
 }
 
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
+}
+
 const TargetStatusBadge: React.FC<{ status: ForumReportTargetStatus | undefined }> = ({
   status,
 }) => {
   const config: Record<ForumReportTargetStatus, { label: string; cls: string }> = {
     active: {
       label: 'Ativo',
-      cls: 'bg-[color-mix(in_srgb,var(--feedback-success)_18%,transparent)] text-[var(--feedback-success)]',
+      cls: 'bg-[color-mix(in_srgb,var(--feedback-success)_14%,transparent)] text-[var(--feedback-success)]',
     },
     edited: {
       label: 'Editado',
-      cls: 'bg-[color-mix(in_srgb,var(--feedback-warning)_18%,transparent)] text-[var(--feedback-warning)]',
+      cls: 'bg-[color-mix(in_srgb,var(--feedback-warning)_14%,transparent)] text-[var(--feedback-warning)]',
     },
     'deleted-by-author': {
       label: 'Excluído pelo autor',
-      cls: 'bg-[color-mix(in_srgb,var(--feedback-error)_18%,transparent)] text-[var(--feedback-error)]',
+      cls: 'bg-[color-mix(in_srgb,var(--feedback-error)_14%,transparent)] text-[var(--feedback-error)]',
     },
     'removed-by-moderator': {
       label: 'Removido pelo moderador',
-      cls: 'bg-[color-mix(in_srgb,var(--feedback-error)_18%,transparent)] text-[var(--feedback-error)]',
+      cls: 'bg-[color-mix(in_srgb,var(--feedback-error)_14%,transparent)] text-[var(--feedback-error)]',
     },
     missing: {
       label: 'Conteúdo não encontrado',
@@ -78,7 +87,7 @@ const TargetStatusBadge: React.FC<{ status: ForumReportTargetStatus | undefined 
   const cfg = status ? config[status] : config.unknown;
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 forum-meta font-semibold rounded ${cfg.cls}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 text-[0.6875rem] leading-4 font-bold rounded-full uppercase tracking-wider ${cfg.cls}`}
     >
       {cfg.label}
     </span>
@@ -89,35 +98,75 @@ const ReporterBlock: React.FC<{
   profile: UserProfile | null | undefined;
   fallbackId: string;
 }> = ({ profile, fallbackId }) => {
+  const isAnonymous = !fallbackId && !profile;
+
+  if (isAnonymous) {
+    return (
+      <div className="px-2.5 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex items-center gap-2.5">
+        <div
+          aria-hidden="true"
+          className="w-[30px] h-[30px] rounded-full border border-dashed border-[var(--border-default)] text-[var(--text-muted)] flex items-center justify-center bg-transparent shrink-0"
+        >
+          <UserIcon className="w-3.5 h-3.5" />
+        </div>
+        <div className="min-w-0 flex-1 flex flex-col">
+          <div className="flex items-baseline gap-1.5 flex-wrap forum-body">
+            <span className="text-[0.6875rem] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+              Denunciante
+            </span>
+            <span className="font-bold text-[var(--text-primary)]">Anônimo</span>
+          </div>
+          <div className="forum-meta text-[var(--text-muted)]">
+            Identidade não divulgada aos moderadores
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const name =
     profile?.displayName || (fallbackId ? `membro-${fallbackId.slice(0, 5)}` : 'Membro');
   const handle = profile?.handle ? `@${profile.handle}` : null;
-  const initial = name.charAt(0).toUpperCase();
-  const color = profile?.primaryGroup?.color || 'var(--brand-primary)';
+  const role = profile?.primaryGroup?.name || 'Membro';
+  const initials = getInitials(name) || '?';
+  const customColor = profile?.primaryGroup?.color;
+
   return (
-    <div className="p-2.5 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex items-center gap-2.5">
+    <div className="px-2.5 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex items-center gap-2.5">
       <div
-        className="w-7 h-7 rounded-full border overflow-hidden flex items-center justify-center bg-[var(--bg-default)] shrink-0"
-        style={{ borderColor: color }}
+        aria-hidden="true"
+        className="w-[30px] h-[30px] rounded-full border overflow-hidden flex items-center justify-center shrink-0 text-[11px] font-bold tracking-wide bg-[color-mix(in_srgb,var(--brand-primary)_16%,transparent)] text-[var(--brand-primary)] border-[color-mix(in_srgb,var(--brand-primary)_30%,transparent)]"
+        style={
+          customColor
+            ? {
+                borderColor: customColor,
+                color: customColor,
+                backgroundColor: `color-mix(in srgb, ${customColor} 16%, transparent)`,
+              }
+            : undefined
+        }
       >
         {profile?.photoURL ? (
           <img src={profile.photoURL} alt={name} className="w-full h-full object-cover" />
-        ) : profile ? (
-          <span className="forum-meta font-bold" style={{ color }}>
-            {initial}
-          </span>
         ) : (
-          <UserIcon className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+          <span>{initials}</span>
         )}
       </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="forum-meta font-bold text-[var(--text-primary)] truncate">
-            {name}
+      <div className="min-w-0 flex-1 flex flex-col">
+        <div className="flex items-baseline gap-1.5 flex-wrap forum-body">
+          <span className="text-[0.6875rem] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+            Denunciante
           </span>
-          <span className="forum-meta text-[var(--text-muted)] truncate">
-            {handle || 'Membro'}
-          </span>
+          <span className="font-bold text-[var(--text-primary)] truncate">{name}</span>
+        </div>
+        <div className="flex items-center gap-1.5 forum-meta text-[var(--text-muted)] flex-wrap">
+          {handle && (
+            <>
+              <span className="truncate">{handle}</span>
+              <span className="opacity-70">·</span>
+            </>
+          )}
+          <span className="truncate">{role}</span>
         </div>
       </div>
     </div>
@@ -125,41 +174,71 @@ const ReporterBlock: React.FC<{
 };
 
 const TargetBlock: React.FC<{ report: HydratedReport }> = ({ report }) => {
-  const snapTitle = report.targetSnapshot?.title || '';
+  const [expanded, setExpanded] = useState(false);
+  const rawTitle = report.targetSnapshot?.title || '';
   const snapBody = report.targetSnapshot?.body || '';
-  if (!snapTitle && !snapBody) return null;
+  if (!rawTitle && !snapBody) return null;
+
+  const formattedTitle = !rawTitle
+    ? 'Conteúdo denunciado'
+    : /^(Tópico:|Comentário)/i.test(rawTitle)
+    ? rawTitle
+    : report.kind === 'thread'
+    ? `Tópico: “${rawTitle}”`
+    : `Comentário em “${rawTitle}”`;
+
   const currentBody = report.currentBody ?? snapBody;
+  const isLong = currentBody.length > 180;
   const wasEdited =
     report.targetStatus === 'edited' &&
     report.currentBody !== null &&
     report.currentBody !== snapBody;
 
   return (
-    <div className="p-2.5 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] space-y-1.5">
+    <div className="px-3 py-2.5 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)] flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <span className="forum-meta font-bold text-[var(--text-primary)] truncate">
-          {snapTitle || 'Conteúdo denunciado'}
+        <span className="text-[0.8125rem] leading-5 font-bold text-[var(--text-primary)] truncate">
+          {formattedTitle}
         </span>
         <TargetStatusBadge status={report.targetStatus} />
       </div>
-      <p className="forum-body text-[var(--text-secondary)] m-0 whitespace-pre-wrap line-clamp-4">
-        {currentBody}
-      </p>
+      {currentBody && (
+        <p
+          className={`text-[0.8125rem] leading-5 text-[var(--text-secondary)] m-0 whitespace-pre-wrap ${
+            isLong && !expanded ? 'line-clamp-4' : ''
+          }`}
+        >
+          {currentBody}
+        </p>
+      )}
+      {isLong && (
+        <div className="flex items-center gap-2.5 flex-wrap forum-meta text-[var(--text-muted)]">
+          <button
+            type="button"
+            onClick={() => setExpanded((prev) => !prev)}
+            className="border-0 bg-transparent text-[var(--brand-primary)] font-bold forum-meta cursor-pointer p-0 underline underline-offset-2"
+          >
+            {expanded ? 'Recolher' : 'Expandir'}
+          </button>
+        </div>
+      )}
       {wasEdited && (
-        <details className="border border-[var(--border-subtle)] rounded-md overflow-hidden">
-          <summary className="cursor-pointer px-2 py-1 forum-meta font-semibold text-[var(--text-secondary)] bg-[var(--bg-surface-elevated)]">
+        <details className="group mt-1 border border-[var(--border-subtle)] rounded-md overflow-hidden">
+          <summary className="list-none [&::-webkit-details-marker]:hidden cursor-pointer px-2.5 py-1.5 forum-meta font-bold text-[var(--text-secondary)] bg-[var(--bg-surface-elevated)] flex items-center gap-1.5 select-none">
+            <span
+              aria-hidden="true"
+              className="inline-block transition-transform duration-150 group-open:rotate-90"
+            >
+              ▸
+            </span>
             Ver alterações
           </summary>
-          <div className="bg-[var(--bg-default)] p-2 space-y-1">
-            <div className="forum-meta font-bold text-[var(--feedback-error)]">Antes</div>
-            <pre className="m-0 forum-meta whitespace-pre-wrap font-mono text-[var(--text-secondary)]">
-              {snapBody}
-            </pre>
-            <div className="forum-meta font-bold text-[var(--feedback-success)] pt-1">Depois</div>
-            <pre className="m-0 forum-meta whitespace-pre-wrap font-mono text-[var(--text-secondary)]">
-              {currentBody}
-            </pre>
-          </div>
+          <pre className="m-0 px-2.5 py-2 font-mono forum-meta leading-[1.35rem] overflow-x-auto whitespace-pre-wrap text-[var(--text-secondary)] bg-[var(--bg-default)]">
+            {'Antes:\n'}
+            {snapBody}
+            {'\n\nDepois:\n'}
+            {currentBody}
+          </pre>
         </details>
       )}
     </div>
@@ -180,13 +259,22 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
   const [reporterProfiles, setReporterProfiles] = useState<
     Record<string, UserProfile | null>
   >({});
-  const [busyReportId, setBusyReportId] = useState<string | null>(null);
+  const [busyReport, setBusyReport] = useState<{
+    id: string;
+    action: 'dismissed' | 'reviewed' | 'reopen';
+  } | null>(null);
   const [reportsToast, setReportsToast] = useState<{
     type: 'success' | 'error';
     text: string;
+    undoSnapshot?: ForumReport;
   } | null>(null);
 
   const { threads, loading, error, reload } = useForumThreads(forum.id, selectedCategory);
+  const hydratedReports = useMemo(() => hydrateReports(reports, threads), [reports, threads]);
+  const pendingReportsCount = useMemo(
+    () => reports.filter((r) => r.status === 'open').length,
+    [reports]
+  );
 
   const allowCreate = canCreateThread(forum, user, profile);
   const allowReviewReports = canReviewReports(forum, user, profile);
@@ -213,7 +301,7 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
     } catch (err) {
       console.error('Failed to load reports:', err);
       setReportsError(
-        'Não foi possível carregar as denúncias. Verifique a conexão e tente novamente.'
+        'Falha de conexão com o servidor. Verifique sua rede e tente novamente.'
       );
     } finally {
       setLoadingReports(false);
@@ -241,8 +329,12 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
     };
   }, [reports]);
 
-  const showReportsToast = (text: string, type: 'success' | 'error') => {
-    setReportsToast({ text, type });
+  const showReportsToast = (
+    text: string,
+    type: 'success' | 'error',
+    undoSnapshot?: ForumReport
+  ) => {
+    setReportsToast({ text, type, undoSnapshot });
     window.setTimeout(() => {
       setReportsToast((t) => (t && t.text === text ? null : t));
     }, 6000);
@@ -257,45 +349,57 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
     } catch (err) {
       console.error('Failed to load reports:', err);
       setReportsError(
-        'Não foi possível carregar as denúncias. Verifique a conexão e tente novamente.'
+        'Falha de conexão com o servidor. Verifique sua rede e tente novamente.'
       );
     } finally {
       setLoadingReports(false);
     }
   };
 
-  const handleReviewReportAction = async (reportId: string, status: 'reviewed' | 'dismissed') => {
-    if (!user) return;
+  const handleReviewReportAction = async (
+    reportId: string,
+    status: 'reviewed' | 'dismissed'
+  ) => {
+    if (!user || busyReport?.id === reportId) return;
     const prev = reports.find((r) => r.id === reportId);
     if (!prev) return;
-    const tgtTitle = prev.targetSnapshot?.title || 'conteúdo denunciado';
+    const rawTitle = prev.targetSnapshot?.title || 'conteúdo denunciado';
+    const tgtTitle = rawTitle
+      .replace(/^Tópico:\s*/i, '')
+      .replace(/^Comentário em\s*/i, '');
+    const repProfile = reporterProfiles[prev.reporterId];
+    const who = !prev.reporterId
+      ? 'denunciante anônimo'
+      : repProfile?.displayName || `membro-${prev.reporterId.slice(0, 5)}`;
 
-    setBusyReportId(reportId);
-    setReports((list) =>
-      list.map((r) => (r.id === reportId ? { ...r, status, reviewedBy: user.uid } : r))
-    );
+    setBusyReport({ id: reportId, action: status });
 
     try {
       await reviewReport(reportId, status, user.uid);
+      setReports((list) =>
+        list.map((r) => (r.id === reportId ? { ...r, status, reviewedBy: user.uid } : r))
+      );
       showReportsToast(
         status === 'reviewed'
-          ? `Denúncia sobre "${tgtTitle}" resolvida.`
-          : `Denúncia sobre "${tgtTitle}" descartada.`,
-        'success'
+          ? `Denúncia sobre "${tgtTitle}" resolvida (${who}).`
+          : `Denúncia sobre "${tgtTitle}" descartada (${who}).`,
+        'success',
+        prev
       );
     } catch (err) {
       console.error('Failed to review report:', err);
       setReports((list) => list.map((r) => (r.id === reportId ? prev : r)));
       showReportsToast('Não foi possível atualizar a denúncia. Tente novamente.', 'error');
     } finally {
-      setBusyReportId(null);
+      setBusyReport(null);
     }
   };
 
   const handleReopenReport = async (reportId: string) => {
-    if (!user) return;
+    if (!user || busyReport?.id === reportId) return;
     const prev = reports.find((r) => r.id === reportId);
     if (!prev) return;
+    setBusyReport({ id: reportId, action: 'reopen' });
     setReports((list) =>
       list.map((r) =>
         r.id === reportId ? { ...r, status: 'open', reviewedBy: null, reviewedAt: null } : r
@@ -308,6 +412,25 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
       console.error('Failed to reopen report:', err);
       setReports((list) => list.map((r) => (r.id === reportId ? prev : r)));
       showReportsToast('Não foi possível reabrir a denúncia. Tente novamente.', 'error');
+    } finally {
+      setBusyReport(null);
+    }
+  };
+
+  const handleUndoToast = async () => {
+    if (!user || !reportsToast?.undoSnapshot) return;
+    const snapshot = reportsToast.undoSnapshot;
+    setReportsToast(null);
+    setReports((list) => list.map((r) => (r.id === snapshot.id ? snapshot : r)));
+    try {
+      if (snapshot.status === 'open') {
+        await reopenReport(snapshot.id);
+      } else {
+        await reviewReport(snapshot.id, snapshot.status, user.uid);
+      }
+    } catch (err) {
+      console.error('Failed to undo report review:', err);
+      showReportsToast('Não foi possível desfazer a ação.', 'error');
     }
   };
 
@@ -328,7 +451,7 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
             <button
               type="button"
               onClick={handleOpenReports}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 forum-meta font-semibold rounded-lg bg-[var(--bg-surface)] border border-[var(--border-default)] text-[var(--feedback-warning)] hover:bg-[var(--border-default)] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 forum-meta font-semibold rounded-lg bg-[var(--bg-surface)] border border-[var(--border-default)] text-[var(--feedback-warning)] hover:bg-[var(--bg-surface-elevated)] transition-colors cursor-pointer"
             >
               <ShieldAlert className="w-3.5 h-3.5" />
               Denúncias do Fórum
@@ -466,153 +589,215 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="reports-modal-title"
-            className="dialog-transition bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-6 max-w-2xl w-full shadow-2xl space-y-4 max-h-[85vh] flex flex-col"
+            className="dialog-transition bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl max-w-[720px] w-full shadow-2xl max-h-[85vh] flex flex-col overflow-hidden"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)]">
+            <div className="flex items-start justify-between gap-4 px-6 pt-4.5 pb-3.5 border-b border-[var(--border-subtle)] shrink-0">
               <div>
                 <h3 id="reports-modal-title" className="forum-title text-[var(--text-primary)] m-0">
                   Denúncias do Fórum
                 </h3>
                 <p className="forum-meta text-[var(--text-muted)] mt-0.5 mb-0">
                   Análise e resolução de denúncias enviadas pelos membros.
+                  <span className="mx-1">·</span>
+                  <span className="forum-num">
+                    {loadingReports || reportsError ? '—' : pendingReportsCount}
+                  </span>{' '}
+                  {!loadingReports && !reportsError && pendingReportsCount === 1
+                    ? 'pendente'
+                    : 'pendentes'}
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => setShowReportsModal(false)}
-                className="p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-lg cursor-pointer"
-                aria-label="Fechar modal de denúncias"
+                onClick={() => {
+                  setReportsToast(null);
+                  setShowReportsModal(false);
+                }}
+                className="px-2 py-1.5 text-base leading-none text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-default)] rounded-md transition-colors cursor-pointer"
+                aria-label="Fechar denúncias"
               >
-                <XCircle className="w-5 h-5" />
+                ✕
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+            <div
+              aria-busy={loadingReports}
+              className="flex-1 min-h-0 overflow-y-auto px-6 pt-3.5 pb-5 flex flex-col gap-3"
+            >
               {loadingReports ? (
-                <div className="space-y-3">
+                <>
+                  <p className="sr-only" role="status">
+                    Carregando denúncias…
+                  </p>
                   {[1, 2, 3].map((n) => (
                     <div
                       key={n}
                       aria-hidden="true"
-                      className="p-3.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] animate-pulse h-28"
-                    />
+                      className="p-3.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] flex flex-col gap-2.5 animate-pulse"
+                    >
+                      <div className="flex justify-between">
+                        <span className="h-[18px] w-[120px] rounded bg-[var(--bg-surface)]" />
+                        <span className="h-[18px] w-[80px] rounded bg-[var(--bg-surface)]" />
+                      </div>
+                      <div className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
+                        <span className="w-[30px] h-[30px] rounded-full bg-[var(--bg-surface-elevated)] shrink-0" />
+                        <div className="flex flex-col gap-1.5 flex-1">
+                          <span className="h-2.5 w-1/2 rounded bg-[var(--bg-surface-elevated)]" />
+                          <span className="h-2.5 w-[30%] rounded bg-[var(--bg-surface-elevated)]" />
+                        </div>
+                      </div>
+                      <span className="h-2.5 w-[90%] rounded bg-[var(--bg-surface-elevated)]" />
+                    </div>
                   ))}
-                  <p className="sr-only" role="status">
-                    Carregando denúncias…
-                  </p>
-                </div>
+                </>
               ) : reportsError ? (
                 <div
                   role="alert"
-                  className="p-4 rounded-lg bg-[color-mix(in_srgb,var(--feedback-error)_15%,transparent)] border border-[var(--feedback-error)] flex items-start gap-3"
+                  className="p-3.5 rounded-lg bg-[color-mix(in_srgb,var(--feedback-error)_12%,transparent)] border border-[var(--feedback-error)] flex items-start gap-3"
                 >
-                  <AlertCircle className="w-4 h-4 text-[var(--feedback-error)] shrink-0 mt-0.5" />
-                  <div className="flex-1">
+                  <AlertCircle
+                    aria-hidden="true"
+                    className="w-4 h-4 text-[var(--feedback-error)] shrink-0 mt-0.5"
+                  />
+                  <div>
                     <strong className="block forum-body font-semibold text-[var(--text-primary)]">
                       Não foi possível carregar as denúncias.
                     </strong>
-                    <p className="forum-meta text-[var(--text-secondary)] mt-1 mb-2">
+                    <p className="text-[0.8125rem] leading-5 text-[var(--text-secondary)] mt-0.5 mb-0">
                       {reportsError}
                     </p>
-                    <button
-                      type="button"
-                      onClick={handleRetryReports}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 forum-meta font-semibold rounded bg-[var(--bg-surface)] border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] cursor-pointer"
-                    >
-                      Tentar novamente
-                    </button>
                   </div>
+                  <button
+                    type="button"
+                    onClick={handleRetryReports}
+                    className="ml-auto self-center shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 forum-meta font-semibold rounded-md bg-transparent border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--bg-surface)] transition-colors cursor-pointer"
+                  >
+                    Tentar novamente
+                  </button>
                 </div>
               ) : reports.length === 0 ? (
-                <div className="p-8 text-center flex flex-col items-center gap-2">
-                  <Inbox className="w-8 h-8 text-[var(--text-muted)]" />
+                <div className="py-9 px-4 text-center flex flex-col items-center gap-1.5">
+                  <Inbox
+                    aria-hidden="true"
+                    className="w-[30px] h-[30px] text-[var(--text-muted)] mb-1"
+                  />
                   <h4 className="forum-title text-[var(--text-primary)] m-0">
                     Nenhuma denúncia registrada
                   </h4>
-                  <p className="forum-meta text-[var(--text-muted)] max-w-sm m-0">
+                  <p className="forum-body text-[var(--text-muted)] max-w-[380px] m-0">
                     Quando um membro denunciar um tópico ou comentário, a denúncia aparece
                     aqui com quem denunciou, o motivo e o conteúdo denunciado.
                   </p>
                 </div>
               ) : (
-                hydratedReports.map((report) => (
-                  <div
-                    key={report.id}
-                    className="p-3.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] space-y-2"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 forum-meta font-semibold rounded bg-[var(--bg-surface)] text-[var(--text-secondary)] uppercase">
-                          {report.kind === 'thread' ? 'Tópico' : 'Comentário'}
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 forum-meta font-semibold rounded ${
-                            report.status === 'open'
-                              ? 'bg-[var(--feedback-warning)] text-[var(--text-inverse)]'
+                hydratedReports.map((report) => {
+                  const isBusy = busyReport?.id === report.id;
+                  const isDismissing = isBusy && busyReport?.action === 'dismissed';
+                  const isResolving = isBusy && busyReport?.action === 'reviewed';
+
+                  return (
+                    <article
+                      key={report.id}
+                      className="p-3.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] flex flex-col gap-2.5"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="px-2 py-0.5 forum-meta font-semibold rounded bg-[var(--bg-surface)] text-[var(--text-secondary)] uppercase tracking-wide">
+                            {report.kind === 'thread' ? 'Tópico' : 'Comentário'}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 forum-meta font-semibold rounded transition-colors ${
+                              report.status === 'open'
+                                ? 'bg-[var(--feedback-warning)] text-[var(--text-inverse)]'
+                                : report.status === 'reviewed'
+                                ? 'bg-[var(--feedback-success)] text-[var(--text-inverse)]'
+                                : 'bg-[var(--bg-surface-elevated)] text-[var(--text-muted)]'
+                            }`}
+                          >
+                            {report.status === 'open'
+                              ? 'Pendente'
                               : report.status === 'reviewed'
-                              ? 'bg-[var(--feedback-success)] text-[var(--text-inverse)]'
-                              : 'bg-[var(--bg-surface-elevated)] text-[var(--text-muted)]'
-                          }`}
-                        >
-                          {report.status === 'open'
-                            ? 'Pendente'
-                            : report.status === 'reviewed'
-                            ? 'Resolvida'
-                            : 'Ignorada'}
-                        </span>
+                              ? 'Resolvida'
+                              : 'Ignorada'}
+                          </span>
+                        </div>
+                        <time className="forum-meta text-[var(--text-muted)] forum-num shrink-0">
+                          {report.createdAt?.toDate
+                            ? report.createdAt.toDate().toLocaleDateString('pt-BR')
+                            : ''}
+                        </time>
                       </div>
-                      <span className="forum-meta text-[var(--text-muted)] forum-num">
-                        {report.createdAt?.toDate
-                          ? report.createdAt.toDate().toLocaleDateString('pt-BR')
-                          : ''}
-                      </span>
-                    </div>
 
-                    <ReporterBlock
-                      profile={reporterProfiles[report.reporterId]}
-                      fallbackId={report.reporterId}
-                    />
+                      <ReporterBlock
+                        profile={reporterProfiles[report.reporterId]}
+                        fallbackId={report.reporterId}
+                      />
 
-                    <TargetBlock report={report} />
+                      <TargetBlock report={report} />
 
-                    <p className="forum-body text-[var(--text-primary)] m-0 font-medium">
-                      Motivo: &quot;{report.reason}&quot;
-                    </p>
+                      <p className="forum-body text-[var(--text-primary)] m-0 font-medium">
+                        Motivo: “{report.reason}”
+                      </p>
 
-                    {report.status === 'open' && (
-                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border-subtle)]">
-                        <button
-                          type="button"
-                          onClick={() => handleReviewReportAction(report.id, 'dismissed')}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 forum-meta font-semibold rounded bg-[var(--bg-surface)] text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
-                        >
-                          <XCircle className="w-3.5 h-3.5" />
-                          Descartar
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleReviewReportAction(report.id, 'reviewed')}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 forum-meta font-semibold rounded bg-[var(--feedback-success)] text-[var(--text-inverse)] cursor-pointer"
-                        >
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          Marcar como resolvida
-                        </button>
-                      </div>
-                    )}
-                    {report.status !== 'open' && (
-                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-[var(--border-subtle)]">
-                        <button
-                          type="button"
-                          onClick={() => handleReopenReport(report.id)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 forum-meta font-semibold rounded bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-pointer"
-                        >
-                          <RotateCcw className="w-3.5 h-3.5" />
-                          Reabrir
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))
+                      {report.status === 'open' && (
+                        <div className="flex items-center justify-end gap-2 pt-2.5 border-t border-[var(--border-subtle)]">
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            aria-disabled={isBusy}
+                            onClick={() => handleReviewReportAction(report.id, 'dismissed')}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 forum-meta font-semibold rounded-md bg-[var(--bg-surface)] text-[var(--text-muted)] border border-[var(--border-subtle)] hover:enabled:text-[var(--text-primary)] hover:enabled:bg-[var(--bg-surface-elevated)] disabled:opacity-65 disabled:cursor-default transition-colors cursor-pointer"
+                          >
+                            {isDismissing ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
+                                Descartando…
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                                Descartar
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            aria-disabled={isBusy}
+                            onClick={() => handleReviewReportAction(report.id, 'reviewed')}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 forum-meta font-semibold rounded-md bg-[var(--feedback-success)] text-[var(--text-inverse)] hover:enabled:brightness-105 disabled:opacity-65 disabled:cursor-default transition-all cursor-pointer"
+                          >
+                            {isResolving ? (
+                              <>
+                                <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
+                                Resolvendo…
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-3.5 h-3.5" aria-hidden="true" />
+                                Marcar como resolvida
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                      {report.status !== 'open' && (
+                        <div className="flex items-center justify-end gap-2 pt-2.5 border-t border-[var(--border-subtle)]">
+                          <button
+                            type="button"
+                            disabled={isBusy}
+                            aria-disabled={isBusy}
+                            onClick={() => handleReopenReport(report.id)}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 forum-meta font-semibold rounded-md bg-[var(--bg-surface)] text-[var(--text-secondary)] border border-[var(--border-subtle)] hover:enabled:text-[var(--text-primary)] hover:enabled:bg-[var(--bg-surface-elevated)] disabled:opacity-65 disabled:cursor-default transition-colors cursor-pointer"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                            Reabrir
+                          </button>
+                        </div>
+                      )}
+                    </article>
+                  );
+                })
               )}
             </div>
           </div>
@@ -622,27 +807,44 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
         <div
           role="status"
           aria-live="polite"
-          className={`fixed bottom-6 right-6 z-[60] max-w-sm toast-transition flex items-start gap-3 px-4 py-3 rounded-lg shadow-lg border ${
+          className={`fixed bottom-4 right-4 z-[60] max-w-[380px] toast-transition flex items-start gap-2.5 px-3.5 py-3 rounded-[10px] shadow-2xl border ${
             reportsToast.type === 'success'
-              ? 'bg-[var(--bg-surface-elevated)] border-[var(--feedback-success)]'
+              ? 'bg-[var(--bg-surface-elevated)] border-[var(--border-default)]'
               : 'bg-[var(--bg-surface-elevated)] border-[var(--feedback-error)]'
           }`}
         >
           {reportsToast.type === 'success' ? (
-            <CheckCircle className="w-4 h-4 text-[var(--feedback-success)] shrink-0 mt-0.5" />
+            <CheckCircle
+              aria-hidden="true"
+              className="w-4 h-4 text-[var(--feedback-success)] shrink-0 mt-0.5"
+            />
           ) : (
-            <AlertCircle className="w-4 h-4 text-[var(--feedback-error)] shrink-0 mt-0.5" />
+            <AlertCircle
+              aria-hidden="true"
+              className="w-4 h-4 text-[var(--feedback-error)] shrink-0 mt-0.5"
+            />
           )}
-          <p className="forum-body text-[var(--text-primary)] m-0 flex-1">
-            {reportsToast.text}
-          </p>
+          <div className="flex flex-col gap-1 min-w-0 flex-1">
+            <p className="text-[0.8125rem] leading-5 text-[var(--text-primary)] m-0">
+              {reportsToast.text}
+            </p>
+            {reportsToast.undoSnapshot && (
+              <button
+                type="button"
+                onClick={handleUndoToast}
+                className="self-start border-0 bg-transparent text-[var(--brand-primary)] font-bold text-[0.8125rem] cursor-pointer p-0 underline underline-offset-2"
+              >
+                Desfazer
+              </button>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => setReportsToast(null)}
-            className="p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded cursor-pointer"
-            aria-label="Fechar notificação"
+            className="px-0.5 text-sm leading-none text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded cursor-pointer ml-0.5"
+            aria-label="Fechar aviso"
           >
-            <XCircle className="w-3.5 h-3.5" />
+            ✕
           </button>
         </div>
       )}
