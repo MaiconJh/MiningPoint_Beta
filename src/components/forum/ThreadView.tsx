@@ -27,6 +27,7 @@ import {
   ForumComment,
   ForumCommentFormData,
   ThreadRevision,
+  ForumReportTargetSnapshot,
 } from '../../types/forum';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -512,12 +513,29 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
     if (!user || !reportingItem || !reportReason.trim()) return;
     setSubmittingReport(true);
     try {
+      let targetSnapshot: ForumReportTargetSnapshot;
+      if (reportingItem.kind === 'thread') {
+        targetSnapshot = {
+          title: thread.title,
+          body: thread.body,
+          authorId: thread.authorId,
+        };
+      } else {
+        const targetComment = comments.find((c) => c.id === reportingItem.id);
+        if (!targetComment) throw new Error('Comentário não encontrado.');
+        targetSnapshot = {
+          title: 'Comentário em "' + thread.title + '"',
+          body: targetComment.body,
+          authorId: targetComment.authorId,
+        };
+      }
       await createReport({
         forumId: forum.id,
         kind: reportingItem.kind,
         itemId: reportingItem.id,
         reporterId: user.uid,
         reason: reportReason.trim(),
+        targetSnapshot,
       });
       setReportSuccess(true);
       setTimeout(() => {

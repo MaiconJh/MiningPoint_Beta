@@ -171,6 +171,29 @@ export interface ForumReaction {
 export type ForumReportKind = 'thread' | 'comment';
 export type ForumReportStatus = 'open' | 'reviewed' | 'dismissed';
 
+/**
+ * Estado atual do conteúdo denunciado no momento da leitura do painel.
+ * Calculado em runtime; não fica persistido na denúncia.
+ */
+export type ForumReportTargetStatus =
+  | 'active'
+  | 'edited'
+  | 'deleted-by-author'
+  | 'removed-by-moderator'
+  | 'missing'
+  | 'unknown';
+
+/**
+ * Snapshot preservado no momento da denúncia. Se o conteúdo original for
+ * editado ou removido depois, este snapshot continua disponível para o
+ * moderador avaliar a denúncia com contexto.
+ */
+export interface ForumReportTargetSnapshot {
+  title: string;
+  body: string;
+  authorId: string;
+}
+
 export interface ForumReport {
   id: string;
   forumId: string;
@@ -182,4 +205,6 @@ export interface ForumReport {
   status: ForumReportStatus;
   reviewedBy?: string | null;
   reviewedAt?: Timestamp | null;
+  /** Presente em denúncias criadas após a introdução do snapshot. */
+  targetSnapshot?: ForumReportTargetSnapshot | null;
 }

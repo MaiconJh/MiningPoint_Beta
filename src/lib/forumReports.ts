@@ -15,7 +15,24 @@ import {
   ForumReport,
   ForumReportKind,
   ForumReportStatus,
+  ForumReportTargetSnapshot,
+  ForumReportTargetStatus,
+  ForumThread,
 } from '../types/forum';
+
+const MAX_REASON_LEN = 500;
+const MAX_TITLE_LEN = 300;
+const MAX_BODY_LEN = 8000;
+
+function sanitizeSnapshot(data: unknown): ForumReportTargetSnapshot | null {
+  if (!data || typeof data !== 'object') return null;
+  const s = data as Record<string, unknown>;
+  const title = typeof s.title === 'string' ? s.title : '';
+  const body = typeof s.body === 'string' ? s.body : '';
+  const authorId = typeof s.authorId === 'string' ? s.authorId : '';
+  if (!title && !body) return null;
+  return { title, body, authorId };
+}
 
 export function sanitizeReportDoc(id: string, data: Record<string, unknown>): ForumReport {
   return {
@@ -32,6 +49,7 @@ export function sanitizeReportDoc(id: string, data: Record<string, unknown>): Fo
         : 'open',
     reviewedBy: typeof data.reviewedBy === 'string' ? data.reviewedBy : null,
     reviewedAt: (data.reviewedAt as Timestamp) || null,
+    targetSnapshot: sanitizeSnapshot(data.targetSnapshot),
   };
 }
 
@@ -41,6 +59,7 @@ export async function createReport(data: {
   itemId: string;
   reporterId: string;
   reason: string;
+  targetSnapshot: ForumReportTargetSnapshot;
 }): Promise<string> {
   if (!db) throw new Error('Firestore não inicializado.');
   const reportsRef = collection(db, 'forumReports');
@@ -51,7 +70,12 @@ export async function createReport(data: {
     kind: data.kind,
     itemId: data.itemId,
     reporterId: data.reporterId,
-    reason: data.reason.trim().slice(0, 500),
+    reason: data.reason.trim().slice(0, MAX_REASON_LEN),
+    targetSnapshot: {
+      title: data.targetSnapshot.title.slice(0, MAX_TITLE_LEN),
+      body: data.targetSnapshot.body.slice(0, MAX_BODY_LEN),
+      authorId: data.targetSnapshot.authorId,
+    },
     status: 'open',
     createdAt: serverTimestamp(),
     reviewedBy: null,
@@ -98,5 +122,71 @@ export async function reviewReport(
     status,
     reviewedBy,
     reviewedAt: serverTimestamp(),
+  });
+}
+
+export async function reopenReport(reportId: string): Promise<void> {
+  if (!db) throw new Error('Firestore não inicializado.');
+  const reportRef = doc(db, 'forumReports', reportId);
+  await updateDoc(reportRef, {
+    status: 'open',
+    reviewedBy: null,
+    reviewedAt: null,
+  });
+}
+
+export interface HydratedReport extends ForumReport {
+  targetStatus: ForumReportTargetStatus;
+  currentTitle: string | null;
+  currentBody: string | null;
+}
+
+/**
+ * Calcula o estado atual do alvo de cada denúncia a partir dos threads
+ * carregados. Para denúncias de comentário, ou quando o thread não está na
+ * lista carregada, o estado fica unknown -- o snapshot continua visível.
+ */
+export function hydrateReports(
+  reports: ForumReport[],
+  threads: ForumThread[]
+): HydratedReport[] {
+  const byId = new Map(threads.map((t) => [t.id, t]));
+
+  return reports.map((r) => {
+    if (r.kind !== 'thread') {
+      return { ...r, targetStatus: 'unknown', currentTitle: null, currentBody: null };
+    }
+
+    const t = byId.get(r.itemId);
+    if (!t) {
+      return { ...r, targetStatus: 'unknown', currentTitle: null, currentBody: null };
+    }
+
+    const snapAuthorId = r.targetSnapshot?.authorId || t.authorId;
+    let status: ForumReportTargetStatus;
+    let wasEdited = false;
+
+    if (t.isRemoved) {
+      status =
+        t.removedBy && t.removedBy !== snapAuthorId
+          ? 'removed-by-moderator'
+          : 'deleted-by-author';
+    } else if (
+      t.updatedAt &&
+      r.createdAt &&
+      t.updatedAt.toMillis() > r.createdAt.toMillis()
+    ) {
+      status = 'edited';
+      wasEdited = true;
+    } else {
+      status = 'active';
+    }
+
+    return {
+      ...r,
+      targetStatus: status,
+      currentTitle: wasEdited ? t.title : null,
+      currentBody: wasEdited ? t.body : null,
+    };
   });
 }
