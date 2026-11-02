@@ -1579,8 +1579,9 @@ const CommentCard: React.FC<CommentCardProps> = ({
           ? 'border-[var(--feedback-success)] bg-[var(--bg-surface-elevated)]'
           : isNested
           ? 'border-transparent bg-transparent hover:bg-[var(--bg-surface)]/30'
-          : 'border-[var(--border-default)] bg-[var(--bg-surface)]'
+        : 'border-[var(--border-default)] bg-[var(--bg-surface)]'
       }`}
+      aria-label={comment.isRemoved ? 'Comentário removido' : undefined}
     >
       {hasChildren && (
         <span
@@ -1623,11 +1624,6 @@ const CommentCard: React.FC<CommentCardProps> = ({
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 forum-meta font-semibold rounded-md bg-[var(--feedback-success)] text-[var(--text-inverse)]">
                   <Check className="w-3 h-3" />
                   Solução
-                </span>
-              )}
-              {comment.isRemoved && (
-                <span className="px-2 py-0.5 forum-meta font-medium rounded-md bg-[var(--bg-default)] text-[var(--feedback-error)] border border-[var(--border-subtle)]">
-                  Removido
                 </span>
               )}
             </div>
@@ -1719,13 +1715,9 @@ const CommentCard: React.FC<CommentCardProps> = ({
         </div>
       </div>
 
-      {/* Body or removed placeholder */}
-      <div className="pt-3 forum-body text-[var(--text-secondary)] leading-relaxed">
-        {comment.isRemoved ? (
-          <span className="italic text-[var(--text-muted)]">
-            [Mensagem removida pelo autor ou moderação]
-          </span>
-        ) : isEditing ? (
+      {/* Body — tombstone (isRemoved) não renderiza corpo nem espaço */}
+      <div className={`forum-body text-[var(--text-secondary)] leading-relaxed${comment.isRemoved ? '' : ' pt-3'}`}>
+        {!comment.isRemoved && (isEditing ? (
           <div className="space-y-3">
             <textarea
               value={editingBody}
@@ -1752,7 +1744,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
           </div>
         ) : (
           <MarkdownBody content={comment.body} />
-        )}
+        ))}
       </div>
 
       {/* Reactions on Comment (R-05) */}
