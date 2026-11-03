@@ -199,6 +199,8 @@ export interface ForumReport {
   forumId: string;
   kind: ForumReportKind;
   itemId: string;
+  targetId: string;
+  threadId?: string | null;
   reporterId: string;
   reason: string;
   createdAt: Timestamp;
@@ -208,3 +210,4 @@ export interface ForumReport {
   /** Presente em denúncias criadas após a introdução do snapshot. */
   targetSnapshot?: ForumReportTargetSnapshot | null;
 }
+

@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
-import Layers from 'lucide-react/dist/esm/icons/layers';
+import Folder from 'lucide-react/dist/esm/icons/folder';
 import ArrowRight from 'lucide-react/dist/esm/icons/arrow-right';
-import Trophy from 'lucide-react/dist/esm/icons/trophy';
+import Flame from 'lucide-react/dist/esm/icons/flame';
 import BarChart2 from 'lucide-react/dist/esm/icons/bar-chart-2';
-import Compass from 'lucide-react/dist/esm/icons/compass';
 import { Forum, ForumThread } from '../../types/forum';
 import { useAuth } from '../../context/AuthContext';
 import { canViewForum } from '../../lib/forumPermissions';
@@ -27,7 +26,7 @@ export const ForumIndex: React.FC<ForumIndexProps> = ({ forums, loading, error }
     return forums.filter((f) => canViewForum(f, user, profile));
   }, [forums, user, profile]);
 
-  // Unique focuses for the horizontal categories bar (R-02)
+  // Unique focuses for the horizontal categories bar
   const uniqueFocuses = useMemo(() => {
     const set = new Set<string>();
     visibleForums.forEach((f) => {
@@ -45,7 +44,9 @@ export const ForumIndex: React.FC<ForumIndexProps> = ({ forums, loading, error }
   // Recent threads and stats for feed and sidebar
   const [recentThreads, setRecentThreads] = useState<Array<{ thread: ForumThread; forum: Forum }>>([]);
   const [loadingRecent, setLoadingRecent] = useState(false);
-  const [forumStats, setForumStats] = useState<Record<string, { threads: number; comments: number }>>({});
+  const [forumStats, setForumStats] = useState<
+    Record<string, { threads: number; comments: number; solutions: number }>
+  >({});
 
   useEffect(() => {
     let isMounted = true;
@@ -71,16 +72,20 @@ export const ForumIndex: React.FC<ForumIndexProps> = ({ forums, loading, error }
       });
       setRecentThreads(all.slice(0, 8));
 
-      const stats: Record<string, { threads: number; comments: number }> = {};
+      const stats: Record<string, { threads: number; comments: number; solutions: number }> = {};
       results.forEach((threadsOfForum, idx) => {
         const f = visibleForums[idx];
         const totalComments = threadsOfForum.reduce(
           (acc, cur) => acc + (cur.thread.commentCount || 0),
           0
         );
+        const totalSolutions = threadsOfForum.filter((cur) =>
+          Boolean(f.features?.solution && cur.thread.solutionCommentId)
+        ).length;
         stats[f.id] = {
           threads: threadsOfForum.length,
           comments: totalComments,
+          solutions: totalSolutions,
         };
       });
       setForumStats(stats);
@@ -102,23 +107,25 @@ export const ForumIndex: React.FC<ForumIndexProps> = ({ forums, loading, error }
   }, [forumStats]);
 
   const totalSolutionsCount = useMemo(() => {
-    return recentThreads.filter((item) => item.thread.solutionCommentId).length;
-  }, [recentThreads]);
+    return Object.values(forumStats).reduce((acc, cur) => acc + cur.solutions, 0);
+  }, [forumStats]);
 
   if (loading) {
     return (
       <div className="space-y-6 forum-screen-fade">
-        <div className="space-y-2">
-          <div className="h-8 w-48 bg-[var(--bg-surface)] rounded-lg animate-pulse" />
-          <div className="h-4 w-96 bg-[var(--bg-surface)] rounded-md animate-pulse" />
+        <div className="flex gap-2">
+          <div className="h-8 w-32 bg-[var(--bg-surface)] rounded-full animate-pulse" />
+          <div className="h-8 w-24 bg-[var(--bg-surface)] rounded-full animate-pulse" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-          {[1, 2, 3, 4].map((n) => (
-            <div
-              key={n}
-              className="p-6 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] animate-pulse h-40"
-            />
-          ))}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8">
+          <div className="space-y-6">
+            <div className="h-32 rounded-[10px] border border-[var(--border-default)] bg-[var(--bg-surface)] animate-pulse" />
+            <div className="h-48 rounded-[10px] border border-[var(--border-default)] bg-[var(--bg-surface)] animate-pulse" />
+          </div>
+          <div className="space-y-5">
+            <div className="h-36 rounded-[10px] border border-[var(--border-default)] bg-[var(--bg-surface)] animate-pulse" />
+            <div className="h-36 rounded-[10px] border border-[var(--border-default)] bg-[var(--bg-surface)] animate-pulse" />
+          </div>
         </div>
       </div>
     );
@@ -133,56 +140,43 @@ export const ForumIndex: React.FC<ForumIndexProps> = ({ forums, loading, error }
   }
 
   return (
-    <div className="space-y-8 forum-screen-fade">
-      {/* Header Banner */}
-      <div className="border-b border-[var(--border-subtle)] pb-6">
-        <h1 className="forum-page text-[var(--text-primary)] m-0">
-          Fóruns da Comunidade
-        </h1>
-        <p className="forum-body text-[var(--text-secondary)] mt-2 mb-0 max-w-2xl">
-          Espaço aberto para discussões, dúvidas, sugestões e troca de experiências entre os membros do MiningPoint.
-        </p>
-      </div>
-
-      {/* Zona 1: Barra horizontal de categorias acima do conteúdo (R-02) */}
-      {uniqueFocuses.length > 0 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-[var(--border-subtle)]">
+    <div className="forum-screen-fade">
+      {/* Category/Focus Tabs */}
+      <div className="flex gap-2 mb-6 flex-wrap">
+        <button
+          type="button"
+          onClick={() => setSelectedFocus(null)}
+          className={`px-3.5 py-1.5 rounded-full text-[12px] font-medium border transition-all cursor-pointer whitespace-nowrap ${
+            selectedFocus === null
+              ? 'bg-[var(--brand-primary)] text-[var(--text-on-primary)] border-[var(--brand-primary)]'
+              : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--border-focus)] hover:text-[var(--text-primary)]'
+          }`}
+        >
+          Todos os fóruns
+        </button>
+        {uniqueFocuses.map((focus) => (
           <button
+            key={focus}
             type="button"
-            onClick={() => setSelectedFocus(null)}
-            className={`px-3.5 py-1.5 forum-meta font-semibold rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
-              selectedFocus === null
-                ? 'bg-[var(--brand-primary)] text-[var(--text-on-primary)]'
-                : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-default)]'
+            onClick={() => setSelectedFocus(focus)}
+            className={`px-3.5 py-1.5 rounded-full text-[12px] font-medium border transition-all cursor-pointer whitespace-nowrap ${
+              selectedFocus === focus
+                ? 'bg-[var(--brand-primary)] text-[var(--text-on-primary)] border-[var(--brand-primary)]'
+                : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--border-focus)] hover:text-[var(--text-primary)]'
             }`}
           >
-            Todos os fóruns
+            {focus}
           </button>
-          {uniqueFocuses.map((focus) => (
-            <button
-              key={focus}
-              type="button"
-              onClick={() => setSelectedFocus(focus)}
-              className={`px-3.5 py-1.5 forum-meta font-semibold rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
-                selectedFocus === focus
-                  ? 'bg-[var(--brand-primary)] text-[var(--text-on-primary)]'
-                  : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-default)]'
-              }`}
-            >
-              {focus}
-            </button>
-          ))}
-        </div>
-      )}
+        ))}
+      </div>
 
-      {/* Main Layout: Grid + Feed with Contextual Sidebar */}
-      <div className="flex flex-col lg:flex-row items-start gap-8">
-        {/* Main Column */}
-        <div className="flex-1 min-w-0 space-y-8 w-full">
-          {/* Zona 2: Grid de cards de categoria (R-02 & R-03) */}
+      {/* Main 2-Column Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8 items-start">
+        <div className="min-w-0">
+          {/* Unified Forum List */}
           {filteredForums.length === 0 ? (
-            <div className="p-12 rounded-xl border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] text-center">
-              <MessageSquare className="w-12 h-12 mx-auto text-[var(--text-muted)] mb-3" />
+            <div className="p-10 mb-8 rounded-[10px] border border-[var(--border-default)] bg-[var(--bg-surface)] text-center">
+              <MessageSquare className="w-10 h-10 mx-auto text-[var(--text-muted)] mb-3" />
               <h2 className="forum-title text-[var(--text-primary)] m-0">
                 Nenhum fórum disponível nesta categoria
               </h2>
@@ -191,197 +185,198 @@ export const ForumIndex: React.FC<ForumIndexProps> = ({ forums, loading, error }
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {filteredForums.map((forum) => (
-                <Link
-                  key={forum.id}
-                  to={`/forum/${forum.slug}`}
-                  className="group forum-card-transition rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-[var(--border-focus)] flex flex-col justify-between overflow-hidden cursor-pointer"
-                >
-                  <div>
-                    {/* Capa com campo de cor próprio (R-03) */}
-                    <div className="p-4 border-b border-[var(--border-subtle)] bg-[var(--bg-default)] flex items-center justify-between gap-3">
-                      {/* Ícone à esquerda com reação ao hover */}
-                      <div className="p-2.5 rounded-lg bg-[var(--bg-surface-elevated)] text-[var(--brand-primary)] border border-[var(--border-subtle)] forum-icon-hover">
-                        <Compass className="w-5 h-5" />
+            <div className="flex flex-col bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-[10px] overflow-hidden mb-8">
+              {filteredForums.map((forum) => {
+                const threadCount = forumStats[forum.id]?.threads ?? 0;
+                const commentCount = forumStats[forum.id]?.comments ?? 0;
+
+                return (
+                  <Link
+                    key={forum.id}
+                    to={`/forum/${forum.slug}`}
+                    className="group flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 p-5 border-b border-[var(--border-subtle)] last:border-b-0 transition-colors cursor-pointer relative hover:bg-[color-mix(in_srgb,var(--bg-surface)_80%,var(--bg-surface-elevated)_20%)]"
+                  >
+                    <div className="w-11 h-11 rounded-[10px] bg-[var(--bg-default)] border border-[var(--border-default)] group-hover:border-[var(--border-focus)] flex items-center justify-center shrink-0 text-[var(--brand-primary)] transition-colors">
+                      <MessageSquare className="w-[22px] h-[22px]" />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="text-[1rem] font-bold text-[var(--text-primary)] leading-[1.4]">
+                          {forum.title}
+                        </span>
+                        {forum.focus && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-[1px] rounded-[4px] text-[10px] font-semibold border border-[var(--border-default)] text-[var(--text-secondary)] bg-[var(--bg-default)] leading-[1.5]">
+                            Foco: {forum.focus}
+                          </span>
+                        )}
                       </div>
 
-                      {/* Pílula de foco à direita */}
-                      <span className="forum-meta font-semibold px-2.5 py-0.5 rounded-full bg-[var(--bg-surface)] border border-[var(--border-subtle)] text-[var(--brand-primary)]">
-                        Foco: {forum.focus}
-                      </span>
-                    </div>
-
-                    {/* Título e descrição (título primário, resto meta) */}
-                    <div className="p-5 space-y-2.5">
-                      <h2 className="forum-title text-[var(--text-primary)] group-hover:text-[var(--brand-primary)] transition-colors m-0">
-                        {forum.title}
-                      </h2>
-
                       {forum.description && (
-                        <p className="forum-meta text-[var(--text-secondary)] line-clamp-2 m-0">
+                        <div className="text-[0.875rem] text-[var(--text-secondary)] leading-[1.5] mb-2">
                           {forum.description}
-                        </p>
-                      )}
-
-                      {/* Lista de subdivisões com contagem */}
-                      {forum.categories.length > 0 && (
-                        <div className="pt-2 flex items-center gap-1.5 flex-wrap">
-                          <span className="forum-meta text-[var(--text-muted)] flex items-center gap-1 mr-1">
-                            <Layers className="w-3.5 h-3.5" />
-                            <span className="forum-num">{forum.categories.length}</span> subdivisões:
-                          </span>
-                          {forum.categories.slice(0, 3).map((cat) => (
-                            <span
-                              key={cat.id}
-                              className="px-2 py-0.5 forum-meta rounded-md bg-[var(--bg-default)] text-[var(--text-secondary)] border border-[var(--border-subtle)]"
-                            >
-                              {cat.name}
-                            </span>
-                          ))}
-                          {forum.categories.length > 3 && (
-                            <span className="forum-meta text-[var(--text-muted)]">
-                              +{forum.categories.length - 3}
-                            </span>
-                          )}
                         </div>
                       )}
-                    </div>
-                  </div>
 
-                  {/* Rodapé com volume e acesso */}
-                  <div className="p-4 border-t border-[var(--border-subtle)] bg-[var(--bg-default)] flex items-center justify-between forum-meta text-[var(--text-secondary)]">
-                    <div className="flex items-center gap-3">
-                      <span className="forum-num">
-                        {forumStats[forum.id]?.threads ?? 0} tópicos
-                      </span>
-                      <span>·</span>
-                      <span className="forum-num">
-                        {forumStats[forum.id]?.comments ?? 0} respostas
-                      </span>
+                      <div className="flex items-center gap-3 flex-wrap forum-meta text-[var(--text-muted)]">
+                        {forum.categories.length > 0 && (
+                          <>
+                            <span className="inline-flex items-center gap-1">
+                              <Folder className="w-3 h-3" />
+                              <span className="forum-num">{forum.categories.length}</span>{' '}
+                              {forum.categories.length === 1 ? 'subdivisão' : 'subdivisões'}
+                            </span>
+                            <span className="text-[var(--border-default)]">·</span>
+                            <div className="inline-flex items-center gap-1.5 flex-wrap">
+                              {forum.categories.slice(0, 3).map((cat) => (
+                                <span
+                                  key={cat.id}
+                                  className="px-1.5 py-[1px] rounded-full bg-[var(--bg-surface-elevated)] border border-[var(--border-default)] text-[var(--text-secondary)] text-[10px]"
+                                >
+                                  {cat.name}
+                                </span>
+                              ))}
+                              {forum.categories.length > 3 && (
+                                <span className="text-[10px] text-[var(--text-muted)]">
+                                  +{forum.categories.length - 3}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[var(--border-default)]">·</span>
+                          </>
+                        )}
+
+                        <span className="inline-flex items-center gap-1">
+                          <span className="forum-num">{threadCount}</span>{' '}
+                          {threadCount === 1 ? 'tópico' : 'tópicos'}
+                        </span>
+                        <span className="text-[var(--border-default)]">·</span>
+                        <span className="inline-flex items-center gap-1">
+                          <span className="forum-num">{commentCount}</span>{' '}
+                          {commentCount === 1 ? 'resposta' : 'respostas'}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-1 font-semibold text-[var(--brand-primary)]">
+                    <div className="flex items-center gap-1.5 forum-meta font-semibold text-[var(--brand-primary)] px-2.5 py-1.5 rounded-[6px] border border-transparent group-hover:bg-[color-mix(in_srgb,var(--brand-primary)_10%,transparent)] group-hover:border-[color-mix(in_srgb,var(--brand-primary)_25%,transparent)] transition-all shrink-0 ml-[60px] sm:ml-auto">
                       <span>Acessar fórum</span>
-                      <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           )}
 
-          {/* Zona 3: Feed de últimos tópicos abaixo do grid (R-02) */}
-          <div className="space-y-4 pt-4">
-            <div className="border-b border-[var(--border-subtle)] pb-2 flex items-center justify-between">
-              <div>
-                <h3 className="forum-title text-[var(--text-primary)] m-0">
-                  Últimos Tópicos da Comunidade
-                </h3>
-                <p className="forum-meta text-[var(--text-muted)] mt-1 mb-0">
-                  Atividades recentes e discussões em andamento
-                </p>
-              </div>
-            </div>
+          {/* Community Recent Threads */}
+          <h2 className="text-[0.9375rem] font-semibold text-[var(--text-primary)] mb-3.5 flex items-center gap-2 m-0">
+            Últimos Tópicos da Comunidade
+          </h2>
 
-            {loadingRecent ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((n) => (
-                  <div
-                    key={n}
-                    className="p-4 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] animate-pulse h-20"
-                  />
-                ))}
-              </div>
-            ) : recentThreads.length === 0 ? (
-              <div className="p-8 rounded-xl border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] text-center">
-                <p className="forum-meta text-[var(--text-muted)] m-0">
-                  Nenhum tópico recente encontrado nos fóruns ativos.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {recentThreads.map(({ thread, forum }) => (
-                  <ThreadListItem key={thread.id} thread={thread} forum={forum} />
-                ))}
-              </div>
-            )}
-          </div>
+          {loadingRecent ? (
+            <div className="flex flex-col bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-[10px] overflow-hidden divide-y divide-[var(--border-subtle)]">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="p-5 animate-pulse h-20" />
+              ))}
+            </div>
+          ) : recentThreads.length === 0 ? (
+            <div className="p-8 rounded-[10px] border border-[var(--border-default)] bg-[var(--bg-surface)] text-center">
+              <p className="forum-meta text-[var(--text-muted)] m-0">
+                Nenhum tópico recente encontrado nos fóruns ativos.
+              </p>
+            </div>
+          ) : (
+            <div
+              className="flex flex-col bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-[10px] overflow-hidden"
+              role="list"
+            >
+              {recentThreads.map(({ thread, forum }) => (
+                <ThreadListItem key={thread.id} thread={thread} forum={forum} />
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Zona 4: Sidebar contextual à direita (some em telas estreitas) (R-02) */}
-        <aside className="hidden lg:block lg:w-80 shrink-0">
-          <div className="rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] p-5 space-y-4">
-            {/* Bloco 1: Stats da Comunidade */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-[var(--brand-primary)]">
-                <BarChart2 className="w-4 h-4" />
-                <h4 className="forum-title text-[var(--text-primary)] m-0">
-                  Estatísticas
-                </h4>
-              </div>
+        {/* Sidebar */}
+        <aside className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-col gap-5">
+          {/* Card 1: Estatísticas */}
+          <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-[10px] p-5 flex flex-col">
+            <h3 className="flex items-center gap-2 text-[0.875rem] font-semibold text-[var(--text-primary)] mb-4 m-0">
+              <BarChart2 className="w-4 h-4 text-[var(--brand-primary)] shrink-0" />
+              Estatísticas
+            </h3>
 
-              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                <div className="space-y-0.5">
-                  <span className="forum-meta text-[var(--text-muted)] block">Fóruns</span>
-                  <span className="forum-title forum-num text-[var(--text-primary)]">
-                    {visibleForums.length}
-                  </span>
-                </div>
-                <div className="space-y-0.5">
-                  <span className="forum-meta text-[var(--text-muted)] block">Tópicos</span>
-                  <span className="forum-title forum-num text-[var(--text-primary)]">
-                    {totalThreadsCount}
-                  </span>
-                </div>
-                <div className="space-y-0.5">
-                  <span className="forum-meta text-[var(--text-muted)] block">Respostas</span>
-                  <span className="forum-title forum-num text-[var(--text-primary)]">
-                    {totalCommentsCount}
-                  </span>
-                </div>
-                <div className="space-y-0.5">
-                  <span className="forum-meta text-[var(--text-muted)] block">Soluções</span>
-                  <span className="forum-title forum-num text-[var(--feedback-success)]">
-                    {totalSolutionsCount}
-                  </span>
-                </div>
+            <div className="grid grid-cols-2 gap-y-4 gap-x-3">
+              <div className="flex flex-col gap-0.5">
+                <span className="forum-meta text-[var(--text-muted)] leading-[1.2]">
+                  Fóruns
+                </span>
+                <span className="text-[1.25rem] font-bold text-[var(--text-primary)] leading-[1.2] forum-num">
+                  {visibleForums.length}
+                </span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="forum-meta text-[var(--text-muted)] leading-[1.2]">
+                  Tópicos
+                </span>
+                <span className="text-[1.25rem] font-bold text-[var(--text-primary)] leading-[1.2] forum-num">
+                  {totalThreadsCount}
+                </span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="forum-meta text-[var(--text-muted)] leading-[1.2]">
+                  Respostas
+                </span>
+                <span className="text-[1.25rem] font-bold text-[var(--text-primary)] leading-[1.2] forum-num">
+                  {totalCommentsCount}
+                </span>
+              </div>
+              <div className="flex flex-col gap-0.5">
+                <span className="forum-meta text-[var(--text-muted)] leading-[1.2]">
+                  Soluções
+                </span>
+                <span className="text-[1.25rem] font-bold text-[var(--feedback-success)] leading-[1.2] forum-num">
+                  {totalSolutionsCount}
+                </span>
               </div>
             </div>
+          </div>
 
-            {recentThreads.length > 0 && (
-              <div className="pt-4 space-y-3 border-t border-[var(--border-default)]">
-                <div className="flex items-center gap-2 text-[var(--brand-primary)]">
-                  <Trophy className="w-4 h-4" />
-                  <h4 className="forum-title text-[var(--text-primary)] m-0">
-                    Tópicos em Alta
-                  </h4>
-                </div>
+          {/* Card 2: Tópicos em Alta */}
+          <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-[10px] p-5 flex flex-col">
+            <h3 className="flex items-center gap-2 text-[0.875rem] font-semibold text-[var(--text-primary)] mb-4 m-0">
+              <Flame className="w-4 h-4 text-[var(--brand-primary)] shrink-0" />
+              Tópicos em Alta
+            </h3>
 
-                <div className="divide-y divide-[var(--border-subtle)]">
-                  {[...recentThreads]
-                    .sort((a, b) => (b.thread.commentCount || 0) - (a.thread.commentCount || 0))
-                    .slice(0, 3)
-                    .map(({ thread, forum }) => (
-                      <Link
-                        key={thread.id}
-                        to={`/forum/${forum.slug}/${thread.id}`}
-                        className="flex items-start justify-between gap-3 group -mx-2 px-2 py-2 rounded-md hover:bg-[var(--bg-default)] transition-colors"
-                      >
-                        <div className="min-w-0">
-                          <span className="forum-body font-semibold text-[var(--text-primary)] block truncate group-hover:text-[var(--brand-primary)] transition-colors">
-                            {thread.title}
-                          </span>
-                          <span className="forum-meta text-[var(--text-muted)]">
-                            {forum.title}
-                          </span>
-                        </div>
-                        <span className="forum-meta font-semibold text-[var(--feedback-success)] forum-num shrink-0">
-                          {thread.commentCount || 0}
+            {recentThreads.length === 0 ? (
+              <p className="forum-meta text-[var(--text-muted)] m-0">
+                Nenhum tópico em alta no momento.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-1 -mx-2">
+                {[...recentThreads]
+                  .sort((a, b) => (b.thread.commentCount || 0) - (a.thread.commentCount || 0))
+                  .slice(0, 3)
+                  .map(({ thread, forum }) => (
+                    <Link
+                      key={thread.id}
+                      to={`/forum/${forum.slug}/${thread.id}`}
+                      className="flex items-center justify-between gap-3 p-2 rounded-[6px] transition-colors hover:bg-[color-mix(in_srgb,var(--bg-surface)_80%,var(--bg-surface-elevated)_20%)]"
+                    >
+                      <div className="flex flex-col min-w-0 gap-[1px]">
+                        <span className="text-[0.8125rem] font-semibold text-[var(--text-primary)] truncate">
+                          {thread.title}
                         </span>
-                      </Link>
-                    ))}
-                </div>
+                        <span className="text-[0.6875rem] text-[var(--text-muted)]">
+                          {forum.title}
+                        </span>
+                      </div>
+                      <span className="text-[0.8125rem] font-bold text-[var(--feedback-success)] forum-num shrink-0">
+                        {thread.commentCount || 0}
+                      </span>
+                    </Link>
+                  ))}
               </div>
             )}
           </div>
@@ -390,3 +385,4 @@ export const ForumIndex: React.FC<ForumIndexProps> = ({ forums, loading, error }
     </div>
   );
 };
+

@@ -1,0 +1,889 @@
+<!DOCTYPE html><html lang="pt-BR">
+<head><script>
+(function() {
+  function sendError(msg, stack, lineno, colno) {
+    try {
+      window.parent.postMessage({
+        type: "BDS_VISUALIZER_ERROR",
+        message: String(msg || "Script error"),
+        stack: stack ? String(stack) : null,
+        lineno: lineno ?? null,
+        colno: colno ?? null
+      }, "*");
+    } catch(e) {}
+  }
+  window.addEventListener("error", function(e) {
+    sendError(e.message, e.error ? e.error.stack : null, e.lineno, e.colno);
+  });
+  window.addEventListener("unhandledrejection", function(e) {
+    var reason = e.reason;
+    var msg = reason ? (reason.message || String(reason)) : "Unhandled Promise Rejection";
+    var stack = reason && reason.stack ? reason.stack : null;
+    sendError(msg, stack);
+  });
+})();
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MiningPoint — Fórum (Header Esquerda)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+/* ============================================================
+TOKENS
+============================================================ */
+:root {
+--bg-default: #25262A;
+--bg-surface: #2E2F33;
+--bg-surface-elevated: #393A3E;
+--text-primary: #F5F5F7;
+--text-secondary: #B7B8BC;
+--text-muted: #8E8F96;
+--text-on-primary: #25262A;
+--border-default: #45464B;
+--border-subtle: #2E2F33;
+--border-focus: #8BD0EF;
+--brand-primary: #8BD0EF;
+--brand-primary-hover: #A9DEF4;
+--feedback-success: #4ADE80;
+--feedback-warning: #FBBF24;
+--sombra-1: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+[data-theme="light"] {
+--bg-default: #F7F7F8;
+--bg-surface: #EFF0F0;
+--bg-surface-elevated: #FCFCFD;
+--text-primary: #272C35;
+--text-secondary: #545E6E;
+--text-muted: #9DA4AF;
+--text-on-primary: #FCFCFD;
+--border-default: #DEE0E2;
+--border-subtle: #EFF0F0;
+--border-focus: #BED3E9;
+--brand-primary: #177CE8;
+--brand-primary-hover: #0F80B3;
+--feedback-success: #16A34A;
+--feedback-warning: #D97706;
+--sombra-1: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+/* ============================================================
+TIPOGRAFIA
+============================================================ */
+.forum-meta { font-size: 0.75rem; line-height: 1.125rem; }
+.forum-num {
+font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+font-variant-numeric: tabular-nums;
+line-height: 1;
+}
+
+html { scroll-behavior: smooth; }
+body {
+margin: 0;
+background-color: var(--bg-default);
+color: var(--text-primary);
+font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+line-height: 1.65;
+-webkit-font-smoothing: antialiased;
+transition: background-color 250ms ease, color 250ms ease;
+min-height: 100vh;
+display: flex;
+align-items: flex-start;
+justify-content: center;
+padding: 32px 16px;
+}
+
+/* ============================================================
+JANELA MOCK
+============================================================ */
+.mock-window {
+width: 100%; max-width: 1120px; border-radius: 12px; overflow: hidden;
+box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.7), 0 20px 50px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+background: var(--bg-default); display: flex; flex-direction: column;
+}
+[data-theme="light"] .mock-window { box-shadow: 0 40px 100px -20px rgba(40, 50, 70, 0.35), 0 20px 50px rgba(40, 50, 70, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.04); }
+
+.title-bar {
+display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+background: rgba(30, 31, 36, 0.85); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+[data-theme="light"] .title-bar { background: rgba(250, 250, 252, 0.85); border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
+.traffic-lights { display: flex; gap: 8px; }
+.traffic-light { width: 12px; height: 12px; border-radius: 50%; }
+.traffic-light.close { background: #ff5f56; }
+.traffic-light.min { background: #ffbd2e; }
+.traffic-light.max { background: #27c93f; }
+.window-title { position: absolute; left: 50%; transform: translateX(-50%); font-size: 12px; color: var(--text-muted); }
+.window-actions { margin-left: auto; }
+.win-action { border: none; background: transparent; color: var(--text-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; transition: background 150ms ease; }
+.win-action:hover { background: rgba(255,255,255,0.08); }
+.win-action svg { width: 16px; height: 16px; }
+
+.main-content { padding: 32px 40px 64px; max-width: 1040px; margin: 0 auto; width: 100%; min-height: 600px; }
+
+/* ============================================================
+COMPONENTES GLOBAIS
+============================================================ */
+.btn {
+display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+cursor: pointer; transition: all 150ms ease; font-family: inherit; text-decoration: none; border: 1px solid transparent;
+}
+.btn-outline { border-color: var(--border-default); background: var(--bg-surface); color: var(--text-secondary); }
+.btn-outline:hover { border-color: var(--border-focus); color: var(--text-primary); }
+.btn-primary { background: var(--brand-primary); color: var(--text-on-primary); border-color: var(--brand-primary); }
+.btn-primary:hover { background: var(--brand-primary-hover); border-color: var(--brand-primary-hover); }
+.btn svg { width: 14px; height: 14px; }
+
+.category-tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+.cat-tab {
+padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 500;
+border: 1px solid var(--border-default); background: transparent; color: var(--text-secondary);
+cursor: pointer; transition: all 150ms ease; white-space: nowrap;
+}
+.cat-tab:hover { border-color: var(--border-focus); color: var(--text-primary); }
+.cat-tab.active { background: var(--brand-primary); color: var(--text-on-primary); border-color: var(--brand-primary); }
+
+.state-badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; border: 1px solid transparent; line-height: 1.5; }
+.state-badge svg { width: 10px; height: 10px; }
+.state-badge.pinned { border-color: color-mix(in srgb, var(--brand-primary) 45%, transparent); color: var(--brand-primary); }
+.state-badge.locked { border-color: color-mix(in srgb, var(--feedback-warning) 45%, transparent); color: var(--feedback-warning); }
+.state-badge.solved { border-color: color-mix(in srgb, var(--feedback-success) 45%, transparent); color: var(--feedback-success); }
+.state-badge.category { border-color: var(--border-default); color: var(--text-secondary); background: var(--bg-default); }
+
+/* ============================================================
+VIEWS
+============================================================ */
+.view-container { display: none; }
+.view-container.active { display: block; animation: fadeIn 250ms ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ============================================================
+VIEW 1: TODOS OS FÓRUNS
+============================================================ */
+.forum-layout { display: grid; grid-template-columns: 1fr 280px; gap: 32px; align-items: start; }
+.section-heading { font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+.forum-list {
+display: flex; flex-direction: column; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 10px; overflow: hidden; margin-bottom: 32px;
+}
+.forum-row {
+display: flex; align-items: center; gap: 16px; padding: 20px;
+border-bottom: 1px solid var(--border-subtle);
+transition: background 150ms ease; cursor: pointer; position: relative;
+}
+.forum-row:last-child { border-bottom: none; }
+.forum-row:hover { background: color-mix(in srgb, var(--bg-surface) 80%, var(--bg-surface-elevated) 20%); }
+.forum-icon-wrapper {
+width: 44px; height: 44px; border-radius: 10px; background: var(--bg-default); border: 1px solid var(--border-default);
+display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--brand-primary);
+transition: border-color 150ms ease;
+}
+.forum-row:hover .forum-icon-wrapper { border-color: var(--border-focus); }
+.forum-icon-wrapper svg { width: 22px; height: 22px; }
+.forum-content { flex: 1; min-width: 0; }
+.forum-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+.forum-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); line-height: 1.4; }
+.forum-badge {
+display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; border: 1px solid var(--border-default); color: var(--text-secondary); background: var(--bg-default); line-height: 1.5;
+}
+.forum-desc { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px; }
+.forum-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 0.75rem; color: var(--text-muted); }
+.forum-meta-item { display: inline-flex; align-items: center; gap: 4px; }
+.forum-meta-item svg { width: 12px; height: 12px; }
+.forum-meta .sep { color: var(--border-default); }
+.subforum-tag { padding: 1px 6px; border-radius: 999px; background: var(--bg-surface-elevated); border: 1px solid var(--border-default); color: var(--text-secondary); font-size: 10px; }
+.forum-action {
+display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 600; color: var(--brand-primary); text-decoration: none;
+padding: 6px 10px; border-radius: 6px; transition: background 150ms ease, gap 150ms ease; flex-shrink: 0; border: 1px solid transparent;
+margin-left: auto;
+}
+.forum-action:hover { background: color-mix(in srgb, var(--brand-primary) 10%, transparent); border-color: color-mix(in srgb, var(--brand-primary) 25%, transparent); gap: 8px; }
+.forum-action svg { width: 14px; height: 14px; }
+
+.sidebar { display: flex; flex-direction: column; gap: 20px; }
+.sidebar-card { background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 10px; padding: 20px; display: flex; flex-direction: column; }
+.sidebar-title { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; }
+.sidebar-title svg { width: 16px; height: 16px; color: var(--brand-primary); flex-shrink: 0; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 12px; }
+.stat-item { display: flex; flex-direction: column; gap: 2px; }
+.stat-label { font-size: 0.75rem; color: var(--text-muted); line-height: 1.2; }
+.stat-value { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+.stat-value.success { color: var(--feedback-success); }
+.trending-list { display: flex; flex-direction: column; gap: 4px; margin: 0 -8px; }
+.trending-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px; border-radius: 6px; text-decoration: none; transition: background 150ms ease; cursor: pointer; }
+.trending-item:hover { background: color-mix(in srgb, var(--bg-surface) 80%, var(--bg-surface-elevated) 20%); }
+.trending-info { display: flex; flex-direction: column; min-width: 0; gap: 1px; }
+.trending-title { font-size: 0.8125rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trending-meta { font-size: 0.6875rem; color: var(--text-muted); }
+.trending-count { font-size: 0.8125rem; font-weight: 700; color: var(--feedback-success); flex-shrink: 0; }
+
+/* ============================================================
+VIEW 2: FÓRUM ESPECÍFICO
+============================================================ */
+.page-actions { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+.breadcrumb { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--text-secondary); text-decoration: none; transition: color 150ms ease; white-space: nowrap; cursor: pointer; border: none; background: transparent; }
+.breadcrumb:hover { color: var(--text-primary); }
+.breadcrumb svg { width: 16px; height: 16px; flex-shrink: 0; }
+.action-buttons { display: flex; gap: 8px; }
+
+/* --- HEADER ALINHADO À ESQUERDA --- */
+.view-forum-header {
+display: flex;
+flex-direction: column;
+align-items: flex-start;
+gap: 16px;
+padding: 24px;
+background: var(--bg-surface);
+border: 1px solid var(--border-default);
+border-radius: 12px;
+margin-bottom: 24px;
+}
+
+/* Bloco Superior: Título e Descrição */
+.header-top {
+display: flex;
+flex-direction: column;
+gap: 6px;
+}
+.forum-header-title {
+font-size: 1.75rem;
+line-height: 1.2;
+font-weight: 700;
+color: var(--text-primary);
+margin: 0;
+}
+.forum-header-desc {
+font-size: 0.875rem;
+color: var(--text-secondary);
+line-height: 1.5;
+max-width: 600px;
+margin: 0;
+}
+
+/* Bloco Inferior: Metadados */
+.header-bottom {
+display: flex;
+align-items: center;
+gap: 12px;
+font-size: 0.75rem;
+color: var(--text-muted);
+}
+.meta-item {
+display: flex;
+align-items: center;
+gap: 6px;
+}
+.meta-item svg {
+width: 14px;
+height: 14px;
+color: var(--text-muted);
+flex-shrink: 0;
+}
+
+/* Filter Toolbar */
+.filter-toolbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 8px 12px; margin-bottom: 16px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 10px; }
+.sort-tabs { display: flex; gap: 2px; background: var(--bg-default); padding: 3px; border-radius: 7px; border: 1px solid var(--border-subtle); flex-shrink: 0; }
+.sort-tab { display: flex; align-items: center; justify-content: center; height: 24px; padding: 0 12px; border: none; border-radius: 5px; font-size: 11.5px; font-weight: 500; line-height: 1; color: var(--text-muted); cursor: pointer; transition: all 150ms ease; font-family: inherit; background: transparent; }
+.sort-tab.active { background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--sombra-1); }
+.sort-tab:hover:not(.active) { color: var(--text-secondary); }
+.toolbar-divider { width: 1px; height: 20px; background: var(--border-subtle); flex-shrink: 0; }
+.filter-chips { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; min-width: 0; align-items: center; }
+
+/* AJUSTES NOS CHIPS E CONTADORES */
+.chip { 
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 6px; 
+  height: 28px; 
+  padding: 0 10px; 
+  border-radius: 999px; 
+  font-size: 11px; 
+  font-weight: 500; 
+  line-height: normal; 
+  border: 1px solid var(--border-default); 
+  background: transparent; 
+  color: var(--text-secondary); 
+  cursor: pointer; 
+  transition: all 150ms ease; 
+  font-family: inherit; 
+  white-space: nowrap; 
+}
+.chip:hover { border-color: var(--border-focus); color: var(--text-primary); }
+.chip.active { background: color-mix(in srgb, var(--brand-primary) 14%, transparent); border-color: var(--brand-primary); color: var(--brand-primary); }
+.chip .count { 
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center; 
+  height: 18px; 
+  min-width: 18px; 
+  font-size: 10px; 
+  color: var(--text-muted); 
+  background: var(--bg-default); 
+  border-radius: 999px; 
+  padding: 0 5px; 
+  font-weight: 600; 
+  line-height: 1; 
+  box-sizing: border-box;
+}
+.chip.active .count { color: var(--brand-primary); background: color-mix(in srgb, var(--brand-primary) 15%, transparent); }
+.result-count { display: inline-flex; align-items: center; gap: 4px; height: 28px; font-size: 11px; line-height: 1; color: var(--text-muted); white-space: nowrap; margin-left: auto; }
+.result-count strong { color: var(--text-secondary); font-weight: 600; }
+
+/* THREAD LIST */
+.thread-list { display: flex; flex-direction: column; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: 10px; overflow: hidden; }
+.thread-item { display: flex; align-items: center; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--border-subtle); transition: background 150ms ease; position: relative; cursor: pointer; }
+.thread-item:last-child { border-bottom: none; }
+.thread-item:hover { background: color-mix(in srgb, var(--bg-surface) 80%, var(--bg-surface-elevated) 20%); }
+.thread-item.pinned { background: var(--bg-surface-elevated); }
+.thread-item.pinned::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 2px; background: var(--brand-primary); border-radius: 0 2px 2px 0; }
+.item-left { flex-shrink: 0; }
+.item-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--brand-primary); background: var(--bg-surface); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: var(--brand-primary); }
+.item-center { flex: 1; min-width: 0; }
+.item-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+.item-title { font-size: 1rem; line-height: 1.4; font-weight: 600; color: var(--text-primary); text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-title:hover { color: var(--brand-primary); }
+.item-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--text-muted); }
+.item-meta .author { font-weight: 600; color: var(--text-secondary); }
+.item-meta .sep { font-size: 12px; line-height: 1; }
+.item-meta .time-item { display: inline-flex; align-items: center; gap: 4px; }
+.item-meta .time-item svg { width: 12px; height: 12px; }
+.item-meta .last-reply { color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px; }
+.item-right { display: flex; align-items: center; gap: 16px; flex-shrink: 0; padding-left: 16px; border-left: 1px solid var(--border-subtle); align-self: center; height: 24px; color: var(--text-muted); font-size: 12px; }
+.item-stat { display: inline-flex; align-items: center; gap: 6px; line-height: 1; }
+.item-stat svg { width: 16px; height: 16px; }
+.item-stat.reactions svg { color: var(--brand-primary); }
+
+/* PAINEL DE CONTROLO */
+.mock-controls {
+display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+padding: 8px 12px; background: rgba(30, 31, 36, 0.8); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 999px;
+width: fit-content; position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 100;
+box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+[data-theme="light"] .mock-controls { background: rgba(250, 250, 252, 0.9); border: 1px solid rgba(0, 0, 0, 0.06); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+.ctrl-label { font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: rgba(255, 255, 255, 0.4); margin-right: 4px; }
+[data-theme="light"] .ctrl-label { color: rgba(40, 45, 55, 0.5); }
+.ctrl-group { display: flex; gap: 2px; background: rgba(255, 255, 255, 0.04); padding: 2px; border-radius: 7px; }
+[data-theme="light"] .ctrl-group { background: rgba(0, 0, 0, 0.04); }
+.ctrl-btn { background: transparent; border: none; padding: 4px 10px; border-radius: 5px; font-size: 11px; font-weight: 500; color: rgba(255, 255, 255, 0.55); cursor: pointer; transition: all 150ms ease; font-family: inherit; white-space: nowrap; }
+[data-theme="light"] .ctrl-btn { color: rgba(40, 45, 55, 0.6); }
+.ctrl-btn.active { background: var(--brand-primary); color: var(--text-on-primary); }
+.ctrl-btn:hover:not(.active) { color: rgba(255, 255, 255, 0.9); }
+[data-theme="light"] .ctrl-btn:hover:not(.active) { color: rgba(40, 45, 55, 0.9); }
+
+/* Responsivo */
+@media (max-width: 860px) {
+.forum-layout { grid-template-columns: 1fr; }
+.sidebar { display: grid; grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 640px) {
+.main-content { padding: 20px 16px; }
+.sidebar { grid-template-columns: 1fr; }
+.thread-item { align-items: flex-start; }
+.item-right { display: none; }
+.page-actions { flex-direction: column; align-items: stretch; gap: 12px; }
+.action-buttons { justify-content: flex-end; }
+.filter-toolbar { flex-direction: column; align-items: stretch; }
+.toolbar-divider { display: none; }
+.result-count { margin-left: 0; text-align: right; }
+.forum-row { flex-wrap: wrap; gap: 12px; }
+.forum-action { margin-left: 60px; }
+}
+</style>
+<style>
+:root {
+  --v-bg: #ffffff;
+  --v-panel: #ffffff;
+  --v-border: #e5e5e5;
+  --v-border-strong: #d1d5db;
+  --v-accent: #4d6bfe;
+  --v-accent-glow: rgba(77, 107, 254, 0.1);
+  --v-text: #0d0d0d;
+  --v-text-secondary: #6b6b6b;
+  --v-text-dim: #999999;
+  --v-radius: 12px;
+  --v-radius-sm: 8px;
+  --v-shadow: 0 2px 12px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+}
+body {
+  margin: 0;
+  padding: clamp(12px, 2vw, 28px);
+  background: var(--v-bg);
+  color: var(--v-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--v-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--v-border-strong);
+}
+.v-card {
+  background: var(--v-panel);
+  border: 1px solid var(--v-border);
+  border-radius: var(--v-radius);
+  padding: clamp(1rem, 2vw, 1.5rem);
+  box-shadow: var(--v-shadow);
+  animation: v-fade-in 0.25s ease-out;
+}
+.v-glass {
+  background: transparent;
+  border: 1px solid var(--v-border);
+  border-radius: var(--v-radius-sm);
+}
+.v-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 0 0 1rem 0;
+  color: var(--v-text);
+  border-bottom: 2px solid var(--v-border);
+  padding-bottom: 6px;
+  display: inline-block;
+}
+.v-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 1.5rem;
+}
+.v-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--v-text-secondary);
+}
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: var(--v-border);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  margin: 8px 0;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--v-accent);
+  border: 2px solid var(--v-panel);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--v-accent);
+  border: 2px solid var(--v-panel);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  cursor: pointer;
+}
+input[type="text"],
+input[type="number"],
+select,
+textarea {
+  background: var(--v-bg);
+  color: var(--v-text);
+  border: 1px solid var(--v-border);
+  border-radius: var(--v-radius-sm);
+  padding: 8px 12px;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--v-accent);
+  box-shadow: 0 0 0 2px var(--v-accent-glow);
+}
+select {
+  cursor: pointer;
+}
+textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+.v-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.v-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.8125rem;
+  color: var(--v-accent);
+  font-weight: 700;
+  background: var(--v-accent-glow);
+  padding: 3px 10px;
+  border-radius: var(--v-radius-sm);
+}
+button.v-btn {
+  background: var(--v-accent);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--v-radius-sm);
+  padding: 10px 18px;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+button.v-btn:hover {
+  filter: brightness(0.9);
+  transform: translateY(-1px);
+}
+button.v-btn:active {
+  transform: translateY(0);
+}
+button.v-btn-outline {
+  background: transparent;
+  color: var(--v-accent);
+  border: 1px solid var(--v-accent);
+}
+button.v-btn-outline:hover {
+  background: var(--v-accent-glow);
+}
+.v-animate-float {
+  animation: v-float 3s ease-in-out infinite;
+}
+@keyframes v-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+pre, code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.8125rem;
+}
+pre {
+  background: var(--v-bg);
+  border: 1px solid var(--v-border);
+  border-radius: var(--v-radius-sm);
+  padding: 12px 16px;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+code {
+  background: var(--v-accent-glow);
+  color: var(--v-accent);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+pre code {
+  background: none;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+}
+input[type="checkbox"] {
+  accent-color: var(--v-accent);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+canvas {
+  width: 100%;
+  border: 1px solid var(--v-border-strong);
+  border-radius: var(--v-radius-sm);
+  background: var(--v-panel);
+}
+@keyframes v-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+  </style></head>
+<body><div class="mock-window" role="application" aria-label="MiningPoint — Fóruns">  <div class="title-bar">
+    <div class="traffic-lights" aria-hidden="true">
+      <span class="traffic-light close"></span>
+      <span class="traffic-light min"></span>
+      <span class="traffic-light max"></span>
+    </div>
+    <span class="window-title">MiningPoint — Fórum</span>
+    <div class="window-actions">
+      <button class="win-action" id="themeBtn" aria-label="Alternar tema">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/>
+          <path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/>
+        </svg>
+      </button>
+    </div>
+  </div>  <main class="main-content">    <!-- VIEW 1: TODOS OS FÓRUNS -->    <div id="view-all-forums" class="view-container active">      <div class="category-tabs">
+        <button class="cat-tab active">Todos os fóruns</button>
+        <button class="cat-tab">discussões</button>
+      </div>      <div class="forum-layout">
+        <div>
+          <div class="forum-list">
+            <div class="forum-row" onclick="switchView('specific-forum')">
+              <div class="forum-icon-wrapper">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              </div>
+              <div class="forum-content">
+                <div class="forum-title-row">
+                  <span class="forum-title">Suporte</span>
+                  <span class="forum-badge">Foco: discussões</span>
+                </div>
+                <div class="forum-desc">Tire dúvidas, reporte problemas ou peça ajuda para configurar o ambiente.</div>
+                <div class="forum-meta">
+                  <span class="forum-meta-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    1 subdivisão
+                  </span>
+                  <span class="sep">·</span>
+                  <span class="subforum-tag">Dúvidas</span>
+                  <span class="sep">·</span>
+                  <span class="forum-meta-item"><span class="forum-num">3</span> tópicos</span>
+                  <span class="sep">·</span>
+                  <span class="forum-meta-item"><span class="forum-num">9</span> respostas</span>
+                </div>
+              </div>
+              <div class="forum-action">
+                Acessar fórum
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+              </div>
+            </div>
+          </div>          <div class="section-heading">Últimos Tópicos da Comunidade</div>
+          <div class="thread-list">
+            <div class="thread-item" onclick="switchView('specific-forum')">
+              <div class="item-left"><div class="item-avatar">M</div></div>
+              <div class="item-center">
+                <div class="item-title-row">
+                  <span class="item-title">RFASDF</span>
+                  <span class="state-badge category">Dúvidas</span>
+                </div>
+                <div class="item-meta forum-meta">
+                  <span class="author">@maiconjh</span> <span class="sep">·</span>
+                  <span class="forum-num">02 de nov.</span> <span class="sep">·</span>
+                  <span class="time-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="forum-num">há 12h</span></span>
+                  <span class="sep">·</span><span class="last-reply">Última resposta <span class="forum-num">há 12h</span></span>
+                </div>
+              </div>
+              <div class="item-right">
+                <div class="item-stat comments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="forum-num">2</span></div>
+              </div>
+            </div>
+          </div>
+        </div>        <aside class="sidebar">
+          <div class="sidebar-card">
+            <div class="sidebar-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+              Estatísticas
+            </div>
+            <div class="stats-grid">
+              <div class="stat-item"><span class="stat-label">Fóruns</span><span class="stat-value forum-num">1</span></div>
+              <div class="stat-item"><span class="stat-label">Tópicos</span><span class="stat-value forum-num">3</span></div>
+              <div class="stat-item"><span class="stat-label">Respostas</span><span class="stat-value forum-num">9</span></div>
+              <div class="stat-item"><span class="stat-label">Soluções</span><span class="stat-value forum-num success">2</span></div>
+            </div>
+          </div>
+          <div class="sidebar-card">
+            <div class="sidebar-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+              Tópicos em Alta
+            </div>
+            <div class="trending-list">
+              <a href="#" class="trending-item" onclick="switchView('specific-forum'); event.preventDefault();">
+                <div class="trending-info"><span class="trending-title">sadasdww</span><span class="trending-meta">Suporte</span></div>
+                <span class="trending-count forum-num">7</span>
+              </a>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>    <!-- VIEW 2: FÓRUM ESPECÍFICO -->    <div id="view-specific-forum" class="view-container">      <div class="page-actions">
+        <button class="breadcrumb" onclick="switchView('all-forums')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+          </svg>
+          Todos os fóruns
+        </button>
+        <div class="action-buttons">
+          <button class="btn btn-outline">
+            <svg style="color: var(--feedback-warning);" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Denúncias
+          </button>
+          <button class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Novo tópico
+          </button>
+        </div>
+      </div>      <!-- NOVO HEADER ALINHADO À ESQUERDA -->      <div class="view-forum-header">        <!-- Bloco Superior -->        <div class="header-top">
+          <h1 class="forum-header-title">Suporte</h1>
+          <p class="forum-header-desc">Tire dúvidas, reporte problemas ou peça ajuda para configurar o ambiente.</p>
+        </div>        <!-- Bloco Inferior -->        <div class="header-bottom">
+          <div class="meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Fórum: discussões
+          </div>
+          <span class="sep" style="color: var(--border-default);">·</span>
+          <div class="meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <span class="forum-num">3</span> tópicos
+          </div>
+        </div>      </div>      <div class="category-tabs">
+        <button class="cat-tab active">Todos os tópicos</button>
+        <button class="cat-tab">Dúvidas</button>
+      </div>      <div class="filter-toolbar" id="filterToolbar" data-src="NEW">
+        <div class="sort-tabs" id="sortTabs" role="tablist">
+          <button class="sort-tab active" data-sort="recent">Recentes</button>
+          <button class="sort-tab" data-sort="active">Ativos</button>
+          <button class="sort-tab" data-sort="voted">Votados</button>
+        </div>
+        <div class="toolbar-divider"></div>
+        <div class="filter-chips" id="filterChips">
+          <button class="chip" data-filter="solved">Resolvidos <span class="count" id="count-solved">0</span></button>
+          <button class="chip" data-filter="pinned">Fixados <span class="count" id="count-pinned">0</span></button>
+          <button class="chip" data-filter="unanswered">Sem resposta <span class="count" id="count-unanswered">0</span></button>
+        </div>
+        <span class="result-count" id="resultCount">— tópicos</span>
+      </div>      <div class="thread-list" id="threadList" role="list"></div>
+    </div>  </main>
+</div><!-- CONTROLOS --><div class="mock-controls">
+  <span class="ctrl-label">Navegação</span>
+  <div class="ctrl-group" id="navToggle">
+    <button class="ctrl-btn active" data-view="all-forums">Fóruns</button>
+    <button class="ctrl-btn" data-view="specific-forum">Fórum Específico</button>
+  </div>
+</div><script>
+  const THREADS = [
+    {
+      id: 't3', title: 'sadasdww', author: '@maiconjh', initial: 'M', date: '17 de out.', relative: 'há 16d',
+      stateBadges: [{ label: 'Fixado', cls: 'pinned', icon: 'pin' }, { label: 'Trancado', cls: 'locked', icon: 'lock' }, { label: 'Resolvido', cls: 'solved', icon: 'check' }],
+      category: null, replies: 7, reactions: 1, pinned: true, solved: true, lastReply: 'há 1h', lastReplyAuthor: '@ana'
+    },
+    {
+      id: 't2', title: 'Testes', author: '@maiconjh', initial: 'M', date: '19 de out.', relative: 'há 13d',
+      stateBadges: [{ label: 'Resolvido', cls: 'solved', icon: 'check' }],
+      category: null, replies: 0, reactions: 0, pinned: false, solved: true, lastReply: null, lastReplyAuthor: null
+    },
+    {
+      id: 't1', title: 'RFASDF', author: '@maiconjh', initial: 'M', date: '02 de nov.', relative: 'há 12h',
+      stateBadges: [], category: 'Dúvidas', replies: 2, reactions: 0, pinned: false, solved: false, lastReply: 'há 12h', lastReplyAuthor: '@pedro'
+    }
+  ];
+
+  const ICONS = {
+    clock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+    reply: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+    thumbsUp: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>`,
+    pin: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"/></svg>`,
+    lock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+    check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`
+  };
+
+  const state = { currentView: 'all-forums', sort: 'recent', filters: new Set(), theme: 'dark' };
+
+  function switchView(viewName) {
+    state.currentView = viewName;
+    document.getElementById('view-all-forums').classList.toggle('active', viewName === 'all-forums');
+    document.getElementById('view-specific-forum').classList.toggle('active', viewName === 'specific-forum');
+    document.querySelectorAll('#navToggle .ctrl-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
+    if (viewName === 'specific-forum') renderThreads();
+  }
+
+  document.getElementById('navToggle').addEventListener('click', (e) => {
+    const btn = e.target.closest('.ctrl-btn');
+    if (btn) switchView(btn.dataset.view);
+  });
+
+  document.getElementById('themeBtn').addEventListener('click', () => {
+    const root = document.documentElement;
+    if (state.theme === 'dark') { root.setAttribute('data-theme', 'light'); state.theme = 'light'; }
+    else { root.removeAttribute('data-theme'); state.theme = 'dark'; }
+  });
+
+  function renderCard(t) {
+    const stateBadges = t.stateBadges.map(b => `<span class="state-badge ${b.cls}">${b.icon ? ICONS[b.icon] : ''}<span>${b.label}</span></span>`).join('');
+    const category = t.category ? `<span class="state-badge category">${t.category}</span>` : '';
+    const lastReply = t.replies > 0 && t.lastReply ? `<span class="sep">·</span><span class="last-reply">Última resposta ${t.lastReplyAuthor ? t.lastReplyAuthor + ' ' : ''}<span class="forum-num">${t.lastReply}</span></span>` : '';
+    const reactions = t.reactions > 0 ? `<div class="item-stat reactions">${ICONS.thumbsUp}<span class="forum-num">${t.reactions}</span></div>` : '';
+
+    return `
+      <div class="thread-item ${t.pinned ? 'pinned' : ''}" role="listitem">
+        <div class="item-left"><div class="item-avatar">${t.initial}</div></div>
+        <div class="item-center">
+          <div class="item-title-row">
+            <a href="#" class="item-title">${t.title}</a>
+            ${category}
+            ${stateBadges}
+          </div>
+          <div class="item-meta forum-meta">
+            <span class="author">${t.author}</span>
+            <span class="sep">·</span>
+            <span class="forum-num">${t.date}</span>
+            <span class="sep">·</span>
+            <span class="time-item">${ICONS.clock}<span class="forum-num">${t.relative}</span></span>
+            ${lastReply}
+          </div>
+        </div>
+        <div class="item-right">
+          ${reactions}
+          <div class="item-stat comments">${ICONS.reply}<span class="forum-num">${t.replies}</span></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderThreads() {
+    let list = [...THREADS];
+    if (state.filters.has('solved')) list = list.filter(t => t.solved);
+    if (state.filters.has('pinned')) list = list.filter(t => t.pinned);
+    if (state.filters.has('unanswered')) list = list.filter(t => t.replies === 0);
+    if (state.sort === 'active') list.sort((a, b) => b.replies - a.replies);
+    if (state.sort === 'voted') list.sort((a, b) => b.reactions - a.reactions);
+    if (!state.filters.has('pinned')) list.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+
+    document.getElementById('resultCount').innerHTML = `<strong>${list.length}</strong> de ${THREADS.length} tópicos`;
+    document.getElementById('threadList').innerHTML = list.map(renderCard).join('');
+  }
+
+  document.getElementById('sortTabs').addEventListener('click', e => {
+    if (e.target.tagName === 'BUTTON') {
+      state.sort = e.target.dataset.sort;
+      document.querySelectorAll('.sort-tab').forEach(b => b.classList.toggle('active', b === e.target));
+      renderThreads();
+    }
+  });
+
+  document.getElementById('filterChips').addEventListener('click', e => {
+    const btn = e.target.closest('.chip');
+    if (!btn) return;
+    const f = btn.dataset.filter;
+    if (state.filters.has(f)) { state.filters.delete(f); btn.classList.remove('active'); }
+    else { state.filters.add(f); btn.classList.add('active'); }
+    renderThreads();
+  });
+
+  renderThreads();
+</script></body>
+</html>

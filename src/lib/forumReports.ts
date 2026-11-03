@@ -35,11 +35,24 @@ function sanitizeSnapshot(data: unknown): ForumReportTargetSnapshot | null {
 }
 
 export function sanitizeReportDoc(id: string, data: Record<string, unknown>): ForumReport {
+  const itemId = typeof data.itemId === 'string' ? data.itemId : '';
+  const targetId =
+    typeof data.targetId === 'string' && data.targetId ? data.targetId : itemId;
+  const kind: ForumReportKind = data.kind === 'comment' ? 'comment' : 'thread';
+  const threadId =
+    typeof data.threadId === 'string' && data.threadId
+      ? data.threadId
+      : kind === 'thread'
+      ? targetId
+      : null;
+
   return {
     id,
     forumId: typeof data.forumId === 'string' ? data.forumId : '',
-    kind: data.kind === 'comment' ? 'comment' : 'thread',
-    itemId: typeof data.itemId === 'string' ? data.itemId : '',
+    kind,
+    itemId,
+    targetId,
+    threadId,
     reporterId: typeof data.reporterId === 'string' ? data.reporterId : '',
     reason: typeof data.reason === 'string' ? data.reason : '',
     createdAt: (data.createdAt as Timestamp) || Timestamp.now(),
@@ -57,6 +70,8 @@ export async function createReport(data: {
   forumId: string;
   kind: ForumReportKind;
   itemId: string;
+  targetId?: string;
+  threadId?: string;
   reporterId: string;
   reason: string;
   targetSnapshot: ForumReportTargetSnapshot;
@@ -64,11 +79,16 @@ export async function createReport(data: {
   if (!db) throw new Error('Firestore não inicializado.');
   const reportsRef = collection(db, 'forumReports');
   const newDocRef = doc(reportsRef);
+  const resolvedTargetId = data.targetId || data.itemId;
+  const resolvedThreadId =
+    data.threadId || (data.kind === 'thread' ? resolvedTargetId : null);
 
   await setDoc(newDocRef, {
     forumId: data.forumId,
     kind: data.kind,
     itemId: data.itemId,
+    targetId: resolvedTargetId,
+    threadId: resolvedThreadId,
     reporterId: data.reporterId,
     reason: data.reason.trim().slice(0, MAX_REASON_LEN),
     targetSnapshot: {
@@ -154,10 +174,25 @@ export function hydrateReports(
 
   return reports.map((r) => {
     if (r.kind !== 'thread') {
-      return { ...r, targetStatus: 'unknown', currentTitle: null, currentBody: null };
+      let resolvedThreadId = r.threadId || null;
+      if (!resolvedThreadId && r.targetSnapshot?.title) {
+        const match = r.targetSnapshot.title.match(/^Comentário em ["“](.+)["”]$/i);
+        const extractedTitle = (match ? match[1] : r.targetSnapshot.title).trim();
+        const matchingThread = threads.find((t) => t.title.trim() === extractedTitle);
+        if (matchingThread) {
+          resolvedThreadId = matchingThread.id;
+        }
+      }
+      return {
+        ...r,
+        threadId: resolvedThreadId,
+        targetStatus: 'unknown',
+        currentTitle: null,
+        currentBody: null,
+      };
     }
 
-    const t = byId.get(r.itemId);
+    const t = byId.get(r.targetId || r.itemId);
     if (!t) {
       return { ...r, targetStatus: 'unknown', currentTitle: null, currentBody: null };
     }
@@ -184,6 +219,7 @@ export function hydrateReports(
 
     return {
       ...r,
+      threadId: t.id,
       targetStatus: status,
       currentTitle: wasEdited ? t.title : null,
       currentBody: wasEdited ? t.body : null,

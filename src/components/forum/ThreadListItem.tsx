@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Pin from "lucide-react/dist/esm/icons/pin";
 import Lock from "lucide-react/dist/esm/icons/lock";
 import MessageSquare from "lucide-react/dist/esm/icons/message-square";
@@ -9,7 +9,6 @@ import Clock from "lucide-react/dist/esm/icons/clock";
 import { Forum, ForumThread } from "../../types/forum";
 import { getUserProfile } from "../../lib/profile";
 import { UserProfile } from "../../types/profile";
-import { MarkdownBody } from "./MarkdownBody";
 
 interface ThreadListItemProps {
   thread: ForumThread;
@@ -43,6 +42,7 @@ function formatRelativeTime(date?: Date | null): string {
 
 export const ThreadListItem: React.FC<ThreadListItemProps> = ({ thread, forum }) => {
   const [author, setAuthor] = useState<UserProfile | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let isMounted = true;
@@ -85,150 +85,133 @@ export const ThreadListItem: React.FC<ThreadListItemProps> = ({ thread, forum })
     ? `membro-${thread.authorId.slice(0, 5)}`
     : "Membro";
 
-  const authorInitial = (author?.displayName || authorNick).charAt(0).toUpperCase();
+  const authorInitial = (author?.displayName || authorNick.replace(/^@/, ""))
+    .charAt(0)
+    .toUpperCase();
 
-  const hasStateBadges =
-    thread.isPinned ||
-    thread.isLocked ||
-    Boolean(forum.features?.solution && thread.solutionCommentId);
-
-  // Strip markdown punctuation before deciding whether the excerpt has real text.
-  // Without this, a body containing only "-" or "**" would still reserve height.
-  const plainBody = (thread.body || "").replace(/[#*_`>[\]()!~-]/g, " ").trim();
-  const hasBodyContent = plainBody.length > 0;
-
-  const stateBadges = (
-    <>
-      {thread.isPinned && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 forum-meta font-semibold rounded-md border border-[color-mix(in_srgb,var(--brand-primary)_45%,transparent)] text-[var(--brand-primary)]">
-          <Pin className="w-3 h-3" />
-          Fixado
-        </span>
-      )}
-
-      {thread.isLocked && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 forum-meta font-semibold rounded-md border border-[color-mix(in_srgb,var(--feedback-warning)_45%,transparent)] text-[var(--feedback-warning)]">
-          <Lock className="w-3 h-3" />
-          Trancado
-        </span>
-      )}
-
-      {forum.features?.solution && thread.solutionCommentId && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 forum-meta font-semibold rounded-md border border-[color-mix(in_srgb,var(--feedback-success)_45%,transparent)] text-[var(--feedback-success)]">
-          <CheckCircle className="w-3 h-3" />
-          Resolvido
-        </span>
-      )}
-    </>
-  );
-
-  const pinnedBorder = thread.isPinned
-    ? "border-[color-mix(in_srgb,var(--brand-primary)_55%,var(--border-default))] bg-[var(--bg-surface-elevated)]"
-    : "border-[var(--border-default)] bg-[var(--bg-surface)] hover:border-[var(--border-focus)]";
+  const isSolved = Boolean(forum.features?.solution && thread.solutionCommentId);
+  const threadUrl = `/forum/${forum.slug}/${thread.id}`;
 
   return (
-    <article
-      className={`rounded-xl border forum-card-transition flex flex-col overflow-hidden ${pinnedBorder}`}
+    <div
+      role="listitem"
+      onClick={() => navigate(threadUrl)}
+      className={`flex items-start sm:items-center gap-4 px-5 py-4 border-b border-[var(--border-subtle)] last:border-b-0 transition-colors relative cursor-pointer hover:bg-[color-mix(in_srgb,var(--bg-surface)_80%,var(--bg-surface-elevated)_20%)] ${
+        thread.isPinned ? "bg-[var(--bg-surface-elevated)]" : ""
+      }`}
     >
-      {/* Zona 1: Contexto (Header) */}
-      <header className="px-4 py-2.5 sm:px-5 flex items-center justify-between gap-3 flex-wrap bg-[var(--bg-default)] border-b border-[var(--border-default)]">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div
-            className="w-8 h-8 rounded-full border-2 overflow-hidden flex items-center justify-center bg-[var(--bg-surface)] shrink-0"
-            style={{ borderColor: authorGroupColor }}
-            title={author?.primaryGroup?.name || "Membro"}
-          >
-            {author?.photoURL ? (
-              <img
-                src={author.photoURL}
-                alt={authorNick}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span
-                className="forum-meta font-bold"
-                style={{ color: authorGroupColor }}
-              >
-                {authorInitial}
-              </span>
-            )}
-          </div>
+      {thread.isPinned && (
+        <span
+          aria-hidden="true"
+          className="absolute left-0 top-3 bottom-3 w-0.5 bg-[var(--brand-primary)] rounded-r-[2px]"
+        />
+      )}
 
-          <div className="flex items-center gap-1.5 forum-meta text-[var(--text-muted)] min-w-0 flex-wrap">
-            <span className="font-semibold text-[var(--text-secondary)] truncate">
-              {authorNick}
-            </span>
-            {formattedDate && (
-              <>
-                <span>·</span>
-                <span className="forum-num">{formattedDate}</span>
-              </>
-            )}
-            {relativeCreated && (
-              <>
-                <span>·</span>
-                <span className="forum-num">{relativeCreated}</span>
-              </>
-            )}
-          </div>
-        </div>
-
-        {(category || hasStateBadges) && (
-          <div className="flex items-center gap-1.5 flex-wrap shrink-0">
-            {category && (
-              <span className="px-2 py-0.5 forum-meta font-medium rounded-md bg-[var(--bg-surface)] text-[var(--text-secondary)] border border-[var(--border-default)]">
-                {category.name}
-              </span>
-            )}
-            {stateBadges}
-          </div>
-        )}
-      </header>
-
-      {/* Zona 2: Conteúdo (Article Body) */}
-      <div className="px-4 py-3.5 sm:px-5 sm:py-4 space-y-1.5 min-w-0">
-        <Link
-          to={`/forum/${forum.slug}/${thread.id}`}
-          className="forum-title text-[var(--text-primary)] hover:text-[var(--brand-primary)] transition-colors line-clamp-2 block"
+      {/* Left: Author Avatar */}
+      <div className="shrink-0">
+        <div
+          className="w-10 h-10 rounded-full border-2 overflow-hidden flex items-center justify-center bg-[var(--bg-surface)] text-[14px] font-bold"
+          style={{ borderColor: authorGroupColor, color: authorGroupColor }}
+          title={author?.primaryGroup?.name || "Membro"}
         >
-          {thread.title}
-        </Link>
-
-        {hasBodyContent && (
-          <div className="forum-meta text-[var(--text-muted)] line-clamp-2 m-0">
-            <MarkdownBody content={thread.body} compact />
-          </div>
-        )}
+          {author?.photoURL ? (
+            <img
+              src={author.photoURL}
+              alt={authorNick}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span>{authorInitial}</span>
+          )}
+        </div>
       </div>
 
-      {/* Zona 3: Atividade (Footer) */}
-      <footer className="px-4 py-2 sm:px-5 flex items-center justify-between gap-3 flex-wrap bg-[var(--bg-default)] border-t border-[var(--border-default)]">
-        <span className="inline-flex items-center gap-1 text-[var(--text-secondary)] forum-meta min-w-0">
-          {thread.commentCount > 0 && relativeUpdated ? (
-            <>
-              <Clock className="w-3 h-3 text-[var(--text-muted)]" />
-              <span>Última resposta</span>
-              <span className="forum-num">{relativeUpdated}</span>
-            </>
-          ) : (
-            <span className="forum-num">{relativeCreated || formattedDate}</span>
-          )}
-        </span>
+      {/* Center: Title Row & Meta Row */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 flex-wrap mb-1">
+          <Link
+            to={threadUrl}
+            onClick={(e) => e.stopPropagation()}
+            className="text-[1rem] leading-[1.4] font-semibold text-[var(--text-primary)] hover:text-[var(--brand-primary)] transition-colors truncate"
+          >
+            {thread.title}
+          </Link>
 
-        <div className="flex items-center gap-2 flex-wrap justify-end">
-          {forum.features?.reactions && totalReactions > 0 && (
-            <div className="flex items-center gap-1 forum-meta text-[var(--text-secondary)] bg-[var(--bg-surface)] px-2 py-1 rounded-md border border-[var(--border-subtle)]">
-              <ThumbsUp className="w-3.5 h-3.5 text-[var(--brand-primary)]" />
-              <span className="forum-num font-semibold">{totalReactions}</span>
-            </div>
+          {category && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-[1px] rounded-[4px] text-[10px] font-semibold leading-[1.5] border border-[var(--border-default)] text-[var(--text-secondary)] bg-[var(--bg-default)]">
+              {category.name}
+            </span>
           )}
 
-          <div className="flex items-center gap-1 forum-meta text-[var(--text-secondary)] bg-[var(--bg-surface)] px-2 py-1 rounded-md border border-[var(--border-subtle)]">
-            <MessageSquare className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-            <span className="forum-num font-semibold">{thread.commentCount}</span>
-          </div>
+          {thread.isPinned && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-[1px] rounded-[4px] text-[10px] font-semibold leading-[1.5] border border-[color-mix(in_srgb,var(--brand-primary)_45%,transparent)] text-[var(--brand-primary)]">
+              <Pin className="w-2.5 h-2.5" />
+              <span>Fixado</span>
+            </span>
+          )}
+
+          {thread.isLocked && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-[1px] rounded-[4px] text-[10px] font-semibold leading-[1.5] border border-[color-mix(in_srgb,var(--feedback-warning)_45%,transparent)] text-[var(--feedback-warning)]">
+              <Lock className="w-2.5 h-2.5" />
+              <span>Trancado</span>
+            </span>
+          )}
+
+          {isSolved && (
+            <span className="inline-flex items-center gap-1 px-1.5 py-[1px] rounded-[4px] text-[10px] font-semibold leading-[1.5] border border-[color-mix(in_srgb,var(--feedback-success)_45%,transparent)] text-[var(--feedback-success)]">
+              <CheckCircle className="w-2.5 h-2.5" />
+              <span>Resolvido</span>
+            </span>
+          )}
         </div>
-      </footer>
-    </article>
+
+        <div className="flex items-center gap-2 flex-wrap forum-meta text-[var(--text-muted)]">
+          <span className="font-semibold text-[var(--text-secondary)]">
+            {authorNick}
+          </span>
+
+          {formattedDate && (
+            <>
+              <span className="text-[12px] leading-none">·</span>
+              <span className="forum-num">{formattedDate}</span>
+            </>
+          )}
+
+          {relativeCreated && (
+            <>
+              <span className="text-[12px] leading-none">·</span>
+              <span className="inline-flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                <span className="forum-num">{relativeCreated}</span>
+              </span>
+            </>
+          )}
+
+          {thread.commentCount > 0 && relativeUpdated && (
+            <>
+              <span className="text-[12px] leading-none">·</span>
+              <span className="text-[var(--text-secondary)] inline-flex items-center gap-1">
+                Última resposta <span className="forum-num">{relativeUpdated}</span>
+              </span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Right: Reactions & Comments Counters */}
+      <div className="hidden sm:flex items-center gap-4 shrink-0 pl-4 border-l border-[var(--border-subtle)] self-center h-6 text-[var(--text-muted)] text-[12px]">
+        {forum.features?.reactions && totalReactions > 0 && (
+          <div className="inline-flex items-center gap-1.5 leading-none">
+            <ThumbsUp className="w-4 h-4 text-[var(--brand-primary)]" />
+            <span className="forum-num">{totalReactions}</span>
+          </div>
+        )}
+
+        <div className="inline-flex items-center gap-1.5 leading-none">
+          <MessageSquare className="w-4 h-4" />
+          <span className="forum-num">{thread.commentCount}</span>
+        </div>
+      </div>
+    </div>
   );
 };

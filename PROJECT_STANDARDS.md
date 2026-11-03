@@ -69,8 +69,10 @@ Firebase Storage:
   Dedicated client module (`src/lib/storage.ts`) for profile assets (avatars
   and banners). Covers upload, compression, deletion, and friendly error mapping.
 
-Firestore collections are lowercase plural English: users, events, threads,
-products. Field names are lowercase camelCase English.
+Firestore collections are lowercase plural English (or camelCase for compound
+names): users, groups, badges, userCollectibles, icons, titles, rarities,
+catalogCategories, origins, collections, forums, threads, forumReactions,
+forumReports. Field names are lowercase camelCase English.
 
 Security rules are required for every collection. Never leave a collection
 with default-allow. Read rules and write rules are explicit.
@@ -87,6 +89,10 @@ users/{uid}
   displayName: string
   email: string
   photoURL: string | null
+  bannerUrl: string | null       // null by default, profile banner in Firebase Storage
+  shortId: string                // unique alphanumeric short ID generated on creation
+  handle: string | null          // null by default, unique @nick handle (3-20 chars)
+  hasRedefinedHandle: boolean    // false by default, single self-service @nick redefinition
   primaryGroupId: string         // required, drives the badge
   secondaryGroupIds: string[]    // optional, default []
   isStaff: boolean               // derived, true if ANY user group has isStaff === true
@@ -214,6 +220,79 @@ collections/{collectionId}
   createdAt: timestamp
   createdBy: string
 
+forums/{forumId}
+  slug: string                    // unique slug identifier (e.g., "suporte")
+  title: string                   // "Suporte", "Sugestões"
+  description: string
+  focus: string                   // thematic focus chip label (e.g., "Discussão")
+  route: string                   // public route path (e.g., "/forum/suporte")
+  order: number                   // 0-999 display order
+  isActive: boolean               // true by default
+  threadStructure: 'flat' | 'quoted' | 'nested' // comment tree layout
+  categories: Array<{
+    id: string
+    name: string
+    description: string
+    order: number
+  }>
+  features: {
+    solution: boolean             // enables marking a comment as solution
+    reactions: boolean            // enables thread/comment reactions
+    reports: boolean              // enables user reports
+  }
+  permissions: {                  // each rule: { mode: 'anyone' | 'authenticated' | 'groups' | 'staff' | 'admin', groupIds: string[] } (default mode: 'staff')
+    view: PermissionRule
+    createThread: PermissionRule
+    comment: PermissionRule
+    moderate: {
+      pin: PermissionRule
+      lock: PermissionRule
+      move: PermissionRule
+      remove: PermissionRule
+    }
+  }
+  createdAt: timestamp
+  createdBy: string
+  updatedAt: timestamp
+  updatedBy: string
+
+threads/{threadId}
+  forumId: string                 // ref to forums/{forumId}
+  categoryId: string | null       // ref to forum category id
+  title: string
+  body: string                    // Markdown content
+  authorId: string                // ref to users/{uid}
+  createdAt: timestamp
+  updatedAt: timestamp
+  isPinned: boolean               // false by default
+  pinnedAt: timestamp | null
+  pinnedBy: string | null
+  isLocked: boolean               // false by default
+  lockedAt: timestamp | null
+  lockedBy: string | null
+  isRemoved: boolean              // false by default (soft-delete by moderation)
+  removedAt: timestamp | null
+  removedBy: string | null
+  movedAt: timestamp | null
+  movedBy: string | null
+  commentCount: number            // 0 by default
+  solutionCommentId: string | null
+  reactionCounts: Record<string, number> // map of ReactionKey -> count
+  editReason: string | null       // reason from latest edit or rollback
+
+threads/{threadId}/comments/{commentId}
+  threadId: string
+  authorId: string
+  body: string                    // Markdown content
+  createdAt: timestamp
+  updatedAt: timestamp
+  isRemoved: boolean              // false by default (renders accessible tombstone when true)
+  removedAt: timestamp | null
+  removedBy: string | null
+  parentCommentId: string | null  // used when forum threadStructure === 'nested'
+  quoteCommentId: string | null   // used when forum threadStructure === 'quoted'
+  reactionCounts: Record<string, number>
+
 threads/{threadId}/revisions/{revisionId}
   title: string                   // previous title value
   body: string                    // previous body value
@@ -222,6 +301,29 @@ threads/{threadId}/revisions/{revisionId}
   editedBy: string                // user UID who made the edit
   editedByStaff: boolean          // whether editor had staff/moderation privileges
   editedAt: timestamp             // serverTimestamp()
+
+forumReactions/{userId_kind_itemId}
+  userId: string
+  kind: 'thread' | 'comment'
+  itemId: string
+  reaction: 'like' | 'heart' | 'fire' | 'pickaxe' | 'idea'
+  createdAt: timestamp
+
+forumReports/{reportId}
+  forumId: string
+  kind: 'thread' | 'comment'
+  itemId: string
+  reporterId: string
+  reason: string
+  targetSnapshot: {               // preserved at report creation time for moderator audit
+    title: string | null          // thread title (or parent thread title for comments)
+    body: string                  // original reported text
+    authorId: string              // original author UID
+  } | null
+  status: 'open' | 'reviewed' | 'dismissed'
+  createdAt: timestamp
+  reviewedBy: string | null
+  reviewedAt: timestamp | null
 
 Reads never throw. Missing fields fall back to defaults defined above.
 Migration:
@@ -238,9 +340,11 @@ Derivation rules:
 ## Ban Semantics & Security Rules
 
 - A banned user (`isBanned == true`) can read everything they could read before.
-- A banned user cannot write anywhere in Firestore (enforced by `!isBannedUser(uid)` on all write rules).
+- A banned user cannot write anywhere in Firestore (enforced by `!isBannedUser(uid)` on all write rules, including forum threads, comments, revisions, reactions, and reports).
 - A banned admin cannot access the `/admin` control panel.
-- On profile self-update, users can only modify profile fields (bio, title, visibility, featuredBadges); updating groups, permissions, staff flag, attributes or ban status requires `manageUsers`.
+- On profile self-update, users can only modify profile fields (`displayName`, `photoURL`, `bannerUrl`, `handle`, `hasRedefinedHandle`, `bio`, `featuredTitleId`, `visibility`, `featuredBadges`, `featuredBadgesMode`); updating groups, permissions, staff flag, attributes or ban status requires `manageUsers`.
+- Forum administration (`forums/{forumId}`) requires `hasAdminPerm('manageForum')`. Forum moderation and staff overrides accept `hasAdminPerm('manageForum')` or `isStaffUser(uid)` (`isStaff == true`).
+- Thread revision history (`threads/{threadId}/revisions/{revisionId}`) is strictly append-only (`allow update, delete: if false`).
 - Deleting an account in the admin panel removes the user document from `users/{uid}` and all associated `userCollectibles` docs. (Firebase Auth account deletion requires Admin SDK/Cloud Functions, which is beyond client scope).
 
 ## Badges & Icons
@@ -267,7 +371,7 @@ Badge grant/revoke flow:
   - Admin grants a badge to a user from `/admin/insignias/:badgeId`.
   - Creates a doc in `userCollectibles/${userId}_badge_${badgeId}` with `userId`, `kind: 'badge'`, `itemId: badgeId`, `awardedAt: serverTimestamp()`, `awardedBy: adminUid`.
   - Admin revoking a badge deletes the `userCollectibles/${userId}_badge_${badgeId}` doc.
-  - Users with at least one badge choose up to 4 featured badges in `/conta/perfil` (Insígnias destacadas).
+  - Users with at least one badge choose up to 4 featured badges in `/conta/perfil` (Insígnias destacadas) in `manual` or `auto` ordering mode.
   - Selected badges are saved immediately to `users/{uid}.featuredBadges` and rendered in the profile header carousel.
 
 Title grant/revoke & display flow:
@@ -302,37 +406,76 @@ collectibleLinks:
   never applied globally. Everywhere else in the interface, the original
   rule holds: subtle shadows, no neon, no animated shine.
 
+## Forum System
+
+Configurable forums & permissions (`SPEC-0002`, `src/lib/forums.ts`, `src/lib/forumPermissions.ts`):
+  - Forums are created, reordered, activated/deactivated, and configured in `/admin/forum` by staff with `manageForum`.
+  - Route validation prevents collisions with reserved system paths (`/`, `/sobre`, `/eventos`, `/membros`, `/forum`, `/loja`, `/entrar`, `/perfil`, `/conta`, `/admin`).
+  - Permissions (`view`, `createThread`, `comment`, `moderate.{pin,lock,move,remove}`) use `PermissionRule` (`anyone`, `authenticated`, `groups`, `staff`, `admin`) and default to `mode: 'staff'` when unspecified.
+
+Markdown & Typography (`SPEC-0003`, `src/components/forum/MarkdownBody.tsx`, `src/index.css`):
+  - Thread bodies and comments render via `<MarkdownBody>` (`react-markdown` + `remark-gfm` + `@tailwindcss/typography`).
+  - Supports full multi-block prose and `compact` inline mode for card excerpts (`line-clamp-2`).
+  - Forum typographic scale: `.forum-meta` (12px), `.forum-body` (15px), `.forum-title` (18px), `.forum-page` (26px), `.forum-num` (`tabular-nums`).
+  - Micro-interactions: `.forum-card-transition`, `.forum-icon-hover`, and `.forum-screen-fade` (ending in `transform: none` so fixed descendants are never trapped in a containing block).
+
+Layered Thread Card (`SPEC-0005`, `src/components/forum/ThreadListItem.tsx`):
+  - Each thread item is an `<article>` divided into 3 semantic zones separated by subtle borders (`var(--border-subtle)`):
+    1. `<header>` (Context): Author avatar/initial, displayName, `@nick`, absolute publication date, category badge, and active state badges (`Fixado`, `Trancado`, `Resolvido`, `Editado`).
+    2. Body (`<div>`): Prominent thread title (`<h3>`) and optional 2-line compact Markdown excerpt (omitted when body is empty or whitespace-only).
+    3. `<footer>` (Engagement): Relative activity timestamp (`Última resposta há ...` when `commentCount > 0`, otherwise `há ...`) on the left, and non-zero reaction counters + comment count on the right.
+
+Thread View, Modal Editing & Revisions (`SPEC-0003`, `SPEC-0004`, `src/components/forum/ThreadView.tsx`):
+  - Supports `flat`, `quoted`, and `nested` (up to depth 3 with `.isNested` vertical guide line) comment structures.
+  - Removed comments (`isRemoved === true`) render a compact accessible tombstone (`aria-label="Comentário removido"`) without body text, quotes, or reaction bars.
+  - Author edit window is 2 hours (`AUTHOR_EDIT_WINDOW_MS`) on unlocked threads; staff with moderation permissions can edit at any time.
+  - Editing opens a fixed modal (`role="dialog"`, `aria-modal="true"`) with dirty-state confirmation, mandatory `editReason`, append-only revision creation in `threads/{threadId}/revisions`, and staff rollback (`revertThreadToRevision`).
+
+Reports & Moderation (`src/lib/forumReports.ts`, `src/components/forum/ForumView.tsx`):
+  - Creating a report captures a `targetSnapshot` (`title`, `body`, `authorId`) so moderators can inspect the exact reported text even if the target is later edited, deleted by the author, or removed by a moderator.
+  - The moderation modal hydrates each report with live target status (`active`, `edited` with expandable `<details>` diff, `deleted-by-author`, `removed-by-moderator`, `missing`, `unknown`) and reporter identity (`displayName`, `@nick`, group badge).
+  - Moderators can resolve (`reviewed`), dismiss (`dismissed`), or reopen (`open`) reports, with an undo toast on state transitions.
+
+Modals, Toasts & Scroll Hygiene (`src/components/Layout.tsx`, `src/context/ToastContext.tsx`):
+  - `<main>` in `Layout.tsx` uses `overflow-x-clip` (never `overflow-x-hidden`) so the browser does not compute `overflow-y: auto` and create a duplicate vertical scrollbar.
+  - Fixed modals (`ForumView`, `ThreadView`) and global toasts (`ToastContext`) render via `createPortal(..., document.body)` and lock `document.body.style.overflow = 'hidden'` while a modal is open.
+
 ## Navigation & Account Routes
 
+- `/` — Home page with hero, community pillars, and live community counters.
+- `/sobre` — Institutional page with volatile materials lore, quick summary aside, community pillars, and CTAs (`/entrar`, `/membros`).
+- `/membros` — Member directory with search, group/badge filters, and sorting.
+- `/forum` — Forum index grouping active visible forums; `/forum/:forumSlug` for forum view; `/forum/:forumSlug/:threadId` for thread view.
 - `/perfil` — Authenticated own profile view with 4 tabs: Feed, Sobre, Qualidades, Histórico.
-- `/perfil/:slug` — Public profile view resolving transparently by user UID, @nick handle, or shortId.
+- `/perfil/:slug` — Public profile view resolving transparently by user UID, `@nick` handle, or `shortId`.
 - `/conta` — Account management panel with 240px sub-nav, redirects to `/conta/visao-geral`.
   - `/conta/visao-geral` — Overview info: Grupo, Cargo, Membro desde, Insígnias count.
-  - `/conta/perfil` — Self-editing profile info: Bio, Título, Visibilidade, Insígnias destacadas.
+  - `/conta/perfil` — Self-editing profile info: Identificador `@nick` (`SPEC-0001`, at top of panel), Imagens (Avatar & Banner), Bio, Título em destaque, Visibilidade, Insígnias em destaque (`manual` or `auto`).
   - `/conta/preferencias` — Preferences: Theme selector (Claro / Escuro).
-- Navbar Dropdown: Hovering avatar when authenticated opens dropdown menu with Perfil (/perfil), Conta (/conta), and Sair (with divider).
-- Admin Gear Icon: Displayed next to avatar button when user has `effectivePermissions.accessPanel === true`, linking to `/admin`.
+- `/admin` — Staff control panel (`/admin`, `/admin/usuarios`, `/admin/grupos`, `/admin/insignias`, `/admin/titulos`, `/admin/icones`, `/admin/raridades`, `/admin/categorias`, `/admin/origens`, `/admin/colecoes`, `/admin/forum`).
+- Navbar Dropdown: Clicking/activating avatar when authenticated opens menu with Meu Perfil (`/perfil`), Configurações (`/conta`), Painel Administrativo (`/admin`, when authorized), and Sair.
+- Admin Access & Gear Icon: Displayed next to avatar button when `!profile.isBanned` and user has `effectivePermissions.accessPanel === true` (or `isStaff === true` / `primaryGroupId === 'admin'`), linking to `/admin`.
 
-Handle & ShortId:
-  - Every user is assigned a unique alphanumeric shortId (`src/lib/shortId.ts`).
-  - Users may claim a unique `@nick` handle (`src/lib/handle.ts`) with a single self-service redefinition.
+Handle & ShortId (`SPEC-0001`):
+  - Every user is assigned a unique alphanumeric `shortId` (`src/lib/shortId.ts`).
+  - Users may claim a unique `@nick` handle (`src/lib/handle.ts`) in `/conta/perfil` (or via the onboarding `HandleBanner`) with a single self-service redefinition (`hasRedefinedHandle`).
   - Public profile routes (`/perfil/:slug`) resolve transparently against UID, `@nick`, or `shortId`.
 
 ## Colour tokens
 
-Defined in :root in the global CSS file. Dark is the default theme; light
-overrides via [data-theme="light"].
+Defined in :root in the global CSS file (`src/index.css`). Dark is the default
+theme; light overrides via `[data-theme="light"]`.
 
 Dark:
-  Surface    #25262A  #2E2F33  #393A3E
-  Text       #F5F5F7  #B7B8BC  #8E8F96
-  Border     #45464B  #2E2F33
-  Brand      #8BD0EF  #A9DEF4  #9FD9D4 (secondary)  #DCC7A8 (community)
-  Feedback   #4ADE80 (success)  #FBBF24 (warning)  #F87171 (error)  #60A5FA (info)
+  Surface    #25262A (primary)  #2E2F33 (secondary)  #393A3E (elevated)
+  Text       #F5F5F7 (primary)  #B7B8BC (secondary)  #8E8F96 (muted)
+  Border     #45464B (subtle)   #2E2F33 (hairline)   #7A7B80 (strong)  #8BD0EF (focus)
+  Brand      #8BD0EF (primary)  #A9DEF4 (hover)      #9FD9D4 (secondary)  #DCC7A8 (community)
+  Feedback   #4ADE80 (success)  #FBBF24 (warning)    #F87171 (error)      #60A5FA (info)
 
 Light:
-  Surface    #F7F7F8  #EFF0F0  #FCFCFD
-  Text       #272C35  #545E6E  #9DA4AF
-  Border     #DEE0E2  #EFF0F0
-  Brand      #177CE8  #0F80B3  #108A80 (secondary)  #A9762D (community)
-  Feedback   #16A34A (success)  #D97706 (warning)  #DC2626 (error)  #2563EB (info)
+  Surface    #F7F7F8 (primary)  #EFF0F0 (secondary)  #FCFCFD (elevated)
+  Text       #272C35 (primary)  #545E6E (secondary)  #9DA4AF (muted)
+  Border     #DEE0E2 (subtle)   #EFF0F0 (hairline)   #9DA4AF (strong)  #177CE8 (focus)
+  Brand      #177CE8 (primary)  #0F80B3 (hover)      #108A80 (secondary)  #A9762D (community)
+  Feedback   #16A34A (success)  #D97706 (warning)    #DC2626 (error)      #2563EB (info)

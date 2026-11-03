@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Plus from 'lucide-react/dist/esm/icons/plus';
 import ArrowLeft from 'lucide-react/dist/esm/icons/arrow-left';
-import ShieldAlert from 'lucide-react/dist/esm/icons/shield-alert';
+import AlertTriangle from 'lucide-react/dist/esm/icons/alert-triangle';
+import MessageSquare from 'lucide-react/dist/esm/icons/message-square';
+import FileText from 'lucide-react/dist/esm/icons/file-text';
 import CheckCircle from 'lucide-react/dist/esm/icons/check-circle';
 import XCircle from 'lucide-react/dist/esm/icons/x-circle';
 import AlertCircle from 'lucide-react/dist/esm/icons/alert-circle';
@@ -11,8 +13,10 @@ import Loader2 from 'lucide-react/dist/esm/icons/loader-2';
 import UserIcon from 'lucide-react/dist/esm/icons/user';
 import Inbox from 'lucide-react/dist/esm/icons/inbox';
 import RotateCcw from 'lucide-react/dist/esm/icons/rotate-ccw';
+import ExternalLink from 'lucide-react/dist/esm/icons/external-link';
 import {
   Forum,
+  ForumThread,
   ForumThreadFormData,
   ForumReport,
   ForumReportTargetStatus,
@@ -35,6 +39,16 @@ import { NewThreadForm } from './NewThreadForm';
 
 interface ForumViewProps {
   forum: Forum;
+}
+
+type SortOption = 'recent' | 'active' | 'voted';
+type FilterOption = 'solved' | 'pinned' | 'unanswered';
+
+function sumReactions(thread: ForumThread): number {
+  return Object.values(thread.reactionCounts || {}).reduce(
+    (acc, cur) => acc + (typeof cur === 'number' ? cur : 0),
+    0
+  );
 }
 
 const reporterProfileCache = new Map<string, Promise<UserProfile | null>>();
@@ -174,7 +188,10 @@ const ReporterBlock: React.FC<{
   );
 };
 
-const TargetBlock: React.FC<{ report: HydratedReport }> = ({ report }) => {
+const TargetBlock: React.FC<{
+  report: HydratedReport;
+  onViewMessage: () => void;
+}> = ({ report, onViewMessage }) => {
   const [expanded, setExpanded] = useState(false);
   const rawTitle = report.targetSnapshot?.title || '';
   const snapBody = report.targetSnapshot?.body || '';
@@ -242,13 +259,26 @@ const TargetBlock: React.FC<{ report: HydratedReport }> = ({ report }) => {
           </pre>
         </details>
       )}
+      <div className="flex items-center justify-end mt-1">
+        <button
+          type="button"
+          onClick={onViewMessage}
+          className="inline-flex items-center gap-1 text-[0.75rem] font-semibold text-[var(--brand-primary)] hover:text-[var(--brand-primary-hover)] hover:underline transition-colors cursor-pointer"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          Ver mensagem
+        </button>
+      </div>
     </div>
   );
 };
 
 export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('recent');
+  const [activeFilters, setActiveFilters] = useState<FilterOption[]>([]);
   const [isCreatingThread, setIsCreatingThread] = useState(false);
   const [savingThread, setSavingThread] = useState(false);
 
@@ -276,6 +306,58 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
     () => reports.filter((r) => r.status === 'open').length,
     [reports]
   );
+
+  const solvedCount = useMemo(
+    () =>
+      threads.filter((t) => Boolean(forum.features?.solution && t.solutionCommentId)).length,
+    [threads, forum.features?.solution]
+  );
+  const pinnedCount = useMemo(
+    () => threads.filter((t) => Boolean(t.isPinned)).length,
+    [threads]
+  );
+  const unansweredCount = useMemo(
+    () => threads.filter((t) => (t.commentCount || 0) === 0).length,
+    [threads]
+  );
+
+  const displayedThreads = useMemo(() => {
+    let list = [...threads];
+
+    if (activeFilters.includes('solved')) {
+      list = list.filter((t) => Boolean(forum.features?.solution && t.solutionCommentId));
+    }
+    if (activeFilters.includes('pinned')) {
+      list = list.filter((t) => Boolean(t.isPinned));
+    }
+    if (activeFilters.includes('unanswered')) {
+      list = list.filter((t) => (t.commentCount || 0) === 0);
+    }
+
+    if (sortBy === 'recent') {
+      list.sort((a, b) => {
+        const tA = a.createdAt?.toMillis?.() || 0;
+        const tB = b.createdAt?.toMillis?.() || 0;
+        return tB - tA;
+      });
+    } else if (sortBy === 'active') {
+      list.sort((a, b) => (b.commentCount || 0) - (a.commentCount || 0));
+    } else if (sortBy === 'voted') {
+      list.sort((a, b) => sumReactions(b) - sumReactions(a));
+    }
+
+    if (!activeFilters.includes('pinned')) {
+      list.sort((a, b) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+    }
+
+    return list;
+  }, [threads, activeFilters, sortBy, forum.features?.solution]);
+
+  const toggleFilter = (filter: FilterOption) => {
+    setActiveFilters((prev) =>
+      prev.includes(filter) ? prev.filter((f) => f !== filter) : [...prev, filter]
+    );
+  };
 
   const allowCreate = canCreateThread(forum, user, profile);
   const allowReviewReports = canReviewReports(forum, user, profile);
@@ -461,26 +543,26 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
   };
 
   return (
-    <div className="space-y-6 forum-screen-fade">
-      {/* Breadcrumb & Navigation */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="forum-screen-fade">
+      {/* Page Actions: Breadcrumb & Action Buttons */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-6">
         <Link
           to="/forum"
-          className="inline-flex items-center gap-1.5 forum-meta font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors self-start"
+          className="inline-flex items-center gap-2 text-[13px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors whitespace-nowrap self-start"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="w-4 h-4 shrink-0" />
           Todos os fóruns
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2">
           {allowReviewReports && forum.features?.reports && (
             <button
               type="button"
               onClick={handleOpenReports}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 forum-meta font-semibold rounded-lg bg-[var(--bg-surface)] border border-[var(--border-default)] text-[var(--feedback-warning)] hover:bg-[var(--bg-surface-elevated)] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[8px] text-[12px] font-semibold border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:border-[var(--border-focus)] hover:text-[var(--text-primary)] transition-all cursor-pointer"
             >
-              <ShieldAlert className="w-3.5 h-3.5" />
-              Denúncias do Fórum
+              <AlertTriangle className="w-3.5 h-3.5 text-[var(--feedback-warning)]" />
+              Denúncias
             </button>
           )}
 
@@ -488,125 +570,217 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
             <button
               type="button"
               onClick={() => setIsCreatingThread(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 forum-body font-semibold rounded-lg bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[8px] text-[12px] font-semibold border border-[var(--brand-primary)] bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] hover:border-[var(--brand-primary-hover)] transition-all cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               Novo tópico
             </button>
           )}
         </div>
       </div>
 
-      {/* Forum Header Banner */}
-      <div className="p-6 sm:p-8 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2.5 py-0.5 forum-meta font-semibold rounded-full bg-[var(--bg-default)] border border-[var(--border-subtle)] text-[var(--brand-primary)]">
-                Foco: {forum.focus}
-              </span>
-              <span className="forum-meta text-[var(--text-muted)]">
-                <span className="forum-num">{threads.length}</span>{' '}
-                {threads.length === 1 ? 'tópico' : 'tópicos'}
-              </span>
-            </div>
-            <h1 className="forum-page text-[var(--text-primary)] m-0">
-              {forum.title}
-            </h1>
-            {forum.description && (
-              <p className="forum-body text-[var(--text-secondary)] mt-2 mb-0 max-w-2xl">
-                {forum.description}
-              </p>
-            )}
+      {/* Left-Aligned Forum Header */}
+      <div className="flex flex-col items-start gap-4 p-6 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-[12px] mb-6">
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-[1.75rem] leading-[1.2] font-bold text-[var(--text-primary)] m-0">
+            {forum.title}
+          </h1>
+          {forum.description && (
+            <p className="text-[0.875rem] text-[var(--text-secondary)] leading-[1.5] max-w-[600px] m-0">
+              {forum.description}
+            </p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap forum-meta text-[var(--text-muted)]">
+          {forum.focus && (
+            <>
+              <div className="flex items-center gap-1.5">
+                <MessageSquare className="w-3.5 h-3.5 text-[var(--text-muted)] shrink-0" />
+                <span>Fórum: {forum.focus}</span>
+              </div>
+              <span className="text-[var(--border-default)]">·</span>
+            </>
+          )}
+          <div className="flex items-center gap-1.5">
+            <FileText className="w-3.5 h-3.5 text-[var(--text-muted)] shrink-0" />
+            <span>
+              <span className="forum-num">{threads.length}</span>{' '}
+              {threads.length === 1 ? 'tópico' : 'tópicos'}
+            </span>
           </div>
         </div>
       </div>
 
       {/* New Thread Form (when active) */}
       {isCreatingThread && (
-        <NewThreadForm
-          forum={forum}
-          onSave={handleCreateThread}
-          onCancel={() => setIsCreatingThread(false)}
-          saving={savingThread}
-        />
-      )}
-
-      {/* Internal Categories Tabs */}
-      {forum.categories.length > 0 && (
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-[var(--border-subtle)]">
-          <button
-            type="button"
-            onClick={() => setSelectedCategory(null)}
-            className={`px-3.5 py-1.5 forum-meta font-semibold rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
-              selectedCategory === null
-                ? 'bg-[var(--brand-primary)] text-[var(--text-on-primary)]'
-                : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-default)]'
-            }`}
-          >
-            Todos os tópicos
-          </button>
-          {forum.categories.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3.5 py-1.5 forum-meta font-semibold rounded-lg transition-colors cursor-pointer whitespace-nowrap ${
-                selectedCategory === cat.id
-                  ? 'bg-[var(--brand-primary)] text-[var(--text-on-primary)]'
-                  : 'bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] border border-[var(--border-default)]'
-              }`}
-            >
-              {cat.name}
-            </button>
-          ))}
+        <div className="mb-6">
+          <NewThreadForm
+            forum={forum}
+            onSave={handleCreateThread}
+            onCancel={() => setIsCreatingThread(false)}
+            saving={savingThread}
+          />
         </div>
       )}
 
+      {/* Internal Categories Tabs */}
+      <div className="flex gap-2 mb-6 flex-wrap">
+        <button
+          type="button"
+          onClick={() => setSelectedCategory(null)}
+          className={`px-3.5 py-1.5 rounded-full text-[12px] font-medium border transition-all cursor-pointer whitespace-nowrap ${
+            selectedCategory === null
+              ? 'bg-[var(--brand-primary)] text-[var(--text-on-primary)] border-[var(--brand-primary)]'
+              : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--border-focus)] hover:text-[var(--text-primary)]'
+          }`}
+        >
+          Todos os tópicos
+        </button>
+        {forum.categories.map((cat) => (
+          <button
+            key={cat.id}
+            type="button"
+            onClick={() => setSelectedCategory(cat.id)}
+            className={`px-3.5 py-1.5 rounded-full text-[12px] font-medium border transition-all cursor-pointer whitespace-nowrap ${
+              selectedCategory === cat.id
+                ? 'bg-[var(--brand-primary)] text-[var(--text-on-primary)] border-[var(--brand-primary)]'
+                : 'bg-transparent text-[var(--text-secondary)] border-[var(--border-default)] hover:border-[var(--border-focus)] hover:text-[var(--text-primary)]'
+            }`}
+          >
+            {cat.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Filter & Sort Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-wrap px-3 py-2 mb-4 bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-[10px]">
+        <div
+          className="flex gap-0.5 bg-[var(--bg-default)] p-[3px] rounded-[7px] border border-[var(--border-subtle)] shrink-0 self-start sm:self-auto"
+          role="tablist"
+          aria-label="Ordenar tópicos"
+        >
+          {(
+            [
+              { key: 'recent', label: 'Recentes' },
+              { key: 'active', label: 'Ativos' },
+              { key: 'voted', label: 'Votados' },
+            ] as const
+          ).map((tab) => {
+            const isActive = sortBy === tab.key;
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setSortBy(tab.key)}
+                className={`flex items-center justify-center h-6 px-3 rounded-[5px] text-[11.5px] font-medium leading-none cursor-pointer transition-all ${
+                  isActive
+                    ? 'bg-[var(--bg-surface)] text-[var(--text-primary)] shadow-[var(--sombra-1)]'
+                    : 'bg-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="hidden sm:block w-px h-5 bg-[var(--border-subtle)] shrink-0" />
+
+        <div className="flex gap-1.5 flex-wrap flex-1 min-w-0 items-center">
+          {(
+            [
+              { key: 'solved', label: 'Resolvidos', count: solvedCount },
+              { key: 'pinned', label: 'Fixados', count: pinnedCount },
+              { key: 'unanswered', label: 'Sem resposta', count: unansweredCount },
+            ] as const
+          ).map((chip) => {
+            const isActive = activeFilters.includes(chip.key);
+            return (
+              <button
+                key={chip.key}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => toggleFilter(chip.key)}
+                className={`inline-flex items-center justify-center gap-1.5 h-7 px-2.5 rounded-full text-[11px] font-medium border transition-all cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? 'bg-[color-mix(in_srgb,var(--brand-primary)_14%,transparent)] border-[var(--brand-primary)] text-[var(--brand-primary)]'
+                    : 'border-[var(--border-default)] bg-transparent text-[var(--text-secondary)] hover:border-[var(--border-focus)] hover:text-[var(--text-primary)]'
+                }`}
+              >
+                <span>{chip.label}</span>
+                <span
+                  className={`inline-flex items-center justify-center h-[18px] min-w-[18px] text-[10px] rounded-full px-[5px] font-semibold leading-none forum-num ${
+                    isActive
+                      ? 'text-[var(--brand-primary)] bg-[color-mix(in_srgb,var(--brand-primary)_15%,transparent)]'
+                      : 'text-[var(--text-muted)] bg-[var(--bg-default)]'
+                  }`}
+                >
+                  {chip.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <span className="inline-flex items-center gap-1 h-7 text-[11px] leading-none text-[var(--text-muted)] whitespace-nowrap sm:ml-auto self-end sm:self-auto">
+          <strong className="text-[var(--text-secondary)] font-semibold forum-num">
+            {displayedThreads.length}
+          </strong>{' '}
+          de <span className="forum-num">{threads.length}</span>{' '}
+          {threads.length === 1 ? 'tópico' : 'tópicos'}
+        </span>
+      </div>
+
       {/* Threads List */}
       {error && (
-        <div className="p-4 rounded-xl bg-[var(--feedback-error)] text-[var(--text-inverse)] forum-body font-semibold">
+        <div className="p-4 mb-4 rounded-xl bg-[var(--feedback-error)] text-[var(--text-inverse)] forum-body font-semibold">
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="space-y-3">
+        <div className="flex flex-col bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-[10px] overflow-hidden divide-y divide-[var(--border-subtle)]">
           {[1, 2, 3, 4].map((n) => (
-            <div
-              key={n}
-              className="p-5 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] animate-pulse h-24"
-            />
+            <div key={n} className="p-5 animate-pulse h-20" />
           ))}
         </div>
-      ) : threads.length === 0 ? (
-        <div className="p-10 rounded-xl border border-dashed border-[var(--border-default)] bg-[var(--bg-surface)] text-center">
+      ) : displayedThreads.length === 0 ? (
+        <div className="p-10 rounded-[10px] border border-[var(--border-default)] bg-[var(--bg-surface)] text-center">
           <h3 className="forum-title text-[var(--text-primary)] m-0">
             Nenhum tópico encontrado
           </h3>
           <p className="forum-meta text-[var(--text-muted)] mt-1.5 mb-4 max-w-sm mx-auto">
-            {selectedCategory
+            {activeFilters.length > 0
+              ? 'Nenhum tópico corresponde aos filtros selecionados.'
+              : selectedCategory
               ? 'Nenhum tópico cadastrado nesta subdivisão interna.'
               : 'Nenhum tópico criado neste fórum. Seja o primeiro a abrir uma discussão!'}
           </p>
-          {allowCreate && !isCreatingThread && (
+          {allowCreate && !isCreatingThread && activeFilters.length === 0 && (
             <button
               type="button"
               onClick={() => setIsCreatingThread(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 forum-body font-semibold rounded-lg bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[8px] text-[12px] font-semibold bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] transition-colors cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               Criar primeiro tópico
             </button>
           )}
         </div>
       ) : (
-        <div className="space-y-3">
-          {threads.map((thread) => (
+        <div
+          className="flex flex-col bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-[10px] overflow-hidden"
+          role="list"
+        >
+          {displayedThreads.map((thread) => (
             <ThreadListItem key={thread.id} thread={thread} forum={forum} />
           ))}
         </div>
       )}
+
 
       {/* Reports Review Modal Portal */}
       {showReportsModal &&
@@ -769,7 +943,22 @@ export const ForumView: React.FC<ForumViewProps> = ({ forum }) => {
                           fallbackId={report.reporterId}
                         />
 
-                        <TargetBlock report={report} />
+                        <TargetBlock
+                          report={report}
+                          onViewMessage={() => {
+                            const targetThreadId =
+                              report.kind === 'thread'
+                                ? report.targetId || report.itemId
+                                : report.threadId || report.targetId || report.itemId;
+                            const basePath = `/forum/${forum.slug}/${targetThreadId}`;
+                            const hash =
+                              report.kind === 'comment'
+                                ? `#comment-${report.targetId || report.itemId}`
+                                : '';
+                            navigate(`${basePath}${hash}`);
+                            setShowReportsModal(false);
+                          }}
+                        />
 
                         <p className="forum-body text-[var(--text-primary)] m-0 font-medium">
                           Motivo: “{report.reason}”

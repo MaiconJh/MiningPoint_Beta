@@ -107,6 +107,26 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
     };
   }, [thread.authorId]);
 
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#comment-')) {
+      const element = document.getElementById(hash.substring(1));
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.classList.add(
+          'ring-2',
+          'ring-[var(--brand-primary)]',
+          'transition-all',
+          'duration-500'
+        );
+        const timer = window.setTimeout(() => {
+          element.classList.remove('ring-2', 'ring-[var(--brand-primary)]');
+        }, 2000);
+        return () => window.clearTimeout(timer);
+      }
+    }
+  }, []);
+
   // Permissions
   const allowComment = canComment(forum, user, profile, thread);
   const allowEditThread = canEditThread(forum, thread, user, profile);
@@ -544,6 +564,8 @@ export const ThreadView: React.FC<ThreadViewProps> = ({
         forumId: forum.id,
         kind: reportingItem.kind,
         itemId: reportingItem.id,
+        targetId: reportingItem.id,
+        threadId: thread.id,
         reporterId: user.uid,
         reason: reportReason.trim(),
         targetSnapshot,
@@ -1632,6 +1654,7 @@ const CommentCard: React.FC<CommentCardProps> = ({
 
   return (
     <div
+      id={`comment-${comment.id}`}
       className={`relative p-4 sm:p-5 rounded-xl border forum-card-transition ${
         isSolution
           ? 'border-[var(--feedback-success)] bg-[var(--bg-surface-elevated)]'
