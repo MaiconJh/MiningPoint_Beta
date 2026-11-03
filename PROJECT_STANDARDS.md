@@ -177,6 +177,12 @@ icons/{iconId}
   createdAt: timestamp
   createdBy: string
 
+icons/settings
+  kind: 'global-forum-icon'       // reserved pointer document (no 'name' field)
+  iconId: string | null           // ref to icons/{iconId}, null falls back to default Lucide icon
+  updatedAt: timestamp
+  updatedBy: string
+
 titles/{titleId}
   name: string                    // "Pioneiro", "Filho da Profundeza"
   description: string

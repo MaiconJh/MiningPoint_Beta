@@ -6,6 +6,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  onSnapshot,
   query,
   where,
   orderBy,
@@ -14,7 +15,13 @@ import {
   type DocumentData,
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { CustomIcon, CustomIconFormData } from '../types/icon';
+import {
+  CustomIcon,
+  CustomIconFormData,
+  GLOBAL_FORUM_ICON_DOC_ID,
+  GLOBAL_FORUM_ICON_KIND,
+  GlobalForumIconSetting,
+} from '../types/icon';
 import { CategoryKey } from '../data/icons/categories';
 
 const parseCustomIconDoc = (id: string, data: DocumentData): CustomIcon => {
@@ -30,6 +37,21 @@ const parseCustomIconDoc = (id: string, data: DocumentData): CustomIcon => {
   };
 };
 
+const parseGlobalForumIconSetting = (
+  data: DocumentData | undefined
+): GlobalForumIconSetting | null => {
+  if (!data || data.kind !== GLOBAL_FORUM_ICON_KIND) {
+    return null;
+  }
+
+  return {
+    kind: GLOBAL_FORUM_ICON_KIND,
+    iconId: typeof data.iconId === 'string' && data.iconId.trim() ? data.iconId : null,
+    updatedAt: data.updatedAt ?? null,
+    updatedBy: typeof data.updatedBy === 'string' ? data.updatedBy : '',
+  };
+};
+
 export const listCustomIcons = async (): Promise<CustomIcon[]> => {
   if (!db) return [];
   try {
@@ -37,6 +59,7 @@ export const listCustomIcons = async (): Promise<CustomIcon[]> => {
     const snap = await getDocs(q);
     const icons: CustomIcon[] = [];
     snap.forEach((d) => {
+      if (d.id === GLOBAL_FORUM_ICON_DOC_ID) return;
       icons.push(parseCustomIconDoc(d.id, d.data()));
     });
     return icons;
@@ -47,7 +70,7 @@ export const listCustomIcons = async (): Promise<CustomIcon[]> => {
 };
 
 export const getCustomIcon = async (iconId: string): Promise<CustomIcon | null> => {
-  if (!db || !iconId) return null;
+  if (!db || !iconId || iconId === GLOBAL_FORUM_ICON_DOC_ID) return null;
   try {
     const snap = await getDoc(doc(db, 'icons', iconId));
     if (!snap.exists()) return null;
@@ -73,8 +96,10 @@ export const createCustomIcon = async (
       .replace(/-+/g, '-')
       .replace(/^-|-$/g, '') || 'icone';
 
-  const existing = await getDoc(doc(db, 'icons', baseId));
-  const docId = existing.exists() ? `${baseId}-${Date.now().toString(36)}` : baseId;
+  const isReserved = baseId === GLOBAL_FORUM_ICON_DOC_ID;
+  const existing = isReserved ? null : await getDoc(doc(db, 'icons', baseId));
+  const docId =
+    isReserved || existing?.exists() ? `${baseId}-${Date.now().toString(36)}` : baseId;
 
   await setDoc(doc(db, 'icons', docId), {
     name: data.name.trim(),
@@ -118,6 +143,57 @@ export const isIconInUse = async (iconId: string): Promise<boolean> => {
   }
 };
 
+export const getGlobalForumIconConfig = async (): Promise<GlobalForumIconSetting | null> => {
+  if (!db) return null;
+  try {
+    const snap = await getDoc(doc(db, 'icons', GLOBAL_FORUM_ICON_DOC_ID));
+    if (!snap.exists()) return null;
+    return parseGlobalForumIconSetting(snap.data());
+  } catch (error) {
+    console.error('Error getting global forum icon config:', error);
+    return null;
+  }
+};
+
+export const setGlobalForumIconConfig = async (
+  iconId: string | null,
+  updatedBy: string
+): Promise<void> => {
+  if (!db) throw new Error('Firebase DB indisponível');
+
+  await setDoc(doc(db, 'icons', GLOBAL_FORUM_ICON_DOC_ID), {
+    kind: GLOBAL_FORUM_ICON_KIND,
+    iconId: iconId && iconId.trim() ? iconId.trim() : null,
+    updatedAt: serverTimestamp(),
+    updatedBy,
+  });
+};
+
+export const subscribeGlobalForumIconConfig = (
+  callback: (setting: GlobalForumIconSetting | null) => void
+): (() => void) => {
+  if (!db) {
+    callback(null);
+    return () => {};
+  }
+
+  const ref = doc(db, 'icons', GLOBAL_FORUM_ICON_DOC_ID);
+  return onSnapshot(
+    ref,
+    (snap) => {
+      if (!snap.exists()) {
+        callback(null);
+        return;
+      }
+      callback(parseGlobalForumIconSetting(snap.data()));
+    },
+    (error) => {
+      console.error('Error subscribing to global forum icon config:', error);
+      callback(null);
+    }
+  );
+};
+
 export const deleteCustomIcon = async (
   iconId: string
 ): Promise<{ success: boolean; error?: string }> => {
@@ -134,6 +210,11 @@ export const deleteCustomIcon = async (
   }
 
   try {
+    const globalConfig = await getGlobalForumIconConfig();
+    if (globalConfig?.iconId === iconId) {
+      await setGlobalForumIconConfig(null, 'system');
+    }
+
     await deleteDoc(doc(db, 'icons', iconId));
     return { success: true };
   } catch (error) {

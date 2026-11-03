@@ -186,6 +186,33 @@
         "createdBy": { "type": "string" }
       },
       "required": ["name", "description", "order", "createdAt", "createdBy"]
+    },
+    "CustomIcon": {
+      "title": "CustomIcon",
+      "description": "Sanitized custom SVG icon definition",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "svg": { "type": "string" },
+        "viewBox": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["name", "category", "tags", "svg", "viewBox", "createdAt", "createdBy"]
+    },
+    "GlobalForumIconSetting": {
+      "title": "GlobalForumIconSetting",
+      "description": "Reserved pointer document in icons/settings for the global forum SVG icon",
+      "type": "object",
+      "properties": {
+        "kind": { "type": "string", "enum": ["global-forum-icon"] },
+        "iconId": { "type": ["string", "null"] },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string" }
+      },
+      "required": ["kind", "iconId", "updatedAt", "updatedBy"]
     }
   },
   "firestore": {
@@ -224,6 +251,14 @@
     "/collections/{collectionId}": {
       "schema": { "$ref": "Collection" },
       "description": "Named collection definitions"
+    },
+    "/icons/{iconId}": {
+      "schema": { "$ref": "CustomIcon" },
+      "description": "Custom SVG icon definitions"
+    },
+    "/icons/settings": {
+      "schema": { "$ref": "GlobalForumIconSetting" },
+      "description": "Global forum SVG icon pointer setting"
     }
   }
 }

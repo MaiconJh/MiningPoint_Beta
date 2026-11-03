@@ -10,6 +10,8 @@ import { useAuth } from '../../context/AuthContext';
 import { canViewForum } from '../../lib/forumPermissions';
 import { listThreads } from '../../lib/forumThreads';
 import { ThreadListItem } from './ThreadListItem';
+import { useGlobalForumIcon } from '../../hooks/useGlobalForumIcon';
+import { createCustomIconComponent } from '../../data/icons/iconRegistry';
 
 interface ForumIndexProps {
   forums: Forum[];
@@ -20,6 +22,12 @@ interface ForumIndexProps {
 export const ForumIndex: React.FC<ForumIndexProps> = ({ forums, loading, error }) => {
   const { user, profile } = useAuth();
   const [selectedFocus, setSelectedFocus] = useState<string | null>(null);
+  const { icon: globalForumIcon } = useGlobalForumIcon();
+
+  const GlobalForumIconComp = useMemo(() => {
+    if (!globalForumIcon) return null;
+    return createCustomIconComponent(globalForumIcon.svg, globalForumIcon.viewBox);
+  }, [globalForumIcon]);
 
   // Filter forums visible to the current user
   const visibleForums = useMemo(() => {
@@ -197,7 +205,11 @@ export const ForumIndex: React.FC<ForumIndexProps> = ({ forums, loading, error }
                     className="group flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 p-5 border-b border-[var(--border-subtle)] last:border-b-0 transition-colors cursor-pointer relative hover:bg-[color-mix(in_srgb,var(--bg-surface)_80%,var(--bg-surface-elevated)_20%)]"
                   >
                     <div className="w-11 h-11 rounded-[10px] bg-[var(--bg-default)] border border-[var(--border-default)] group-hover:border-[var(--border-focus)] flex items-center justify-center shrink-0 text-[var(--brand-primary)] transition-colors">
-                      <MessageSquare className="w-[22px] h-[22px]" />
+                      {GlobalForumIconComp ? (
+                        <GlobalForumIconComp className="w-[22px] h-[22px]" />
+                      ) : (
+                        <MessageSquare className="w-[22px] h-[22px]" />
+                      )}
                     </div>
 
                     <div className="flex-1 min-w-0">

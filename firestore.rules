@@ -90,9 +90,9 @@ service cloud.firestore {
 
     match /icons/{iconId} {
       allow read: if true;
-      allow create: if has('manageBadges');
-      allow update: if has('manageBadges');
-      allow delete: if has('manageBadges');
+      allow create: if has('manageBadges') || has('manageForum');
+      allow update: if has('manageBadges') || has('manageForum');
+      allow delete: if has('manageBadges') || has('manageForum');
     }
 
     match /titles/{titleId} {

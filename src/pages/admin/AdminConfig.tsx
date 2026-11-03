@@ -1,15 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import RefreshCwIcon from 'lucide-react/dist/esm/icons/refresh-cw';
 import DatabaseIcon from 'lucide-react/dist/esm/icons/database';
 import CheckCircleIcon from 'lucide-react/dist/esm/icons/check-circle';
 import UsersIcon from 'lucide-react/dist/esm/icons/users';
 import ShieldAlertIcon from 'lucide-react/dist/esm/icons/shield-alert';
+import MessageSquareIcon from 'lucide-react/dist/esm/icons/message-square';
 import { useAuth } from '../../context/AuthContext';
 import { backfillShortIds, backfillPrimaryGroupId, type BackfillPrimaryGroupIdResult } from '../../lib/users';
+import { setGlobalForumIconConfig } from '../../lib/icons';
+import { useCustomIcons } from '../../hooks/useCustomIcons';
+import { useGlobalForumIcon } from '../../hooks/useGlobalForumIcon';
+import { GlobalForumIconPicker } from '../../components/admin/GlobalForumIconPicker';
 
 export const AdminConfig: React.FC = () => {
   const { profile } = useAuth();
   const canManageUsers = !profile?.isBanned && !!profile?.effectivePermissions?.manageUsers;
+  const canManageForum = !profile?.isBanned && !!profile?.effectivePermissions?.manageForum;
 
   // ShortIds backfill state
   const [running, setRunning] = useState(false);
@@ -25,6 +31,22 @@ export const AdminConfig: React.FC = () => {
   const [progressGroups, setProgressGroups] = useState<{ done: number; total: number } | null>(null);
   const [resultGroups, setResultGroups] = useState<BackfillPrimaryGroupIdResult | null>(null);
   const [errorGroups, setErrorGroups] = useState<string | null>(null);
+
+  // Global forum icon state
+  const { customIcons, reload: reloadCustomIcons } = useCustomIcons();
+  const { setting: globalForumSetting } = useGlobalForumIcon();
+  const [globalIconSaving, setGlobalIconSaving] = useState(false);
+  const [globalIconSuccess, setGlobalIconSuccess] = useState<string | null>(null);
+  const [globalIconError, setGlobalIconError] = useState<string | null>(null);
+  const successTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current !== null) {
+        window.clearTimeout(successTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleRunBackfill = async () => {
     setRunning(true);
@@ -63,6 +85,37 @@ export const AdminConfig: React.FC = () => {
       setErrorGroups('Ocorreu um erro ao executar a migração de grupos.');
     } finally {
       setRunningGroups(false);
+    }
+  };
+
+  const handleSaveGlobalIcon = async (iconId: string | null) => {
+    if (!canManageForum || !profile) {
+      setGlobalIconError('Ação não autorizada. Requer permissão para gerenciar fóruns.');
+      return;
+    }
+
+    setGlobalIconSaving(true);
+    setGlobalIconError(null);
+    setGlobalIconSuccess(null);
+
+    try {
+      await setGlobalForumIconConfig(iconId, profile.uid);
+      setGlobalIconSuccess(
+        iconId
+          ? 'Ícone global dos fóruns atualizado com sucesso!'
+          : 'Ícone global restaurado para o padrão do sistema!'
+      );
+      if (successTimerRef.current !== null) {
+        window.clearTimeout(successTimerRef.current);
+      }
+      successTimerRef.current = window.setTimeout(() => {
+        setGlobalIconSuccess(null);
+      }, 4000);
+    } catch (err) {
+      console.error('Erro ao salvar ícone global dos fóruns:', err);
+      setGlobalIconError('Ocorreu um erro ao salvar o ícone global dos fóruns.');
+    } finally {
+      setGlobalIconSaving(false);
     }
   };
 
@@ -239,6 +292,60 @@ export const AdminConfig: React.FC = () => {
                   <li>Total de contas verificadas: <strong>{resultGroups.totalCount}</strong></li>
                 </ul>
               </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Seção Ícone Global dos Fóruns */}
+      <section className="p-6 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-lg bg-[color-mix(in_srgb,var(--brand-primary)_12%,transparent)] text-[var(--brand-primary)]">
+            <MessageSquareIcon className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold text-[var(--text-primary)] m-0">
+              Ícone Global dos Fóruns
+            </h2>
+            <p className="text-xs text-[var(--text-secondary)] m-0 mt-0.5">
+              Define o ícone SVG exibido em tempo real em todos os cards de fóruns da página inicial do fórum.
+            </p>
+          </div>
+        </div>
+
+        <div className="p-5 rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)] space-y-4">
+          {!canManageForum && (
+            <p className="text-xs text-[var(--feedback-warning)] m-0 flex items-center gap-1.5 font-medium">
+              <ShieldAlertIcon className="w-3.5 h-3.5" />
+              Requer permissão de Gerenciar fóruns (manageForum).
+            </p>
+          )}
+
+          <GlobalForumIconPicker
+            customIcons={customIcons}
+            selectedIconId={globalForumSetting?.iconId ?? null}
+            onSelect={handleSaveGlobalIcon}
+            onCreated={reloadCustomIcons}
+            createdBy={profile?.uid || 'admin'}
+            disabled={!canManageForum || globalIconSaving}
+          />
+
+          {globalIconError && (
+            <div
+              role="alert"
+              className="p-4 rounded-lg bg-[color-mix(in_srgb,var(--feedback-error)_10%,transparent)] border border-[color-mix(in_srgb,var(--feedback-error)_30%,transparent)] text-xs text-[var(--feedback-error)]"
+            >
+              {globalIconError}
+            </div>
+          )}
+
+          {globalIconSuccess && (
+            <div
+              role="alert"
+              className="p-4 rounded-lg bg-[color-mix(in_srgb,var(--feedback-success)_10%,transparent)] border border-[color-mix(in_srgb,var(--feedback-success)_30%,transparent)] flex items-center gap-3 text-xs text-[var(--feedback-success)] font-semibold"
+            >
+              <CheckCircleIcon className="w-5 h-5 shrink-0" />
+              <span>{globalIconSuccess}</span>
             </div>
           )}
         </div>
