@@ -1,12 +1,12 @@
 ---
 id: SPEC-0006
 title: Ícone SVG individual por fórum
-status: rascunho
+status: aprovado
 created: 2026-11-02
 updated: 2026-11-02
 author: MaiconJh
-reviewer: null
-approved_at: null
+reviewer: MaiconJh
+approved_at: 2026-11-02
 implemented_at: null
 commit: null
 superseded_by: null
