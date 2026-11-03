@@ -1,12 +1,12 @@
 ---
 id: SPEC-0006
 title: Ícone SVG global dos fóruns
-status: rascunho
+status: aprovado
 created: 2026-11-02
 updated: 2026-11-02
 author: MaiconJh
-reviewer: null
-approved_at: null
+reviewer: MaiconJh
+approved_at: 2026-11-02
 implemented_at: null
 commit: null
 superseded_by: null
@@ -127,3 +127,4 @@ Progresso: `[0/8]`
 | Data | Autor | Mudança |
 |---|---|---|
 | 2026-11-02 | MaiconJh | Criação da spec |
+| 2026-11-02 | MaiconJh | Revisão aprovada (SPEC-0006-review.md); transição para aprovado |
