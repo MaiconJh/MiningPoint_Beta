@@ -1,258 +1,216 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
+import { useForums } from '../hooks/useForums';
+import { useMembers } from '../hooks/useMembers';
 
-interface StatCounterProps {
-  finalValue: number;
-  suffix?: string;
-  label: string;
-}
+const ArrowIcon: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="w-4 h-4"
+    aria-hidden="true"
+  >
+    <path d="M5 12h14" />
+    <path d="m13 6 6 6-6 6" />
+  </svg>
+);
 
-const StatCounter: React.FC<StatCounterProps> = ({ finalValue, suffix = '', label }) => {
-  const [displayValue, setDisplayValue] = useState<number>(finalValue);
+const UsersIcon: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="w-5 h-5"
+    aria-hidden="true"
+  >
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
 
-  useEffect(() => {
-    // Respect prefers-reduced-motion
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setDisplayValue(finalValue);
-      return;
-    }
+const ForumIcon: React.FC = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth={1.8}
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="w-5 h-5"
+    aria-hidden="true"
+  >
+    <path d="M21 11.5a8.38 8.38 0 0 1-9 8.5 9.2 9.2 0 0 1-4-.9L3 21l1.9-4.6A8.4 8.4 0 0 1 3 11.5 8.5 8.5 0 0 1 12 3a8.5 8.5 0 0 1 9 8.5Z" />
+  </svg>
+);
 
-    const duration = 1200;
-    const startTime = performance.now();
-    setDisplayValue(0);
-
-    let animationFrameId: number;
-
-    const frame = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      // Ease-out cubic: 1 - (1 - progress)^3
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const current = Math.round(finalValue * eased);
-
-      setDisplayValue(current);
-
-      if (progress < 1) {
-        animationFrameId = requestAnimationFrame(frame);
-      }
-    };
-
-    animationFrameId = requestAnimationFrame(frame);
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [finalValue]);
-
-  return (
-    <div className="flex flex-col gap-1 min-w-[132px]">
-      <span className="font-bold text-3xl sm:text-4xl text-[var(--text-primary)] tabular-nums leading-tight">
-        {displayValue.toLocaleString('pt-BR')}{suffix}
-      </span>
-      <span className="text-xs uppercase tracking-wide text-[var(--text-secondary)] font-medium">
+const HomeStat: React.FC<{ icon: React.ReactNode; value: string; label: string }> = ({
+  icon,
+  value,
+  label,
+}) => (
+  <div className="flex items-center gap-3 min-w-0">
+    <span className="flex items-center justify-center w-10 h-10 rounded-lg bg-[color-mix(in_srgb,var(--brand-primary)_12%,transparent)] text-[var(--brand-primary)]">
+      {icon}
+    </span>
+    <div className="min-w-0">
+      <strong className="block text-xl font-bold text-[var(--text-primary)] tabular-nums">
+        {value}
+      </strong>
+      <span className="block text-xs uppercase tracking-wide text-[var(--text-secondary)]">
         {label}
       </span>
     </div>
-  );
-};
+  </div>
+);
 
 export const Home: React.FC = () => {
+  const { members, isLoading: membersLoading, error: membersError, hasMore } = useMembers();
+  const { forums, loading: forumsLoading, error: forumsError } = useForums();
+  const activeForums = forums.filter((forum) => forum.isActive);
+  const memberValue = membersLoading ? '—' : `${members.length}${hasMore ? '+' : ''}`;
+
   return (
     <div className="w-full">
-      {/* 1. Hero Section */}
-      <section className="relative py-16 sm:py-24 bg-[radial-gradient(120%_90%_at_50%_0%,color-mix(in_srgb,var(--brand-primary)_20%,transparent)_0%,transparent_64%)] border-b border-[var(--border-default)]">
-        <div className="w-full max-w-[1180px] mx-auto px-4 sm:px-6">
-          <div className="max-w-[760px]">
-            <span className="block mb-2 font-mono text-xs uppercase tracking-widest text-[var(--brand-primary)]">
-              Comunidade de exploração · Expedições subterrâneas
-            </span>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[var(--text-primary)] mb-6">
-              MiningPoint
-            </h1>
-            <p className="text-lg sm:text-xl text-[var(--text-secondary)] leading-relaxed mb-8">
-              Nas profundezas, cada descoberta abre novas possibilidades. Cada recurso guarda perguntas ainda sem resposta — e cada explorador decide até onde está disposto a ir.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 mb-12">
-              <Link
-                to="/sobre"
-                className="inline-flex items-center justify-center px-6 py-3 rounded-lg text-base font-semibold tracking-wide bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] transition-colors cursor-pointer"
-              >
-                Explorar a Lore
-              </Link>
-              <button
-                type="button"
-                className="inline-flex items-center justify-center px-6 py-3 rounded-lg text-base font-semibold tracking-wide border border-[var(--border-default)] bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary-hover)] transition-colors cursor-pointer"
-              >
-                Entrar na Comunidade
-              </button>
+      <section className="relative border-b border-[var(--border-default)] bg-[radial-gradient(120%_90%_at_50%_0%,color-mix(in_srgb,var(--brand-primary)_18%,transparent)_0%,transparent_64%)]">
+        <div className="w-full max-w-[1180px] mx-auto px-4 sm:px-6 py-14 sm:py-20 lg:py-24">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_0.75fr] gap-10 lg:gap-16 items-end">
+            <div>
+              <span className="block mb-3 font-mono text-xs uppercase tracking-widest text-[var(--brand-primary)]">
+                Central da comunidade
+              </span>
+              <h1 className="max-w-[760px] text-4xl sm:text-5xl lg:text-[4.25rem] font-extrabold tracking-tight leading-[1.04] text-[var(--text-primary)] mb-6">
+                Explore. Compartilhe. Evolua.
+              </h1>
+              <p className="max-w-[650px] text-lg sm:text-xl text-[var(--text-secondary)] leading-relaxed mb-8">
+                Acompanhe o que está acontecendo em MiningPoint, encontre outros membros e participe das conversas da comunidade.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Link
+                  to="/forum"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-base font-semibold bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] transition-colors"
+                >
+                  Ir para o fórum
+                  <ArrowIcon />
+                </Link>
+                <Link
+                  to="/membros"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-base font-semibold border border-[var(--border-default)] bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary-hover)] transition-colors"
+                >
+                  Ver membros
+                  <ArrowIcon />
+                </Link>
+              </div>
             </div>
 
-            {/* 2. Animated Stats Counter */}
-            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-8 pt-8 border-t border-[var(--border-subtle)]">
-              <StatCounter finalValue={240} suffix="+" label="Membros ativos" />
-              <StatCounter finalValue={86} label="Eventos realizados" />
-              <StatCounter finalValue={512} label="Recursos catalogados" />
-            </div>
+            <aside className="rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-default)] p-6 sm:p-7 shadow-sm">
+              <span className="block mb-5 font-mono text-xs uppercase tracking-widest text-[var(--text-muted)]">
+                Agora na comunidade
+              </span>
+              <div className="grid grid-cols-2 gap-5">
+                <HomeStat icon={<UsersIcon />} value={memberValue} label="Membros públicos" />
+                <HomeStat
+                  icon={<ForumIcon />}
+                  value={forumsLoading ? '—' : String(activeForums.length)}
+                  label="Fóruns ativos"
+                />
+              </div>
+              {(membersError || forumsError) && (
+                <p className="mt-5 pt-4 border-t border-[var(--border-subtle)] text-xs text-[var(--feedback-warning)]">
+                  Alguns dados da comunidade não puderam ser atualizados agora.
+                </p>
+              )}
+            </aside>
           </div>
         </div>
       </section>
 
-      {/* 3. Os Quatro Pilares */}
-      <section className="py-16 sm:py-24" aria-labelledby="titulo-pilares">
+      <section className="py-14 sm:py-20" aria-labelledby="titulo-acessos">
         <div className="w-full max-w-[1180px] mx-auto px-4 sm:px-6">
-          <div className="max-w-[720px] mb-12">
-            <span className="block mb-2 font-mono text-xs uppercase tracking-widest text-[var(--brand-primary)]">
-              A essência do projeto
-            </span>
-            <h2 id="titulo-pilares" className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-3">
-              Os Quatro Pilares
-            </h2>
-            <p className="text-base sm:text-lg text-[var(--text-secondary)] leading-relaxed m-0">
-              Tudo em MiningPoint parte de quatro ideias que se sustentam entre si: descobrir, compreender, evoluir e compartilhar.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Pilar 01 */}
-            <article className="flex flex-col gap-3 p-6 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-default)] shadow-sm hover:-translate-y-1 hover:border-[var(--brand-primary)] transition-all duration-200">
-              <div className="w-9 h-9 text-[var(--brand-primary)]">
-                <svg className="w-full h-full fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="12" cy="12" r="9" />
-                  <path d="M15.5 8.5l-2 5-5 2 2-5 5-2z" />
-                </svg>
-              </div>
-              <span className="font-mono text-xs uppercase tracking-widest text-[var(--brand-primary)]">
-                Pilar 01
-              </span>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)] m-0">
-                Exploração
-              </h3>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed m-0">
-                Descobrir o que existe além das regiões conhecidas e encontrar recursos que desafiam as expectativas.
-              </p>
-            </article>
-
-            {/* Pilar 02 */}
-            <article className="flex flex-col gap-3 p-6 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-default)] shadow-sm hover:-translate-y-1 hover:border-[var(--brand-primary)] transition-all duration-200">
-              <div className="w-9 h-9 text-[var(--brand-primary)]">
-                <svg className="w-full h-full fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 6.5C10.5 5 8.5 4.5 4 4.5v13c4.5 0 6.5.5 8 2 1.5-1.5 3.5-2 8-2v-13c-4.5 0-6.5.5-8 2z" />
-                  <path d="M12 6.5v13" />
-                </svg>
-              </div>
-              <span className="font-mono text-xs uppercase tracking-widest text-[var(--brand-primary)]">
-                Pilar 02
-              </span>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)] m-0">
-                Conhecimento
-              </h3>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed m-0">
-                Investigar materiais, compreender suas propriedades e transformar descobertas em novas possibilidades.
-              </p>
-            </article>
-
-            {/* Pilar 03 */}
-            <article className="flex flex-col gap-3 p-6 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-default)] shadow-sm hover:-translate-y-1 hover:border-[var(--brand-primary)] transition-all duration-200">
-              <div className="w-9 h-9 text-[var(--brand-primary)]">
-                <svg className="w-full h-full fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M4 19h16" />
-                  <path d="M4 15l5-5 3.5 3.5L20 6" />
-                  <path d="M20 10V6h-4" />
-                </svg>
-              </div>
-              <span className="font-mono text-xs uppercase tracking-widest text-[var(--brand-primary)]">
-                Pilar 03
-              </span>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)] m-0">
-                Evolução
-              </h3>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed m-0">
-                Desenvolver habilidades, aperfeiçoar técnicas e construir uma trajetória própria por meio da experiência.
-              </p>
-            </article>
-
-            {/* Pilar 04 */}
-            <article className="flex flex-col gap-3 p-6 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-default)] shadow-sm hover:-translate-y-1 hover:border-[var(--brand-primary)] transition-all duration-200">
-              <div className="w-9 h-9 text-[var(--brand-primary)]">
-                <svg className="w-full h-full fill-none stroke-current stroke-[1.5] [stroke-linecap:round] [stroke-linejoin:round]" viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="9" cy="9" r="3" />
-                  <path d="M3.5 19a5.5 5.5 0 0 1 11 0" />
-                  <path d="M16 6.2a3 3 0 0 1 0 5.6" />
-                  <path d="M17.2 14.3A5.5 5.5 0 0 1 20.5 19" />
-                </svg>
-              </div>
-              <span className="font-mono text-xs uppercase tracking-widest text-[var(--brand-primary)]">
-                Pilar 04
-              </span>
-              <h3 className="text-lg font-semibold text-[var(--text-primary)] m-0">
-                Comunidade
-              </h3>
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed m-0">
-                Compartilhar descobertas, criar relações e participar da evolução de um mundo construído coletivamente.
-              </p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Materiais que não se deixam explicar */}
-      <section className="py-16 sm:py-24 bg-[color-mix(in_srgb,var(--bg-surface)_55%,transparent)] border-y border-[var(--border-default)]" aria-labelledby="titulo-misterio">
-        <div className="w-full max-w-[1180px] mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 md:grid-cols-[1.1fr_1fr] gap-8 md:gap-12 items-center">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
             <div>
               <span className="block mb-2 font-mono text-xs uppercase tracking-widest text-[var(--brand-primary)]">
-                O mistério que permanece
+                Acompanhe de perto
               </span>
-              <h2 id="titulo-misterio" className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-6">
-                Materiais que não se deixam explicar
+              <h2 id="titulo-acessos" className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">
+                O que você quer fazer?
               </h2>
-              <p className="text-base text-[var(--text-secondary)] leading-relaxed mb-4">
-                Diferente dos minérios convencionais, os materiais voláteis não mantêm as mesmas propriedades: variam conforme o ambiente, reagem de forma inesperada quando combinados e não valem apenas pela quantidade extraída. Uma amostra pode parecer comum por fora e contradizer tudo o que já foi registrado.
-              </p>
-              <p className="text-base text-[var(--text-secondary)] leading-relaxed mb-4">
-                Encontrar um recurso é apenas o começo. Compreendê-lo é o que transforma uma descoberta em progresso — e é exatamente aí que a comunidade de MiningPoint passa a maior parte do tempo: comparando registros, repetindo testes e revisando conclusões antigas.
-              </p>
-              <p className="text-base text-[var(--text-secondary)] leading-relaxed m-0">
-                A origem dos materiais voláteis continua em aberto. Por que certas regiões concentram recursos incomuns? Existe relação entre os diferentes materiais? São perguntas que ninguém respondeu ainda.
-              </p>
             </div>
+            <Link
+              to="/sobre"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--brand-primary)] hover:text-[var(--brand-primary-hover)] transition-colors"
+            >
+              Conhecer o MiningPoint
+              <ArrowIcon />
+            </Link>
+          </div>
 
-            <blockquote className="m-0 p-6 sm:p-8 border-l-4 border-[var(--brand-primary)] bg-[color-mix(in_srgb,var(--brand-primary)_6%,transparent)] rounded-r-xl italic text-lg sm:text-xl text-[var(--text-primary)] leading-relaxed">
-              Nas profundezas, cada descoberta abre novas possibilidades. Cada recurso guarda perguntas ainda sem resposta. E cada explorador decide até onde está disposto a ir.
-              <footer className="block mt-4 not-italic font-sans text-xs uppercase tracking-widest text-[var(--text-secondary)] font-medium">
-                Tagline de MiningPoint
-              </footer>
-            </blockquote>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link
+              to="/forum"
+              className="group flex flex-col gap-3 p-6 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-default)] hover:-translate-y-1 hover:border-[var(--brand-primary)] transition-all duration-200"
+            >
+              <span className="text-xs font-mono uppercase tracking-widest text-[var(--brand-primary)]">01</span>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Participar das conversas</h3>
+              <p className="text-sm leading-relaxed text-[var(--text-secondary)] m-0">Leia discussões, compartilhe descobertas e acompanhe os fóruns ativos.</p>
+              <span className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-[var(--brand-primary)]">Abrir fórum <ArrowIcon /></span>
+            </Link>
+            <Link
+              to="/membros"
+              className="group flex flex-col gap-3 p-6 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-default)] hover:-translate-y-1 hover:border-[var(--brand-primary)] transition-all duration-200"
+            >
+              <span className="text-xs font-mono uppercase tracking-widest text-[var(--brand-primary)]">02</span>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Encontrar exploradores</h3>
+              <p className="text-sm leading-relaxed text-[var(--text-secondary)] m-0">Conheça os membros públicos e descubra quem está construindo a comunidade.</p>
+              <span className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-[var(--brand-primary)]">Ver membros <ArrowIcon /></span>
+            </Link>
+            <Link
+              to="/entrar"
+              className="group flex flex-col gap-3 p-6 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-default)] hover:-translate-y-1 hover:border-[var(--brand-primary)] transition-all duration-200"
+            >
+              <span className="text-xs font-mono uppercase tracking-widest text-[var(--brand-primary)]">03</span>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)]">Fazer parte</h3>
+              <p className="text-sm leading-relaxed text-[var(--text-secondary)] m-0">Entre com sua conta Google para participar das áreas que exigem autenticação.</p>
+              <span className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-[var(--brand-primary)]">Entrar na conta <ArrowIcon /></span>
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* 5. Final CTA */}
-      <section className="py-16 sm:py-24" aria-labelledby="titulo-cta">
+      <section className="py-14 sm:py-20 border-y border-[var(--border-default)] bg-[color-mix(in_srgb,var(--bg-surface)_55%,transparent)]" aria-labelledby="titulo-foruns">
         <div className="w-full max-w-[1180px] mx-auto px-4 sm:px-6">
-          <div className="p-8 sm:p-12 text-center rounded-2xl bg-[var(--bg-surface)] border border-[color-mix(in_srgb,var(--brand-primary)_32%,transparent)] shadow-sm">
-            <h2 id="titulo-cta" className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-3">
-              Pronto para descer?
-            </h2>
-            <p className="text-base text-[var(--text-secondary)] max-w-xl mx-auto mb-8">
-              Conheça quem já está nas profundezas e veja o que a comunidade tem marcado para os próximos ciclos.
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link
-                to="/membros"
-                className="inline-flex items-center justify-center px-6 py-3 rounded-lg text-base font-semibold tracking-wide bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] transition-colors cursor-pointer"
-              >
-                Conhecer os membros
-              </Link>
-              <Link
-                to="/eventos"
-                className="inline-flex items-center justify-center px-6 py-3 rounded-lg text-base font-semibold tracking-wide border border-[var(--border-default)] bg-transparent text-[var(--text-primary)] hover:bg-[var(--bg-surface-elevated)] hover:border-[var(--brand-primary)] hover:text-[var(--brand-primary-hover)] transition-colors cursor-pointer"
-              >
-                Ver os próximos eventos
-              </Link>
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+            <div>
+              <span className="block mb-2 font-mono text-xs uppercase tracking-widest text-[var(--brand-primary)]">Espaços de discussão</span>
+              <h2 id="titulo-foruns" className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">Fóruns ativos</h2>
             </div>
+            <Link to="/forum" className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--brand-primary)] hover:text-[var(--brand-primary-hover)] transition-colors">Ver todos <ArrowIcon /></Link>
           </div>
+
+          {forumsLoading ? (
+            <div className="p-6 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-secondary)]">Carregando fóruns ativos...</div>
+          ) : activeForums.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {activeForums.slice(0, 3).map((forum) => (
+                <Link key={forum.id} to={forum.route} className="flex flex-col gap-3 p-6 rounded-xl bg-[var(--bg-surface)] border border-[var(--border-default)] hover:border-[var(--brand-primary)] transition-colors">
+                  <span className="text-xs font-mono uppercase tracking-widest text-[var(--brand-primary)]">{forum.focus}</span>
+                  <h3 className="text-lg font-semibold text-[var(--text-primary)]">{forum.title}</h3>
+                  <p className="text-sm text-[var(--text-secondary)] leading-relaxed m-0 line-clamp-3">{forum.description}</p>
+                  <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-[var(--brand-primary)]">Acessar fórum <ArrowIcon /></span>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="p-6 rounded-xl border border-[var(--border-default)] bg-[var(--bg-surface)] text-sm text-[var(--text-secondary)]">Nenhum fórum ativo está disponível no momento.</div>
+          )}
         </div>
       </section>
     </div>
