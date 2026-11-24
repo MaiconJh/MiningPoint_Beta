@@ -39,6 +39,7 @@ export interface UserProfile {
   featuredTitleId: string | null;
   featuredTitle?: Title | null;
   visibility: UserVisibility;
+  profileSetupCompleted?: boolean;
   featuredBadges: string[];
   featuredBadgesMode?: 'manual' | 'auto';
   attributes: UserAttributes;
