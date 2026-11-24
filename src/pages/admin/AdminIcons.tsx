@@ -124,16 +124,22 @@ export const AdminIcons: React.FC = () => {
             Ícones custom
           </h1>
           <p className="text-sm text-[var(--text-secondary)] mt-1 m-0">
-            Gerenciamento de ícones SVG customizados para insígnias.
+            Gerenciamento da biblioteca de ícones SVG customizados para insígnias, fóruns e elementos do sistema.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Link
             to="/admin/insignias"
             className="px-3.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] hover:border-[var(--brand-primary)] text-sm font-semibold transition-colors"
           >
             Ver insígnias
+          </Link>
+          <Link
+            to="/admin/forum"
+            className="px-3.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] hover:border-[var(--brand-primary)] text-sm font-semibold transition-colors"
+          >
+            Ver fóruns
           </Link>
           <button
             type="button"

@@ -94,7 +94,7 @@ export const BadgeForm: React.FC<BadgeFormProps> = ({
   };
 
   return (
-    <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-6 sm:p-8 max-w-2xl">
+    <div className="bg-[var(--bg-surface)] border border-[var(--border-default)] rounded-xl p-6 sm:p-8 max-w-4xl">
       <div className="flex items-center justify-between pb-6 mb-6 border-b border-[var(--border-subtle)]">
         <h2 className="text-xl font-bold text-[var(--text-primary)] m-0">
           {initialBadge ? `Editar insígnia: ${initialBadge.name}` : 'Nova insígnia'}
@@ -150,12 +150,22 @@ export const BadgeForm: React.FC<BadgeFormProps> = ({
           <span className="text-xs text-[var(--text-muted)]">{description.length}/160 caracteres</span>
         </div>
 
-        {/* Ícone */}
-        <div className="space-y-3">
-          <label className="block text-sm font-semibold text-[var(--text-primary)]">
-            Ícone <span className="text-[var(--feedback-error)]">*</span>
-          </label>
-          <BadgeIconPicker value={icon} onChange={setIcon} />
+        {/* Ícone (padrão unificado com ForumForm) */}
+        <div className="p-4 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] space-y-3">
+          <div>
+            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider block">
+              Ícone da Insígnia <span className="text-[var(--feedback-error)]">*</span>
+            </span>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5 mb-0">
+              Escolha um ícone do catálogo unificado ou cadastre um novo SVG customizado.
+            </p>
+          </div>
+          <BadgeIconPicker
+            value={icon}
+            onChange={setIcon}
+            defaultValue="award"
+            disabled={saving || deleting}
+          />
         </div>
 
         {/* Catálogo */}

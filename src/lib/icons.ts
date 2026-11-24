@@ -205,7 +205,7 @@ export const deleteCustomIcon = async (
   if (inUse) {
     return {
       success: false,
-      error: 'Não é possível excluir: há badges usando este ícone.',
+      error: 'Não é possível excluir: há insígnias usando este ícone.',
     };
   }
 
@@ -214,6 +214,21 @@ export const deleteCustomIcon = async (
     if (globalConfig?.iconId === iconId) {
       await setGlobalForumIconConfig(null, 'system');
     }
+
+    const customRef = `custom:${iconId}`;
+    const [bareForumsSnap, prefixedForumsSnap] = await Promise.all([
+      getDocs(query(collection(db, 'forums'), where('iconId', '==', iconId))),
+      getDocs(query(collection(db, 'forums'), where('iconId', '==', customRef))),
+    ]);
+    const forumIdsToReset = new Set<string>();
+    bareForumsSnap.docs.forEach((d) => forumIdsToReset.add(d.id));
+    prefixedForumsSnap.docs.forEach((d) => forumIdsToReset.add(d.id));
+
+    await Promise.all(
+      Array.from(forumIdsToReset).map((fId) =>
+        updateDoc(doc(db, 'forums', fId), { iconId: null })
+      )
+    );
 
     await deleteDoc(doc(db, 'icons', iconId));
     return { success: true };

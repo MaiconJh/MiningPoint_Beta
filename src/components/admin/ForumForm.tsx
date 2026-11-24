@@ -7,8 +7,11 @@ import {
   DEFAULT_FORUM_FEATURES,
 } from '../../types/forum';
 import { validateForumRoute } from '../../lib/forums';
+import { useCustomIcons } from '../../hooks/useCustomIcons';
+import { useAuth } from '../../context/AuthContext';
 import { ForumCategoryEditor } from './ForumCategoryEditor';
 import { ForumPermissionEditor } from './ForumPermissionEditor';
+import { ForumIconPicker } from './ForumIconPicker';
 
 interface ForumFormProps {
   initialForum?: Forum | null;
@@ -29,10 +32,14 @@ export const ForumForm: React.FC<ForumFormProps> = ({
   saving,
   inlineError,
 }) => {
+  const { user } = useAuth();
+  const { customIcons, reload: reloadCustomIcons } = useCustomIcons();
+
   const [title, setTitle] = useState(initialForum?.title || '');
   const [slug, setSlug] = useState(initialForum?.slug || '');
   const [description, setDescription] = useState(initialForum?.description || '');
   const [focus, setFocus] = useState(initialForum?.focus || 'discussões');
+  const [iconId, setIconId] = useState<string | null>(initialForum?.iconId ?? null);
   const [order, setOrder] = useState<number>(initialForum?.order ?? existingForums.length + 1);
   const [isActive, setIsActive] = useState<boolean>(initialForum?.isActive ?? true);
   const [threadStructure, setThreadStructure] = useState<ThreadStructure>(
@@ -84,6 +91,7 @@ export const ForumForm: React.FC<ForumFormProps> = ({
       title: title.trim().slice(0, 80),
       slug: routeValidation.slug,
       route: routeValidation.route,
+      iconId,
       description: description.trim().slice(0, 300),
       focus: focus.trim().slice(0, 50),
       order: typeof order === 'number' ? order : 0,
@@ -234,6 +242,26 @@ export const ForumForm: React.FC<ForumFormProps> = ({
             rows={2}
             placeholder="Breve resumo da finalidade deste fórum para os membros"
             className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)] text-[var(--text-primary)] focus:outline-none focus:border-[var(--border-focus)]"
+          />
+        </div>
+
+        {/* Forum icon section (R-05) */}
+        <div className="p-4 rounded-lg border border-[var(--border-default)] bg-[var(--bg-default)] space-y-3">
+          <div>
+            <span className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-wider block">
+              Ícone do Fórum
+            </span>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5 mb-0">
+              Escolha um ícone do catálogo unificado ou cadastre um novo SVG customizado.
+            </p>
+          </div>
+          <ForumIconPicker
+            customIcons={customIcons}
+            selectedIconId={iconId}
+            onSelect={setIconId}
+            onCreated={reloadCustomIcons}
+            createdBy={user?.uid || ''}
+            disabled={saving}
           />
         </div>
 

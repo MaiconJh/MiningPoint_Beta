@@ -202,17 +202,29 @@
       },
       "required": ["name", "category", "tags", "svg", "viewBox", "createdAt", "createdBy"]
     },
-    "GlobalForumIconSetting": {
-      "title": "GlobalForumIconSetting",
-      "description": "Reserved pointer document in icons/settings for the global forum SVG icon",
+    "Forum": {
+      "title": "Forum",
+      "description": "Configurable community forum definition",
       "type": "object",
       "properties": {
-        "kind": { "type": "string", "enum": ["global-forum-icon"] },
+        "slug": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "focus": { "type": "string" },
+        "route": { "type": "string" },
         "iconId": { "type": ["string", "null"] },
+        "order": { "type": "number" },
+        "isActive": { "type": "boolean" },
+        "threadStructure": { "type": "string", "enum": ["flat", "quoted", "nested"] },
+        "categories": { "type": "array", "items": { "type": "object" } },
+        "features": { "type": "object" },
+        "permissions": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" },
         "updatedAt": { "type": "string", "format": "date-time" },
         "updatedBy": { "type": "string" }
       },
-      "required": ["kind", "iconId", "updatedAt", "updatedBy"]
+      "required": ["slug", "title", "route", "order", "isActive", "threadStructure", "createdAt", "createdBy", "updatedAt", "updatedBy"]
     }
   },
   "firestore": {
@@ -256,9 +268,9 @@
       "schema": { "$ref": "CustomIcon" },
       "description": "Custom SVG icon definitions"
     },
-    "/icons/settings": {
-      "schema": { "$ref": "GlobalForumIconSetting" },
-      "description": "Global forum SVG icon pointer setting"
+    "/forums/{forumId}": {
+      "schema": { "$ref": "Forum" },
+      "description": "Configurable community forums with optional individual SVG icon reference"
     }
   }
 }

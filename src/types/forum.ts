@@ -66,6 +66,7 @@ export interface Forum {
   description: string;
   focus: string;
   route: string;
+  iconId?: string | null;
   order: number;
   isActive: boolean;
   threadStructure: ThreadStructure;

@@ -177,12 +177,6 @@ icons/{iconId}
   createdAt: timestamp
   createdBy: string
 
-icons/settings
-  kind: 'global-forum-icon'       // reserved pointer document (no 'name' field)
-  iconId: string | null           // ref to icons/{iconId}, null falls back to default Lucide icon
-  updatedAt: timestamp
-  updatedBy: string
-
 titles/{titleId}
   name: string                    // "Pioneiro", "Filho da Profundeza"
   description: string
@@ -232,6 +226,7 @@ forums/{forumId}
   description: string
   focus: string                   // thematic focus chip label (e.g., "Discussão")
   route: string                   // public route path (e.g., "/forum/suporte")
+  iconId: string | null           // optional custom SVG icon ref to icons/{iconId} (null uses default Lucide icon)
   order: number                   // 0-999 display order
   isActive: boolean               // true by default
   threadStructure: 'flat' | 'quoted' | 'nested' // comment tree layout
@@ -359,11 +354,11 @@ Icon registry & custom icons:
   - Curated set of 300 Lucide icons across 8 categories:
     general (40), community (35), exploration (40), progress (40),
     items (40), achievements (40), time (30), documents (35).
-  - Custom SVG icons created by admin in `/admin/icones` and stored in `icons/{iconId}`.
+  - Custom SVG icons created by admin in `/admin/icones` (or inline in `/admin/forum`) and stored in `icons/{iconId}`, shared across badges (`custom:{iconId}`) and individual forums (`forums/{forumId}.iconId`).
   - Icon reference formats:
     - `"shield"`: legacy or Lucide slug (no prefix)
     - `"lucide:shield"`: explicit Lucide slug
-    - `"custom:iconId"`: custom icon document in `icons/{iconId}`
+    - `"custom:iconId"`: custom icon document in `icons/{iconId}` (or bare `iconId` in `forums/{forumId}.iconId`)
   - Resolution order via `resolveIcon`:
     1. If `custom:id`, lookup in custom icons cache/collection.
     2. Otherwise, strip `lucide:` prefix and lookup in Lucide registry.

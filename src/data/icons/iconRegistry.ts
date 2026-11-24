@@ -2451,6 +2451,23 @@ export const createCustomIconComponent = (
 
 const warnedUnknownIcons = new Set<string>();
 
+const findCustomIconInCache = (
+  customId: string,
+  customIconsCache?: Record<string, CustomIcon> | CustomIcon[] | Map<string, CustomIcon>
+): CustomIcon | undefined => {
+  if (!customIconsCache || !customId) return undefined;
+  if (customIconsCache instanceof Map) {
+    return customIconsCache.get(customId);
+  }
+  if (Array.isArray(customIconsCache)) {
+    return customIconsCache.find((c) => c.id === customId);
+  }
+  if (typeof customIconsCache === 'object') {
+    return customIconsCache[customId];
+  }
+  return undefined;
+};
+
 export const resolveIcon = (
   iconRef: string | null | undefined,
   customIconsCache?: Record<string, CustomIcon> | CustomIcon[] | Map<string, CustomIcon>
@@ -2461,21 +2478,10 @@ export const resolveIcon = (
 
   const trimmed = iconRef.trim();
 
-  // 1. Custom icon format: "custom:abc123"
+  // 1. Explicit custom icon format: "custom:abc123"
   if (trimmed.startsWith('custom:')) {
     const customId = trimmed.slice(7);
-
-    let customDoc: CustomIcon | undefined;
-    if (customIconsCache) {
-      if (customIconsCache instanceof Map) {
-        customDoc = customIconsCache.get(customId);
-      } else if (Array.isArray(customIconsCache)) {
-        customDoc = customIconsCache.find((c) => c.id === customId);
-      } else if (typeof customIconsCache === 'object') {
-        customDoc = customIconsCache[customId];
-      }
-    }
-
+    const customDoc = findCustomIconInCache(customId, customIconsCache);
     if (customDoc && customDoc.svg) {
       return createCustomIconComponent(customDoc.svg, customDoc.viewBox);
     }
@@ -2487,7 +2493,13 @@ export const resolveIcon = (
     return ICON_BY_SLUG[slug].component;
   }
 
-  // 3. Fallback to "award" and warn once per session
+  // 3. Bare custom icon ID format (e.g., stored directly in forums/{forumId}.iconId)
+  const bareCustomDoc = findCustomIconInCache(trimmed, customIconsCache);
+  if (bareCustomDoc && bareCustomDoc.svg) {
+    return createCustomIconComponent(bareCustomDoc.svg, bareCustomDoc.viewBox);
+  }
+
+  // 4. Fallback to "award" and warn once per session
   if (!warnedUnknownIcons.has(trimmed)) {
     warnedUnknownIcons.add(trimmed);
     console.warn(

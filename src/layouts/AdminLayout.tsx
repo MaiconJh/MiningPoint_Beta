@@ -18,7 +18,6 @@ const NAV_ENTRIES: AdminNavEntry[] = [
     items: [
       { to: '/admin/insignias', label: 'Insígnias' },
       { to: '/admin/titulos', label: 'Títulos' },
-      { to: '/admin/icones', label: 'Ícones custom' },
     ],
   },
   {
@@ -32,6 +31,7 @@ const NAV_ENTRIES: AdminNavEntry[] = [
       { to: '/admin/colecoes', label: 'Coleções' },
     ],
   },
+  { type: 'link', to: '/admin/icones', label: 'Ícones custom' },
   { type: 'link', to: '/admin/forum', label: 'Fórum' },
   { type: 'link', to: '/admin/conteudo', label: 'Conteúdo' },
   { type: 'link', to: '/admin/logs', label: 'Logs' },

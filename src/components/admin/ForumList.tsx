@@ -44,17 +44,25 @@ export const ForumList: React.FC<ForumListProps> = ({
             Fóruns Cadastrados ({forums.length})
           </h2>
           <p className="text-xs text-[var(--text-muted)] mt-1 mb-0">
-            Gerencie os fóruns ativos, regras de acesso e rotas públicas da comunidade.
+            Gerencie os fóruns ativos, ícones, regras de acesso e rotas públicas da comunidade.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={onNew}
-          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] transition-colors cursor-pointer self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          Novo fórum
-        </button>
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          <Link
+            to="/admin/icones"
+            className="px-3.5 py-2 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface-elevated)] text-[var(--text-primary)] hover:border-[var(--brand-primary)] text-xs font-semibold transition-colors"
+          >
+            Ícones custom
+          </Link>
+          <button
+            type="button"
+            onClick={onNew}
+            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg bg-[var(--brand-primary)] text-[var(--text-on-primary)] hover:bg-[var(--brand-primary-hover)] transition-colors cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            Novo fórum
+          </button>
+        </div>
       </div>
 
       {forums.length === 0 ? (

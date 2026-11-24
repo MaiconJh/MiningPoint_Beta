@@ -123,6 +123,10 @@ export function sanitizeForumDoc(id: string, data: Record<string, unknown>): For
     description: typeof data.description === 'string' ? data.description : '',
     focus: typeof data.focus === 'string' ? data.focus : 'discussões',
     route: typeof data.route === 'string' ? data.route : `/forum/${data.slug || id}`,
+    iconId:
+      typeof data.iconId === 'string' && data.iconId.trim().length > 0
+        ? data.iconId.trim()
+        : null,
     order: typeof data.order === 'number' ? data.order : 0,
     isActive: typeof data.isActive === 'boolean' ? data.isActive : false,
     threadStructure:
