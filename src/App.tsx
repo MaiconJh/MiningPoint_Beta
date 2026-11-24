@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { ThemeProvider } from './context/ThemeContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { Layout } from './components/Layout';
 import { PageTransition } from './components/PageTransition';
@@ -19,7 +19,6 @@ import { Shop } from './pages/Shop';
 import { OwnProfile } from './pages/OwnProfile';
 import { AccountPanel } from './pages/AccountPanel';
 import { Login } from './pages/Login';
-import { ProfileSetup } from './pages/ProfileSetup';
 import { PublicProfile } from './pages/PublicProfile';
 import { NotFound } from './pages/NotFound';
 
@@ -45,42 +44,11 @@ import { AdminNotFound } from './pages/admin/AdminNotFound';
 
 const AppRoutes: React.FC = () => {
   const location = useLocation();
-  const { user, profile, loading } = useAuth();
-  const normalizedPath = location.pathname.replace(/\/+$/, '') || '/';
-  const isProfileSetup = normalizedPath === '/completar-perfil';
   const isAdmin = location.pathname.startsWith('/admin');
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
-
-  if (!loading) {
-    if (!user && isProfileSetup) {
-      return <Navigate to="/entrar" replace />;
-    }
-
-    if (user && profile !== null) {
-      if (profile.profileSetupCompleted === false && !isProfileSetup) {
-        return <Navigate to="/completar-perfil" replace />;
-      }
-
-      if (profile.profileSetupCompleted !== false && isProfileSetup) {
-        return <Navigate to="/perfil" replace />;
-      }
-    }
-  }
-
-  if (isProfileSetup) {
-    if (loading) {
-      return null;
-    }
-
-    return (
-      <Routes>
-        <Route path="/completar-perfil" element={<ProfileSetup />} />
-      </Routes>
-    );
-  }
 
   if (isAdmin) {
     return (

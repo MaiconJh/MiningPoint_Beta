@@ -117,8 +117,6 @@ export const listUsers = async (options: ListUsersOptions = {}): Promise<ListUse
       return profile;
     });
 
-    users = users.filter((u) => u.profileSetupCompleted !== false);
-
     if (selectedGroupId && selectedGroupId !== 'all') {
       users = users.filter((u) => {
         return (
@@ -507,93 +505,6 @@ const checkHandleUniqueness = async (uid: string, handle: string): Promise<void>
       throw new Error('Este @nick coincide com o identificador de outro usuário.');
     }
   }
-};
-
-export type DisplayNameValidationResult =
-  | { valid: true; displayName: string }
-  | { valid: false; reason: string };
-
-const hasControlOrNewlineChar = (value: string): boolean => {
-  for (let i = 0; i < value.length; i++) {
-    const code = value.charCodeAt(i);
-    if (
-      code <= 0x1f ||
-      (code >= 0x7f && code <= 0x9f) ||
-      code === 0x2028 ||
-      code === 0x2029
-    ) {
-      return true;
-    }
-  }
-  return false;
-};
-
-export const validateDisplayName = (raw: string): DisplayNameValidationResult => {
-  if (typeof raw !== 'string') {
-    return { valid: false, reason: 'Informe um nome de exibição válido.' };
-  }
-
-  const trimmed = raw.trim();
-
-  if (trimmed.length === 0) {
-    return { valid: false, reason: 'O nome de exibição é obrigatório.' };
-  }
-
-  if (hasControlOrNewlineChar(raw)) {
-    return {
-      valid: false,
-      reason: 'O nome de exibição não pode conter quebras de linha ou caracteres de controle.',
-    };
-  }
-
-  if (trimmed.length < 2 || trimmed.length > 50) {
-    return {
-      valid: false,
-      reason: 'O nome de exibição deve ter entre 2 e 50 caracteres.',
-    };
-  }
-
-  return { valid: true, displayName: trimmed };
-};
-
-export interface CompleteProfileSetupResult {
-  displayName: string;
-  handle: string;
-}
-
-export const completeProfileSetup = async (
-  uid: string,
-  rawDisplayName: string,
-  rawHandle: string
-): Promise<CompleteProfileSetupResult> => {
-  if (!db || !uid) {
-    throw new Error('Não foi possível conectar ao serviço. Tente novamente.');
-  }
-
-  const displayNameValidation = validateDisplayName(rawDisplayName);
-  if (!displayNameValidation.valid) {
-    throw new Error(displayNameValidation.reason);
-  }
-
-  const handleValidation = validateHandle(rawHandle);
-  if (!handleValidation.valid) {
-    throw new Error(handleValidation.reason);
-  }
-
-  const { displayName } = displayNameValidation;
-  const { handle } = handleValidation;
-
-  await checkHandleUniqueness(uid, handle);
-
-  const userRef = doc(db, 'users', uid);
-  await updateDoc(userRef, {
-    displayName,
-    handle,
-    visibility: 'public',
-    profileSetupCompleted: true,
-  });
-
-  return { displayName, handle };
 };
 
 export const setHandle = async (uid: string, rawHandle: string): Promise<void> => {

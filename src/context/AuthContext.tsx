@@ -66,7 +66,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userDocRef = doc(db, 'users', currentUser.uid);
         const initialProfile = {
           uid: currentUser.uid,
-          displayName: '',
+          displayName: currentUser.displayName || '',
           email: currentUser.email || '',
           photoURL: currentUser.photoURL || null,
           bannerUrl: null,
@@ -89,8 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             : { ...DEFAULT_EFFECTIVE_PERMISSIONS },
           bio: '',
           featuredTitleId: null,
-          visibility: 'private' as const,
-          profileSetupCompleted: false,
+          visibility: 'public' as const,
           featuredBadges: [],
           attributes: { ...DEFAULT_ATTRIBUTES },
           createdAt: serverTimestamp(),
@@ -160,7 +159,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           featuredTitleId: null,
           featuredTitle: null,
           visibility: 'public',
-          profileSetupCompleted: true,
           featuredBadges: [],
           featuredBadgesMode: 'manual',
           attributes: { ...DEFAULT_ATTRIBUTES },
@@ -182,18 +180,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setLoading(true);
       setUser(currentUser);
 
-      try {
-        if (currentUser && db) {
-          await loadUserProfile(currentUser);
-        } else {
-          setProfile(null);
-        }
-      } finally {
-        setLoading(false);
+      if (currentUser && db) {
+        await loadUserProfile(currentUser);
+      } else {
+        setProfile(null);
       }
+
+      setLoading(false);
     });
 
     return () => unsubscribe();
