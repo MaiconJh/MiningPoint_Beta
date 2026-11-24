@@ -1,6 +1,6 @@
 # Índice de Specs
 
-Total: 6 · rascunho: 0 · em-leitura: 0 · aprovado: 2 · negado: 0 · implementado: 4 · obsoleto: 0
+Total: 7 · rascunho: 1 · em-leitura: 0 · aprovado: 2 · negado: 0 · implementado: 4 · obsoleto: 0
 
 | ID | Título | Status | Criada | Implementada | Commit | Arquivos |
 |---|---|---|---|---|---|---|
@@ -10,6 +10,7 @@ Total: 6 · rascunho: 0 · em-leitura: 0 · aprovado: 2 · negado: 0 · implemen
 | <a href="./entries/SPEC-0004-edicao-post-forum-modal.md">SPEC-0004</a> | Edição de post no fórum com modal fixo, feedback responsável e transições suaves | implementado | 2026-10-19 | 2026-10-19 | — | 5 |
 | <a href="./entries/SPEC-0005-camadas-card-topico.md">SPEC-0005</a> | Camadas de responsabilidade no card de tópico do fórum | implementado | 2026-10-19 | 2026-10-19 | — | 1 |
 | <a href="./entries/SPEC-0006-icone-svg-global-foruns.md">SPEC-0006</a> | Ícone SVG individual por fórum | implementado | 2026-11-02 | 2026-11-02 | — | 9 |
+| <a href="./entries/SPEC-0007-onboarding-identidade-publica.md">SPEC-0007</a> | Onboarding obrigatório de nome público e @nick | rascunho | 2026-11-24 | — | — | 6 |
 
 ---
 
@@ -17,13 +18,13 @@ Total: 6 · rascunho: 0 · em-leitura: 0 · aprovado: 2 · negado: 0 · implemen
 
 - `entries/` — as specs, uma por arquivo.
 - `audits/` — relatórios da skill de verificação.
-- `_meta/` — README e template do fluxo.
+- `_meta/` — infraestrutura do fluxo.
 
 ## Como ler esta tabela
 
 - **Status:** um dos seis estados definidos em _meta/README.md.
 - **Implementada:** data em que status virou implementado.
 - **Commit:** SHA do commit que implementou a spec.
-- **Arquivos:** quantidade de arquivos declarados no frontmatter (files).
+- **Arquivos:** quantidade de arquivos declarados no frontmatter (`files`).
 
 Atualize esta tabela a cada transição de estado de uma spec.
